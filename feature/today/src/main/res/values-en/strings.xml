@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="feature_today_title">Today</string>
+    <string name="feature_today_empty_title">No visits today</string>
+    <string name="feature_today_empty_message">Today’s visits, money to collect and alerts will appear here.</string>
+</resources>

@@ -1,0 +1,20 @@
+package com.teraper.printmaster.core.model
+
+enum class ClientType { FIRM, PRIVATE }
+
+enum class PrintType { LASER, INK }
+
+enum class ColorType { COLOR, MONO }
+
+enum class OrderStatus { NEW, IN_PROGRESS, DONE, CANCELLED }
+
+/** Price-list categories, same three as the PrintMaster web version. */
+enum class RepairCategory { CARTRIDGE, PRINTER, OTHER }
+
+/** Where a charge (something the client owes) came from. */
+enum class ChargeSource { INVOICE_IMPORT, REPAIR, MANUAL }
+
+enum class PaymentMethod { CASH, BANK }
+
+/** The two Excel files the app imports. */
+enum class ImportKind { INVOICES, BANK_STATEMENT }

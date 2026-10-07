@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="feature_more_title">More</string>
+    <string name="feature_more_empty_title">Coming soon</string>
+    <string name="feature_more_empty_message">Price list, printer catalog, reports, backup and settings.</string>
+</resources>

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="feature_more_title">Ավելին</string>
+    <string name="feature_more_empty_title">Շուտով</string>
+    <string name="feature_more_empty_message">Գնացուցակ, տպիչների կատալոգ, հաշվետվություններ, պահուստավորում և կարգավորումներ։</string>
+</resources>

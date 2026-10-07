@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="feature_today_title">Այսօր</string>
+    <string name="feature_today_empty_title">Այսօր այցեր չկան</string>
+    <string name="feature_today_empty_message">Այստեղ կերևան այսօրվա այցերը, գանձելիք գումարները և ծանուցումները։</string>
+</resources>

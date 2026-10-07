@@ -1,3 +1,10 @@
 <resources>
-    <string name="app_name">My Application</string>
+    <string name="app_name">PrintMaster</string>
+    <!-- Tab names must fit ~72dp on a 360dp phone, so they are short (singular).
+         Screen titles inside each tab use the full plural names. -->
+    <string name="tab_today">Այսօր</string>
+    <string name="tab_clients">Հաճախորդ</string>
+    <string name="tab_orders">Պատվեր</string>
+    <string name="tab_payments">Վճարում</string>
+    <string name="tab_more">Ավելին</string>
 </resources>

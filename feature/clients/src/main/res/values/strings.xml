@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="feature_clients_title">Հաճախորդներ</string>
+    <string name="feature_clients_empty_title">Հաճախորդներ դեռ չկան</string>
+    <string name="feature_clients_empty_message">Ավելացրեք առաջին հաճախորդին՝ կազմակերպություն (ՀՎՀՀ-ով) կամ անհատ։</string>
+</resources>

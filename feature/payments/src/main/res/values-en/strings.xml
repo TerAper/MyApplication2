@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="feature_payments_title">Payments</string>
+    <string name="feature_payments_empty_title">No payments yet</string>
+    <string name="feature_payments_empty_message">Debts, cash and bank payments, and Excel import will appear here.</string>
+</resources>

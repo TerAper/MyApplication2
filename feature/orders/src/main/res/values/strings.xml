@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="feature_orders_title">Պատվերներ</string>
+    <string name="feature_orders_empty_title">Պատվերներ դեռ չկան</string>
+    <string name="feature_orders_empty_message">Այստեղ կերևան այցերն ըստ օրերի։</string>
+</resources>

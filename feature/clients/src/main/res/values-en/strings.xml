@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="feature_clients_title">Clients</string>
+    <string name="feature_clients_empty_title">No clients yet</string>
+    <string name="feature_clients_empty_message">Add your first client: a firm (with ՀՎՀՀ) or a private person.</string>
+</resources>

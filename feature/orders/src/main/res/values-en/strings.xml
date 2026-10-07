@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="feature_orders_title">Orders</string>
+    <string name="feature_orders_empty_title">No orders yet</string>
+    <string name="feature_orders_empty_message">Planned visits will appear here, day by day.</string>
+</resources>

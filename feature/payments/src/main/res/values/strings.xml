@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="feature_payments_title">Վճարումներ</string>
+    <string name="feature_payments_empty_title">Վճարումներ դեռ չկան</string>
+    <string name="feature_payments_empty_message">Այստեղ կերևան պարտքերը, կանխիկ և անկանխիկ վճարումները և Excel ներմուծումը։</string>
+</resources>

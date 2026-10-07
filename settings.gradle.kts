@@ -1,4 +1,5 @@
 pluginManagement {
+    includeBuild("build-logic")
     repositories {
         google {
             content {
@@ -22,6 +23,17 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "My Application"
+rootProject.name = "PrintMaster"
+enableFeaturePreview("TYPESAFE_PROJECT_ACCESSORS")
+
 include(":app")
- 
+
+include(":core:model")
+include(":core:database")
+include(":core:designsystem")
+
+include(":feature:today")
+include(":feature:clients")
+include(":feature:orders")
+include(":feature:payments")
+include(":feature:more")

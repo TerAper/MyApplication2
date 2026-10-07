@@ -1,0 +1,7 @@
+<resources>
+    <string name="tab_today">Today</string>
+    <string name="tab_clients">Clients</string>
+    <string name="tab_orders">Orders</string>
+    <string name="tab_payments">Payments</string>
+    <string name="tab_more">More</string>
+</resources>
