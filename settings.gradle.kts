@@ -31,6 +31,7 @@ include(":app")
 include(":core:model")
 include(":core:database")
 include(":core:designsystem")
+include(":core:data")
 
 include(":feature:today")
 include(":feature:clients")

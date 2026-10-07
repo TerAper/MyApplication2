@@ -7,6 +7,8 @@ import androidx.compose.material.icons.rounded.AccountBalanceWallet
 import androidx.compose.material.icons.rounded.CalendarMonth
 import androidx.compose.material.icons.rounded.Call
 import androidx.compose.material.icons.rounded.Close
+import androidx.compose.material.icons.rounded.Delete
+import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material.icons.rounded.GridView
 import androidx.compose.material.icons.rounded.Home
 import androidx.compose.material.icons.rounded.Group
@@ -30,4 +32,6 @@ object PmIcons {
     val Call: ImageVector = Icons.Rounded.Call
     val Map: ImageVector = Icons.Rounded.Place
     val ImportExcel: ImageVector = Icons.Rounded.UploadFile
+    val Edit: ImageVector = Icons.Rounded.Edit
+    val Delete: ImageVector = Icons.Rounded.Delete
 }

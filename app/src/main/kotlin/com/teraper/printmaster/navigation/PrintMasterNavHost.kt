@@ -4,7 +4,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
-import com.teraper.printmaster.feature.clients.navigation.clientsScreen
+import com.teraper.printmaster.feature.clients.navigation.clientsGraph
 import com.teraper.printmaster.feature.more.navigation.moreScreen
 import com.teraper.printmaster.feature.orders.navigation.ordersScreen
 import com.teraper.printmaster.feature.payments.navigation.paymentsScreen
@@ -23,7 +23,7 @@ fun PrintMasterNavHost(navController: NavHostController, modifier: Modifier = Mo
         modifier = modifier,
     ) {
         todayScreen()
-        clientsScreen()
+        clientsGraph(navController)
         ordersScreen()
         paymentsScreen()
         moreScreen()

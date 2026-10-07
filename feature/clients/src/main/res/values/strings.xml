@@ -3,4 +3,64 @@
     <string name="feature_clients_title">Հաճախորդներ</string>
     <string name="feature_clients_empty_title">Հաճախորդներ դեռ չկան</string>
     <string name="feature_clients_empty_message">Ավելացրեք առաջին հաճախորդին՝ կազմակերպություն (ՀՎՀՀ-ով) կամ անհատ։</string>
+    <string name="feature_clients_no_results_title">Ոչինչ չի գտնվել</string>
+    <string name="feature_clients_no_results_message">Փորձեք այլ բառ, ՀՎՀՀ կամ հեռախոսահամար։</string>
+
+    <string name="feature_clients_search_hint">Անուն, ՀՎՀՀ, հեռախոս կամ հասցե</string>
+    <string name="feature_clients_clear_search">Մաքրել որոնումը</string>
+    <string name="feature_clients_filter_all">Բոլորը · %1$d</string>
+    <string name="feature_clients_filter_firms">Կազմակերպություններ</string>
+    <string name="feature_clients_filter_private">Անհատներ</string>
+    <string name="feature_clients_filter_debt">Պարտքով</string>
+    <string name="feature_clients_new_client">Նոր հաճախորդ</string>
+
+    <string name="feature_clients_type_firm">Կազմակերպություն</string>
+    <string name="feature_clients_type_private">Անհատ</string>
+    <string name="feature_clients_tax_id_value">ՀՎՀՀ %1$s</string>
+    <plurals name="feature_clients_printer_count">
+        <item quantity="one">%1$d տպիչ</item>
+        <item quantity="other">%1$d տպիչ</item>
+    </plurals>
+
+    <string name="feature_clients_back">Հետ</string>
+    <string name="feature_clients_edit">Խմբագրել</string>
+    <string name="feature_clients_delete">Ջնջել</string>
+    <string name="feature_clients_cancel">Չեղարկել</string>
+    <string name="feature_clients_ok">Լավ</string>
+    <string name="feature_clients_not_found">Հաճախորդը չի գտնվել</string>
+    <string name="feature_clients_action_call">Զանգել</string>
+    <string name="feature_clients_action_map">Քարտեզ</string>
+    <string name="feature_clients_no_app">Համապատասխան հավելված չի գտնվել</string>
+    <string name="feature_clients_balance_owes">Մնացորդ՝ պարտք</string>
+    <string name="feature_clients_balance_overpaid">Ավել է վճարել</string>
+    <string name="feature_clients_section_phones">ՀԵՌԱԽՈՍՆԵՐ</string>
+    <string name="feature_clients_section_addresses">ՀԱՍՑԵՆԵՐ</string>
+    <string name="feature_clients_section_note">ՆՇՈՒՄ</string>
+    <string name="feature_clients_no_phones">Հեռախոս չկա</string>
+    <string name="feature_clients_no_addresses">Հասցե չկա</string>
+
+    <string name="feature_clients_delete_title">Ջնջե՞լ հաճախորդին</string>
+    <string name="feature_clients_delete_message">«%1$s»-ը կջնջվի իր հեռախոսների, հասցեների և տպիչների հետ միասին։</string>
+    <string name="feature_clients_delete_blocked_title">Հնարավոր չէ ջնջել</string>
+    <string name="feature_clients_delete_blocked_message">Այս հաճախորդն ունի պատվերներ, հաշիվներ կամ վճարումներ։ Ջնջելու դեպքում դրանց պատմությունը կկորի։</string>
+
+    <string name="feature_clients_edit_title">Խմբագրել հաճախորդին</string>
+    <string name="feature_clients_field_firm_name">Կազմակերպության անվանում</string>
+    <string name="feature_clients_field_person_name">Անուն, ազգանուն</string>
+    <string name="feature_clients_field_tax_id">ՀՎՀՀ</string>
+    <string name="feature_clients_field_tax_id_hint">8 թիվ</string>
+    <string name="feature_clients_field_phone">Հեռախոս</string>
+    <string name="feature_clients_field_address">Հասցե</string>
+    <string name="feature_clients_field_contact_label">Նշում (օր.՝ հաշվապահ)</string>
+    <string name="feature_clients_field_note">Նշում</string>
+    <string name="feature_clients_add_phone">+ Ավելացնել հեռախոս</string>
+    <string name="feature_clients_add_address">+ Ավելացնել հասցե</string>
+    <string name="feature_clients_remove">Հեռացնել</string>
+    <string name="feature_clients_save">Պահպանել</string>
+    <string name="feature_clients_error_name_required">Մուտքագրեք անունը</string>
+    <string name="feature_clients_error_tax_id_format">ՀՎՀՀ-ն պետք է լինի 8 թիվ</string>
+    <string name="feature_clients_error_tax_id_taken">Այս ՀՎՀՀ-ով արդեն կա հաճախորդ՝ %1$s</string>
+    <string name="feature_clients_discard_title">Չպահպանե՞լ փոփոխությունները</string>
+    <string name="feature_clients_discard">Չպահպանել</string>
+    <string name="feature_clients_keep_editing">Շարունակել</string>
 </resources>

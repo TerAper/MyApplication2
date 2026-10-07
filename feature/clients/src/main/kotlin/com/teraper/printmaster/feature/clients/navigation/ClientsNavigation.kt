@@ -4,14 +4,60 @@ import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavOptions
 import androidx.navigation.compose.composable
-import com.teraper.printmaster.feature.clients.ClientsRoute
+import androidx.navigation.navigation
+import com.teraper.printmaster.feature.clients.detail.ClientDetailRoute
+import com.teraper.printmaster.feature.clients.edit.ClientEditRoute
+import com.teraper.printmaster.feature.clients.list.ClientListRoute
 import kotlinx.serialization.Serializable
 
+/** The whole Clients tab (list + card + form), so the tab stays highlighted on every screen of it. */
 @Serializable
-data object ClientsDestination
+data object ClientsGraph
 
-fun NavController.navigateToClients(navOptions: NavOptions? = null) = navigate(ClientsDestination, navOptions)
+@Serializable
+data object ClientListDestination
 
-fun NavGraphBuilder.clientsScreen() {
-    composable<ClientsDestination> { ClientsRoute() }
+@Serializable
+data class ClientDetailDestination(val clientId: Long)
+
+/** [clientId] 0 = add a new client. */
+@Serializable
+data class ClientEditDestination(val clientId: Long = 0)
+
+internal const val CLIENT_ID_ARG = "clientId"
+
+fun NavController.navigateToClients(navOptions: NavOptions? = null) = navigate(ClientsGraph, navOptions)
+
+fun NavController.navigateToNewClient() = navigate(ClientEditDestination())
+
+fun NavGraphBuilder.clientsGraph(navController: NavController) {
+    navigation<ClientsGraph>(startDestination = ClientListDestination) {
+        composable<ClientListDestination> {
+            ClientListRoute(
+                onClientClick = { navController.navigate(ClientDetailDestination(it)) },
+                onAddClient = { navController.navigate(ClientEditDestination()) },
+            )
+        }
+        composable<ClientDetailDestination> {
+            ClientDetailRoute(
+                onBack = navController::popBackStack,
+                onEdit = { navController.navigate(ClientEditDestination(it)) },
+            )
+        }
+        composable<ClientEditDestination> {
+            ClientEditRoute(
+                onClose = navController::popBackStack,
+                onSaved = { clientId, wasNew ->
+                    if (wasNew) {
+                        // New client: show its card instead of going back to the list.
+                        navController.navigate(ClientDetailDestination(clientId)) {
+                            popUpTo<ClientEditDestination> { inclusive = true }
+                        }
+                    } else {
+                        navController.popBackStack()
+                    }
+                },
+            )
+        }
+    }
 }

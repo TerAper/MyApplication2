@@ -1,7 +1,11 @@
 package com.teraper.printmaster.core.database
 
+import android.content.Context
 import androidx.room.Database
+import androidx.room.Room
 import androidx.room.RoomDatabase
+import androidx.sqlite.db.SupportSQLiteDatabase
+import com.teraper.printmaster.core.database.dao.ClientDao
 import com.teraper.printmaster.core.database.entity.BrandEntity
 import com.teraper.printmaster.core.database.entity.CartridgeChipCrossRef
 import com.teraper.printmaster.core.database.entity.CartridgeEntity
@@ -47,4 +51,30 @@ import com.teraper.printmaster.core.database.entity.RepairPartEntity
     version = 1,
     exportSchema = true,
 )
-abstract class PrintMasterDatabase : RoomDatabase()
+abstract class PrintMasterDatabase : RoomDatabase() {
+    abstract fun clientDao(): ClientDao
+
+    companion object {
+        private const val DATABASE_NAME = "printmaster.db"
+
+        /** The only way to build the database, so tests get the same setup as the app. */
+        fun create(context: Context, inMemory: Boolean = false): PrintMasterDatabase {
+            val builder = if (inMemory) {
+                Room.inMemoryDatabaseBuilder(context, PrintMasterDatabase::class.java)
+            } else {
+                Room.databaseBuilder(context, PrintMasterDatabase::class.java, DATABASE_NAME)
+            }
+            return builder.addCallback(ForeignKeysOn).build()
+        }
+    }
+}
+
+/**
+ * SQLite ignores foreign keys unless asked; we rely on them for cascades
+ * (delete client → phones) and restrictions (client with orders can't be deleted).
+ */
+private object ForeignKeysOn : RoomDatabase.Callback() {
+    override fun onOpen(db: SupportSQLiteDatabase) {
+        db.execSQL("PRAGMA foreign_keys = ON")
+    }
+}

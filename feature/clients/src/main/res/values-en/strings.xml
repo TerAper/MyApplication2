@@ -3,4 +3,64 @@
     <string name="feature_clients_title">Clients</string>
     <string name="feature_clients_empty_title">No clients yet</string>
     <string name="feature_clients_empty_message">Add your first client: a firm (with ՀՎՀՀ) or a private person.</string>
+    <string name="feature_clients_no_results_title">Nothing found</string>
+    <string name="feature_clients_no_results_message">Try another word, ՀՎՀՀ or phone number.</string>
+
+    <string name="feature_clients_search_hint">Name, ՀՎՀՀ, phone or address</string>
+    <string name="feature_clients_clear_search">Clear search</string>
+    <string name="feature_clients_filter_all">All · %1$d</string>
+    <string name="feature_clients_filter_firms">Firms</string>
+    <string name="feature_clients_filter_private">Private</string>
+    <string name="feature_clients_filter_debt">In debt</string>
+    <string name="feature_clients_new_client">New client</string>
+
+    <string name="feature_clients_type_firm">Firm</string>
+    <string name="feature_clients_type_private">Private</string>
+    <string name="feature_clients_tax_id_value">ՀՎՀՀ %1$s</string>
+    <plurals name="feature_clients_printer_count">
+        <item quantity="one">%1$d printer</item>
+        <item quantity="other">%1$d printers</item>
+    </plurals>
+
+    <string name="feature_clients_back">Back</string>
+    <string name="feature_clients_edit">Edit</string>
+    <string name="feature_clients_delete">Delete</string>
+    <string name="feature_clients_cancel">Cancel</string>
+    <string name="feature_clients_ok">OK</string>
+    <string name="feature_clients_not_found">Client not found</string>
+    <string name="feature_clients_action_call">Call</string>
+    <string name="feature_clients_action_map">Map</string>
+    <string name="feature_clients_no_app">No app found to open this</string>
+    <string name="feature_clients_balance_owes">Balance: owes us</string>
+    <string name="feature_clients_balance_overpaid">Overpaid</string>
+    <string name="feature_clients_section_phones">PHONES</string>
+    <string name="feature_clients_section_addresses">ADDRESSES</string>
+    <string name="feature_clients_section_note">NOTE</string>
+    <string name="feature_clients_no_phones">No phone</string>
+    <string name="feature_clients_no_addresses">No address</string>
+
+    <string name="feature_clients_delete_title">Delete client?</string>
+    <string name="feature_clients_delete_message">“%1$s” will be deleted together with its phones, addresses and printers.</string>
+    <string name="feature_clients_delete_blocked_title">Can’t delete</string>
+    <string name="feature_clients_delete_blocked_message">This client has orders, invoices or payments. Deleting would lose that history.</string>
+
+    <string name="feature_clients_edit_title">Edit client</string>
+    <string name="feature_clients_field_firm_name">Firm name</string>
+    <string name="feature_clients_field_person_name">Full name</string>
+    <string name="feature_clients_field_tax_id">ՀՎՀՀ (tax ID)</string>
+    <string name="feature_clients_field_tax_id_hint">8 digits</string>
+    <string name="feature_clients_field_phone">Phone</string>
+    <string name="feature_clients_field_address">Address</string>
+    <string name="feature_clients_field_contact_label">Label (e.g. accountant)</string>
+    <string name="feature_clients_field_note">Note</string>
+    <string name="feature_clients_add_phone">+ Add phone</string>
+    <string name="feature_clients_add_address">+ Add address</string>
+    <string name="feature_clients_remove">Remove</string>
+    <string name="feature_clients_save">Save</string>
+    <string name="feature_clients_error_name_required">Enter a name</string>
+    <string name="feature_clients_error_tax_id_format">ՀՎՀՀ must be 8 digits</string>
+    <string name="feature_clients_error_tax_id_taken">A client with this ՀՎՀՀ already exists: %1$s</string>
+    <string name="feature_clients_discard_title">Discard changes?</string>
+    <string name="feature_clients_discard">Discard</string>
+    <string name="feature_clients_keep_editing">Keep editing</string>
 </resources>
