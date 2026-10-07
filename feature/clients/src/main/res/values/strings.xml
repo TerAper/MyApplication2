@@ -112,4 +112,8 @@
     <string name="feature_clients_printer_location">Որտեղ է կանգնած</string>
     <string name="feature_clients_printer_location_hint">օր.՝ Հաշվապահություն</string>
     <string name="feature_clients_printer_delete_title">Ջնջե՞լ տպիչը</string>
+    <string name="feature_clients_tab_orders">Պատվեր</string>
+    <string name="feature_clients_action_order">Պատվեր</string>
+    <string name="feature_clients_new_order">Նոր պատվեր</string>
+    <string name="feature_clients_no_orders">Պատվերներ դեռ չկան։</string>
 </resources>

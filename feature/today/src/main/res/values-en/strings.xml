@@ -1,6 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="feature_today_title">Today</string>
-    <string name="feature_today_empty_title">No visits today</string>
-    <string name="feature_today_empty_message">Today’s visits, money to collect and alerts will appear here.</string>
+    <string name="feature_today_new_order">Order</string>
+    <string name="feature_today_cash">Cash</string>
+    <string name="feature_today_to_collect">TO COLLECT</string>
+    <string name="feature_today_received">RECEIVED TODAY</string>
+    <string name="feature_today_visits_none">NO VISITS TODAY</string>
+    <string name="feature_today_overdue">NOT DONE FROM EARLIER DAYS (%1$d)</string>
+    <plurals name="feature_today_visits">
+        <item quantity="one">TODAY’S VISITS: %1$d (%2$d left)</item>
+        <item quantity="other">TODAY’S VISITS: %1$d (%2$d left)</item>
+    </plurals>
+    <plurals name="feature_today_debtors">
+        <item quantity="one">%1$d client owes</item>
+        <item quantity="other">%1$d clients owe</item>
+    </plurals>
 </resources>

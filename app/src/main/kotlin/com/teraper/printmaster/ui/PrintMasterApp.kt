@@ -16,22 +16,20 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.teraper.printmaster.feature.account.navigation.navigateToCompanies
-import com.teraper.printmaster.feature.account.onboarding.OnboardingRoute
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.sp
-import androidx.navigation.NavDestination
-import androidx.navigation.NavDestination.Companion.hasRoute
-import androidx.navigation.NavDestination.Companion.hierarchy
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.teraper.printmaster.core.designsystem.theme.PmTheme
+import com.teraper.printmaster.feature.account.navigation.navigateToCompanies
+import com.teraper.printmaster.feature.account.onboarding.OnboardingRoute
 import com.teraper.printmaster.navigation.PrintMasterNavHost
 import com.teraper.printmaster.navigation.TopLevelDestination
+import com.teraper.printmaster.navigation.currentTab
 import com.teraper.printmaster.navigation.isFullScreen
 import com.teraper.printmaster.navigation.navigateToTab
 
@@ -53,6 +51,7 @@ private fun MainApp(
 ) {
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = backStackEntry?.destination
+    val backStack by navController.currentBackStack.collectAsStateWithLifecycle()
     var showSwitch by rememberSaveable { mutableStateOf(false) }
     val fullScreen = currentDestination.isFullScreen()
 
@@ -67,7 +66,7 @@ private fun MainApp(
         bottomBar = {
             if (!fullScreen) {
                 PrintMasterBottomBar(
-                    currentDestination = currentDestination,
+                    currentTab = backStack.currentTab(),
                     onTabSelected = { navController.navigateToTab(it) },
                 )
             }
@@ -96,12 +95,12 @@ private fun MainApp(
 
 @Composable
 private fun PrintMasterBottomBar(
-    currentDestination: NavDestination?,
+    currentTab: TopLevelDestination?,
     onTabSelected: (TopLevelDestination) -> Unit,
 ) {
     NavigationBar(containerColor = PmTheme.colors.surface) {
         TopLevelDestination.entries.forEach { tab ->
-            val selected = currentDestination?.hierarchy?.any { it.hasRoute(tab.routeClass) } == true
+            val selected = tab == currentTab
             NavigationBarItem(
                 selected = selected,
                 onClick = { onTabSelected(tab) },

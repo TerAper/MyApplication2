@@ -20,6 +20,8 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Rule
 import org.junit.Test
+import com.teraper.printmaster.core.testing.FakeOrdersRepository
+import java.time.Clock
 import java.time.LocalDate
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -34,7 +36,9 @@ class ClientDetailViewModelTest {
     private val bank = LedgerEntry.Payment(11, day, Money.ofDram(9_000), "", 2, PaymentMethod.BANK, "77")
     private val invoice = LedgerEntry.Charge(12, day, Money.ofDram(20_000), "", 3, ChargeSource.INVOICE_IMPORT, "0451")
 
-    private fun TestScope.vm(id: Long) = ClientDetailViewModel(SavedStateHandle(mapOf("clientId" to id)), repo, payments, FakePrintersRepository()).also { vm ->
+    private fun TestScope.vm(id: Long) = ClientDetailViewModel(
+        SavedStateHandle(mapOf("clientId" to id)), repo, payments, FakePrintersRepository(), FakeOrdersRepository(), Clock.systemUTC(),
+    ).also { vm ->
         backgroundScope.launch(UnconfinedTestDispatcher()) { vm.uiState.collect {} }
     }
 

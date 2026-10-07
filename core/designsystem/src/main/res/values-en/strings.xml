@@ -4,4 +4,11 @@
     <string name="core_designsystem_print_ink">Inkjet</string>
     <string name="core_designsystem_color_mono">Black/white</string>
     <string name="core_designsystem_color_color">Color</string>
+    <string name="core_designsystem_order_new">New</string>
+    <string name="core_designsystem_order_in_progress">In progress</string>
+    <string name="core_designsystem_order_done">Done</string>
+    <string name="core_designsystem_order_cancelled">Cancelled</string>
+    <string name="core_designsystem_today">Today</string>
+    <string name="core_designsystem_tomorrow">Tomorrow</string>
+    <string name="core_designsystem_yesterday">Yesterday</string>
 </resources>

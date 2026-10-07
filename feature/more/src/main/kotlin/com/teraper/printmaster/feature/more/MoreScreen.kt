@@ -19,23 +19,23 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.res.pluralStringResource
-import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.teraper.printmaster.core.model.AccountMode
-import com.teraper.printmaster.core.model.Company
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.teraper.printmaster.core.designsystem.component.PmCard
 import com.teraper.printmaster.core.designsystem.component.PmScreenTitle
 import com.teraper.printmaster.core.designsystem.component.PmTag
 import com.teraper.printmaster.core.designsystem.component.TagTone
 import com.teraper.printmaster.core.designsystem.icon.PmIcons
 import com.teraper.printmaster.core.designsystem.theme.PmTheme
+import com.teraper.printmaster.core.model.AccountMode
+import com.teraper.printmaster.core.model.Company
 
 /** One menu row; [onClick] null = not built yet (shown as "Soon"). [subtitleText] overrides [subtitle]. */
 private data class MoreItem(

@@ -39,13 +39,15 @@ fun NavController.navigateToNewClient() = navigate(ClientEditDestination())
 fun NavController.navigateToClientDetail(clientId: Long) = navigate(ClientDetailDestination(clientId))
 
 /**
- * [onRecordPayment] / [onAddCharge] open the Payments feature's entry screen;
- * the app wires them so this feature doesn't depend on Payments.
+ * [onRecordPayment] / [onAddCharge] open the Payments feature's entry screen and
+ * [onNewOrder] / [onOpenOrder] the Orders feature; the app wires them so features stay independent.
  */
 fun NavGraphBuilder.clientsGraph(
     navController: NavController,
     onRecordPayment: (clientId: Long) -> Unit,
     onAddCharge: (clientId: Long) -> Unit,
+    onNewOrder: (clientId: Long) -> Unit,
+    onOpenOrder: (orderId: Long) -> Unit,
 ) {
     navigation<ClientsGraph>(startDestination = ClientListDestination) {
         composable<ClientListDestination> {
@@ -62,6 +64,8 @@ fun NavGraphBuilder.clientsGraph(
                 onAddCharge = onAddCharge,
                 onAddPrinter = { navController.navigate(PrinterEditDestination(it)) },
                 onPrinterClick = { clientId, printerId -> navController.navigate(PrinterEditDestination(clientId, printerId)) },
+                onNewOrder = onNewOrder,
+                onOrderClick = onOpenOrder,
             )
         }
         composable<PrinterEditDestination> {

@@ -1,6 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="feature_today_title">Այսօր</string>
-    <string name="feature_today_empty_title">Այսօր այցեր չկան</string>
-    <string name="feature_today_empty_message">Այստեղ կերևան այսօրվա այցերը, գանձելիք գումարները և ծանուցումները։</string>
+    <string name="feature_today_new_order">Պատվեր</string>
+    <string name="feature_today_cash">Կանխիկ</string>
+    <string name="feature_today_to_collect">ՀԱՎԱՔԵԼՈՒ ԳՈՒՄԱՐ</string>
+    <string name="feature_today_received">ԱՅՍՕՐ ՍՏԱՑՎԱԾ</string>
+    <string name="feature_today_visits_none">ԱՅՍՕՐ ԱՅՑԵՐ ՉԿԱՆ</string>
+    <string name="feature_today_overdue">ՉԱՐՎԱԾ ՆԱԽՈՐԴ ՕՐԵՐԻՑ (%1$d)</string>
+    <plurals name="feature_today_visits">
+        <item quantity="one">ԱՅՍՕՐՎԱ ԱՅՑԵՐԸ՝ %1$d (մնացել է %2$d)</item>
+        <item quantity="other">ԱՅՍՕՐՎԱ ԱՅՑԵՐԸ՝ %1$d (մնացել է %2$d)</item>
+    </plurals>
+    <plurals name="feature_today_debtors">
+        <item quantity="one">%1$d պարտապան</item>
+        <item quantity="other">%1$d պարտապան</item>
+    </plurals>
 </resources>

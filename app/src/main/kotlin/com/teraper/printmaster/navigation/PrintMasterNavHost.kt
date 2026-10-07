@@ -21,10 +21,15 @@ import com.teraper.printmaster.feature.clients.navigation.clientsGraph
 import com.teraper.printmaster.feature.clients.navigation.navigateToClientDetail
 import com.teraper.printmaster.feature.more.MoreActions
 import com.teraper.printmaster.feature.more.navigation.moreGraph
-import com.teraper.printmaster.feature.orders.navigation.ordersScreen
+import com.teraper.printmaster.feature.orders.navigation.OrderEditDestination
+import com.teraper.printmaster.feature.orders.navigation.navigateToNewOrder
+import com.teraper.printmaster.feature.orders.navigation.navigateToOrder
+import com.teraper.printmaster.feature.orders.navigation.orderScreens
+import com.teraper.printmaster.feature.orders.navigation.ordersGraph
 import com.teraper.printmaster.feature.payments.navigation.MoneyEntryDestination
 import com.teraper.printmaster.feature.payments.navigation.navigateToMoneyEntry
 import com.teraper.printmaster.feature.payments.navigation.paymentsGraph
+import com.teraper.printmaster.feature.today.TodayActions
 import com.teraper.printmaster.feature.today.navigation.TodayDestination
 import com.teraper.printmaster.feature.today.navigation.todayScreen
 
@@ -39,13 +44,23 @@ fun PrintMasterNavHost(navController: NavHostController, modifier: Modifier = Mo
         startDestination = TodayDestination,
         modifier = modifier,
     ) {
-        todayScreen()
+        todayScreen(
+            TodayActions(
+                onOrderClick = navController::navigateToOrder,
+                onNewOrder = { navController.navigateToNewOrder() },
+                onCashPayment = { navController.navigateToMoneyEntry(0, MoneyEntryKind.CASH_PAYMENT) },
+                onOpenDebts = { navController.navigateToTab(TopLevelDestination.PAYMENTS) },
+            ),
+        )
         clientsGraph(
             navController = navController,
             onRecordPayment = { navController.navigateToMoneyEntry(it, MoneyEntryKind.CASH_PAYMENT) },
             onAddCharge = { navController.navigateToMoneyEntry(it, MoneyEntryKind.MANUAL_CHARGE) },
+            onNewOrder = { navController.navigateToNewOrder(clientId = it) },
+            onOpenOrder = navController::navigateToOrder,
         )
-        ordersScreen()
+        ordersGraph(navController)
+        orderScreens(navController, onOpenClient = navController::openClientFromOtherTab)
         paymentsGraph(
             navController = navController,
             onOpenClient = navController::openClientFromOtherTab,
@@ -80,6 +95,7 @@ private val fullScreenRoutes = listOf(
     MoneyEntryDestination::class,
     ModelEditDestination::class,
     CompanyEditDestination::class,
+    OrderEditDestination::class,
 )
 
 fun NavDestination?.isFullScreen(): Boolean = this != null && fullScreenRoutes.any { hasRoute(it) }

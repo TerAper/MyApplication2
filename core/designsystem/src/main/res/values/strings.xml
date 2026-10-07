@@ -4,4 +4,11 @@
     <string name="core_designsystem_print_ink">Թանաքային</string>
     <string name="core_designsystem_color_mono">Սև/սպիտակ</string>
     <string name="core_designsystem_color_color">Գունավոր</string>
+    <string name="core_designsystem_order_new">Նոր</string>
+    <string name="core_designsystem_order_in_progress">Ընթացքում</string>
+    <string name="core_designsystem_order_done">Արված</string>
+    <string name="core_designsystem_order_cancelled">Չեղարկված</string>
+    <string name="core_designsystem_today">Այսօր</string>
+    <string name="core_designsystem_tomorrow">Վաղը</string>
+    <string name="core_designsystem_yesterday">Երեկ</string>
 </resources>

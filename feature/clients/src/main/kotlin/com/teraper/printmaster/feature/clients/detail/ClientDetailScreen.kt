@@ -65,6 +65,8 @@ internal fun ClientDetailRoute(
     onAddCharge: (Long) -> Unit,
     onAddPrinter: (clientId: Long) -> Unit,
     onPrinterClick: (clientId: Long, printerId: Long) -> Unit,
+    onNewOrder: (clientId: Long) -> Unit,
+    onOrderClick: (orderId: Long) -> Unit,
     viewModel: ClientDetailViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -94,6 +96,8 @@ internal fun ClientDetailRoute(
         onConfirmDeleteEntry = viewModel::onConfirmDeleteEntry,
         onAddPrinter = onAddPrinter,
         onPrinterClick = onPrinterClick,
+        onNewOrder = onNewOrder,
+        onOrderClick = onOrderClick,
     )
 }
 
@@ -114,6 +118,8 @@ internal fun ClientDetailScreen(
     onConfirmDeleteEntry: (LedgerEntry) -> Unit = {},
     onAddPrinter: (Long) -> Unit = {},
     onPrinterClick: (Long, Long) -> Unit = { _, _ -> },
+    onNewOrder: (Long) -> Unit = {},
+    onOrderClick: (Long) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier.fillMaxSize().background(PmTheme.colors.background)) {
@@ -151,6 +157,8 @@ internal fun ClientDetailScreen(
                 onEntryClick = onEntryClick,
                 onAddPrinter = { onAddPrinter(state.summary.client.id) },
                 onPrinterClick = { onPrinterClick(state.summary.client.id, it) },
+                onNewOrder = { onNewOrder(state.summary.client.id) },
+                onOrderClick = onOrderClick,
             )
         }
     }
@@ -200,6 +208,8 @@ private fun ClientDetailContent(
     onEntryClick: (LedgerEntry) -> Unit,
     onAddPrinter: () -> Unit,
     onPrinterClick: (Long) -> Unit,
+    onNewOrder: () -> Unit,
+    onOrderClick: (Long) -> Unit,
 ) {
     val summary = state.summary
     val client = summary.client
@@ -233,6 +243,12 @@ private fun ClientDetailContent(
                     onClick = { client.addresses.firstOrNull()?.let { onOpenMap(it.address) } },
                 )
                 QuickAction(
+                    icon = PmIcons.Orders,
+                    label = stringResource(R.string.feature_clients_action_order),
+                    enabled = true,
+                    onClick = onNewOrder,
+                )
+                QuickAction(
                     icon = PmIcons.Payments,
                     label = stringResource(R.string.feature_clients_action_cash),
                     enabled = true,
@@ -257,10 +273,14 @@ private fun ClientDetailContent(
                                 when (tab) {
                                     ClientTab.INFO -> R.string.feature_clients_tab_info
                                     ClientTab.PRINTERS -> R.string.feature_clients_tab_printers
+                                    ClientTab.ORDERS -> R.string.feature_clients_tab_orders
                                     ClientTab.FINANCE -> R.string.feature_clients_tab_finance
                                 },
                             ),
-                            style = MaterialTheme.typography.labelLarge,
+                            // Four Armenian tab names only fit on one line at this size.
+                            style = MaterialTheme.typography.labelMedium,
+                            maxLines = 1,
+                            softWrap = false,
                         )
                     },
                     selectedContentColor = PmTheme.colors.primary,
@@ -273,6 +293,8 @@ private fun ClientDetailContent(
             FinanceSection(summary, state.ledger, onRecordPayment, onAddCharge, onEntryClick)
         } else if (state.tab == ClientTab.PRINTERS) {
             PrintersSection(state.printers, onAddPrinter, onPrinterClick)
+        } else if (state.tab == ClientTab.ORDERS) {
+            OrdersSection(state.orders, state.today, onNewOrder, onOrderClick)
         } else {
             Column(
                 modifier = Modifier.padding(16.dp),

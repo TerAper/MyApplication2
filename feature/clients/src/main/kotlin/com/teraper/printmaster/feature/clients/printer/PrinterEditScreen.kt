@@ -45,8 +45,8 @@ import com.teraper.printmaster.core.designsystem.component.label
 import com.teraper.printmaster.core.designsystem.component.typeLabel
 import com.teraper.printmaster.core.designsystem.icon.PmIcons
 import com.teraper.printmaster.core.designsystem.theme.PmTheme
-import com.teraper.printmaster.core.model.CartridgeDraft
 import com.teraper.printmaster.core.model.Cartridge
+import com.teraper.printmaster.core.model.CartridgeDraft
 import com.teraper.printmaster.core.model.CatalogNames
 import com.teraper.printmaster.core.model.ClientPrinterDraft
 import com.teraper.printmaster.core.model.ColorType

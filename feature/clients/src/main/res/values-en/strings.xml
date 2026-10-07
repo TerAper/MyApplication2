@@ -112,4 +112,8 @@
     <string name="feature_clients_printer_location">Where it stands</string>
     <string name="feature_clients_printer_location_hint">e.g. Accounting room</string>
     <string name="feature_clients_printer_delete_title">Delete this printer?</string>
+    <string name="feature_clients_tab_orders">Orders</string>
+    <string name="feature_clients_action_order">Order</string>
+    <string name="feature_clients_new_order">New order</string>
+    <string name="feature_clients_no_orders">No orders yet.</string>
 </resources>

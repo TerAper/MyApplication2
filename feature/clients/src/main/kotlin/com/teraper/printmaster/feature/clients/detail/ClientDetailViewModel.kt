@@ -6,10 +6,12 @@ import androidx.lifecycle.viewModelScope
 import com.teraper.printmaster.core.data.repository.ClientsRepository
 import com.teraper.printmaster.core.data.repository.DeleteClientResult
 import com.teraper.printmaster.core.data.repository.PaymentsRepository
+import com.teraper.printmaster.core.data.repository.OrdersRepository
 import com.teraper.printmaster.core.data.repository.PrintersRepository
 import com.teraper.printmaster.core.model.ClientPrinter
 import com.teraper.printmaster.core.model.ClientSummary
 import com.teraper.printmaster.core.model.LedgerEntry
+import com.teraper.printmaster.core.model.Order
 import com.teraper.printmaster.feature.clients.navigation.CLIENT_ID_ARG
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
@@ -22,9 +24,11 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.time.Clock
+import java.time.LocalDate
 import javax.inject.Inject
 
-enum class ClientTab { INFO, PRINTERS, FINANCE }
+enum class ClientTab { INFO, PRINTERS, ORDERS, FINANCE }
 
 sealed interface ClientDetailUiState {
     data object Loading : ClientDetailUiState
@@ -33,6 +37,8 @@ sealed interface ClientDetailUiState {
         val summary: ClientSummary,
         val ledger: List<LedgerEntry> = emptyList(),
         val printers: List<ClientPrinter> = emptyList(),
+        val orders: List<Order> = emptyList(),
+        val today: LocalDate? = null,
         val tab: ClientTab = ClientTab.INFO,
         val dialog: ClientDetailDialog? = null,
     ) : ClientDetailUiState
@@ -54,7 +60,11 @@ class ClientDetailViewModel @Inject constructor(
     private val clientsRepository: ClientsRepository,
     private val paymentsRepository: PaymentsRepository,
     printersRepository: PrintersRepository,
+    ordersRepository: OrdersRepository,
+    clock: Clock,
 ) : ViewModel() {
+
+    private val today = LocalDate.now(clock)
 
     private val clientId: Long = checkNotNull(savedStateHandle[CLIENT_ID_ARG])
     private val dialog = MutableStateFlow<ClientDetailDialog?>(null)
@@ -64,20 +74,30 @@ class ClientDetailViewModel @Inject constructor(
     private val _events = Channel<ClientDetailEvent>(Channel.BUFFERED)
     val events: Flow<ClientDetailEvent> = _events.receiveAsFlow()
 
+    private class Records(
+        val summary: ClientSummary?,
+        val ledger: List<LedgerEntry>,
+        val printers: List<ClientPrinter>,
+        val orders: List<Order>,
+    )
+
     private val records = combine(
         clientsRepository.observeClientSummary(clientId),
         paymentsRepository.observeLedger(clientId),
         printersRepository.observeClientPrinters(clientId),
-    ) { summary, ledger, printers -> Triple(summary, ledger, printers) }
+        ordersRepository.observeClientOrders(clientId),
+        ::Records,
+    )
 
     val uiState: StateFlow<ClientDetailUiState> = combine(
         records,
         tab,
         dialog,
         deleting,
-    ) { (summary, ledger, printers), tab, dialog, deleting ->
+    ) { records, tab, dialog, deleting ->
+        val summary = records.summary
         when {
-            summary != null -> ClientDetailUiState.Loaded(summary, ledger, printers, tab, dialog)
+            summary != null -> ClientDetailUiState.Loaded(summary, records.ledger, records.printers, records.orders, today, tab, dialog)
             // Just deleted: keep showing Loading for the moment before the screen closes.
             deleting -> ClientDetailUiState.Loading
             else -> ClientDetailUiState.NotFound
