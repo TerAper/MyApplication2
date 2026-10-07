@@ -30,6 +30,10 @@ interface ClientDao {
     @Query("SELECT client_id, SUM(amount_minor) AS total FROM payments WHERE client_id IS NOT NULL GROUP BY client_id")
     fun observePaymentTotals(): Flow<List<ClientTotal>>
 
+    /** Day (epoch day) of each client's most recent payment. */
+    @Query("SELECT client_id, MAX(date_epoch_day) AS total FROM payments WHERE client_id IS NOT NULL GROUP BY client_id")
+    fun observeLastPaymentDays(): Flow<List<ClientTotal>>
+
     @Query("SELECT client_id, COUNT(*) AS total FROM client_printers GROUP BY client_id")
     fun observePrinterCounts(): Flow<List<ClientTotal>>
 

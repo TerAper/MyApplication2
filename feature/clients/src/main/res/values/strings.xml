@@ -63,4 +63,23 @@
     <string name="feature_clients_discard_title">Չպահպանե՞լ փոփոխությունները</string>
     <string name="feature_clients_discard">Չպահպանել</string>
     <string name="feature_clients_keep_editing">Շարունակել</string>
+
+    <string name="feature_clients_action_cash">Կանխիկ</string>
+    <string name="feature_clients_tab_info">Տվյալներ</string>
+    <string name="feature_clients_tab_finance">Ֆինանսներ</string>
+    <string name="feature_clients_total_charged">ՀԱՇՎԱՐԿՎԱԾ</string>
+    <string name="feature_clients_total_paid">ՎՃԱՐՎԱԾ</string>
+    <string name="feature_clients_total_debt">ՊԱՐՏՔ</string>
+    <string name="feature_clients_total_overpaid">ԱՎԵԼ</string>
+    <string name="feature_clients_record_cash">Վճարում</string>
+    <string name="feature_clients_add_debt">Պարտք</string>
+    <string name="feature_clients_no_entries">Գործարքներ դեռ չկան</string>
+    <string name="feature_clients_entry_delete_hint">Կանխիկ վճարումը կամ ձեռքով պարտքը ջնջելու համար սեղմեք դրա վրա։</string>
+    <string name="feature_clients_tag_invoice">ՀԱՇԻՎ</string>
+    <string name="feature_clients_tag_repair">ՆՈՐՈԳՈՒՄ</string>
+    <string name="feature_clients_tag_debt">ՊԱՐՏՔ</string>
+    <string name="feature_clients_tag_cash">ԿԱՆԽԻԿ</string>
+    <string name="feature_clients_tag_bank">ԱՆԿԱՆԽԻԿ</string>
+    <string name="feature_clients_number">№ %1$s</string>
+    <string name="feature_clients_delete_entry_title">Ջնջե՞լ գրառումը</string>
 </resources>

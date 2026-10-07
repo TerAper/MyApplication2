@@ -6,6 +6,7 @@ import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.teraper.printmaster.core.database.dao.ClientDao
+import com.teraper.printmaster.core.database.dao.LedgerDao
 import com.teraper.printmaster.core.database.entity.BrandEntity
 import com.teraper.printmaster.core.database.entity.CartridgeChipCrossRef
 import com.teraper.printmaster.core.database.entity.CartridgeEntity
@@ -53,6 +54,7 @@ import com.teraper.printmaster.core.database.entity.RepairPartEntity
 )
 abstract class PrintMasterDatabase : RoomDatabase() {
     abstract fun clientDao(): ClientDao
+    abstract fun ledgerDao(): LedgerDao
 
     companion object {
         private const val DATABASE_NAME = "printmaster.db"

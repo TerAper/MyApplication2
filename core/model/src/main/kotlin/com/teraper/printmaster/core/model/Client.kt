@@ -26,7 +26,13 @@ data class Client(
 /** A client as shown in lists: contacts plus counts and money totals. */
 data class ClientSummary(
     val client: Client,
-    val printerCount: Int,
+    val printerCount: Int = 0,
+    /** Everything the client was charged: invoices, repairs, manual debts. */
+    val charged: Money = Money.ZERO,
+    /** Everything the client paid: cash and bank. */
+    val paid: Money = Money.ZERO,
+    val lastPaymentDate: java.time.LocalDate? = null,
+) {
     /** Charges minus payments: positive = owes us, negative = overpaid. */
-    val balance: Money,
-)
+    val balance: Money get() = charged - paid
+}

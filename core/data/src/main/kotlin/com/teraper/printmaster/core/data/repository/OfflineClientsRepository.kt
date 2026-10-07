@@ -20,6 +20,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import java.time.Clock
+import java.time.LocalDate
 import javax.inject.Inject
 
 internal class OfflineClientsRepository @Inject constructor(
@@ -32,10 +33,12 @@ internal class OfflineClientsRepository @Inject constructor(
         clientDao.observeClientsWithContacts(),
         clientDao.observeChargeTotals(),
         clientDao.observePaymentTotals(),
+        clientDao.observeLastPaymentDays(),
         clientDao.observePrinterCounts(),
-    ) { clients, charges, payments, printers ->
+    ) { clients, charges, payments, lastPayments, printers ->
         val chargeBy = charges.byClient()
         val paymentBy = payments.byClient()
+        val lastPaymentBy = lastPayments.byClient()
         val printersBy = printers.byClient()
         clients
             .map { row ->
@@ -43,7 +46,9 @@ internal class OfflineClientsRepository @Inject constructor(
                 ClientSummary(
                     client = row.toModel(),
                     printerCount = (printersBy[id] ?: 0L).toInt(),
-                    balance = Money((chargeBy[id] ?: 0L) - (paymentBy[id] ?: 0L)),
+                    charged = Money(chargeBy[id] ?: 0L),
+                    paid = Money(paymentBy[id] ?: 0L),
+                    lastPaymentDate = lastPaymentBy[id]?.let(LocalDate::ofEpochDay),
                 )
             }
             .sortedBy { ClientSearch.normalizeText(it.client.name) }

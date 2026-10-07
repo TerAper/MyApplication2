@@ -63,4 +63,23 @@
     <string name="feature_clients_discard_title">Discard changes?</string>
     <string name="feature_clients_discard">Discard</string>
     <string name="feature_clients_keep_editing">Keep editing</string>
+
+    <string name="feature_clients_action_cash">Cash in</string>
+    <string name="feature_clients_tab_info">Info</string>
+    <string name="feature_clients_tab_finance">Finance</string>
+    <string name="feature_clients_total_charged">CHARGED</string>
+    <string name="feature_clients_total_paid">PAID</string>
+    <string name="feature_clients_total_debt">DEBT</string>
+    <string name="feature_clients_total_overpaid">OVERPAID</string>
+    <string name="feature_clients_record_cash">Payment</string>
+    <string name="feature_clients_add_debt">Debt</string>
+    <string name="feature_clients_no_entries">No entries yet</string>
+    <string name="feature_clients_entry_delete_hint">Tap a cash payment or a hand-typed debt to delete it.</string>
+    <string name="feature_clients_tag_invoice">INVOICE</string>
+    <string name="feature_clients_tag_repair">REPAIR</string>
+    <string name="feature_clients_tag_debt">DEBT</string>
+    <string name="feature_clients_tag_cash">CASH</string>
+    <string name="feature_clients_tag_bank">BANK</string>
+    <string name="feature_clients_number">No. %1$s</string>
+    <string name="feature_clients_delete_entry_title">Delete this entry?</string>
 </resources>

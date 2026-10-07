@@ -30,7 +30,17 @@ fun NavController.navigateToClients(navOptions: NavOptions? = null) = navigate(C
 
 fun NavController.navigateToNewClient() = navigate(ClientEditDestination())
 
-fun NavGraphBuilder.clientsGraph(navController: NavController) {
+fun NavController.navigateToClientDetail(clientId: Long) = navigate(ClientDetailDestination(clientId))
+
+/**
+ * [onRecordPayment] / [onAddCharge] open the Payments feature's entry screen;
+ * the app wires them so this feature doesn't depend on Payments.
+ */
+fun NavGraphBuilder.clientsGraph(
+    navController: NavController,
+    onRecordPayment: (clientId: Long) -> Unit,
+    onAddCharge: (clientId: Long) -> Unit,
+) {
     navigation<ClientsGraph>(startDestination = ClientListDestination) {
         composable<ClientListDestination> {
             ClientListRoute(
@@ -42,6 +52,8 @@ fun NavGraphBuilder.clientsGraph(navController: NavController) {
             ClientDetailRoute(
                 onBack = navController::popBackStack,
                 onEdit = { navController.navigate(ClientEditDestination(it)) },
+                onRecordPayment = onRecordPayment,
+                onAddCharge = onAddCharge,
             )
         }
         composable<ClientEditDestination> {

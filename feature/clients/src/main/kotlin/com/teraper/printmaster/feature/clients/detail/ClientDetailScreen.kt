@@ -16,6 +16,8 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SecondaryTabRow
+import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -36,23 +38,31 @@ import com.teraper.printmaster.core.designsystem.component.PmConfirmDialog
 import com.teraper.printmaster.core.designsystem.component.PmEmptyState
 import com.teraper.printmaster.core.designsystem.component.PmMessageDialog
 import com.teraper.printmaster.core.designsystem.component.PmTopBar
+import com.teraper.printmaster.core.designsystem.component.format
+import com.teraper.printmaster.core.designsystem.component.formatShort
 import com.teraper.printmaster.core.designsystem.icon.PmIcons
 import com.teraper.printmaster.core.designsystem.theme.PmTheme
+import com.teraper.printmaster.core.model.ChargeSource
 import com.teraper.printmaster.core.model.Client
 import com.teraper.printmaster.core.model.ClientAddress
 import com.teraper.printmaster.core.model.ClientPhone
 import com.teraper.printmaster.core.model.ClientSummary
 import com.teraper.printmaster.core.model.ClientType
+import com.teraper.printmaster.core.model.LedgerEntry
 import com.teraper.printmaster.core.model.Money
+import com.teraper.printmaster.core.model.PaymentMethod
 import com.teraper.printmaster.feature.clients.R
 import com.teraper.printmaster.feature.clients.common.dial
 import com.teraper.printmaster.feature.clients.common.label
 import com.teraper.printmaster.feature.clients.common.openMap
+import java.time.LocalDate
 
 @Composable
 internal fun ClientDetailRoute(
     onBack: () -> Unit,
     onEdit: (Long) -> Unit,
+    onRecordPayment: (Long) -> Unit,
+    onAddCharge: (Long) -> Unit,
     viewModel: ClientDetailViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -75,6 +85,11 @@ internal fun ClientDetailRoute(
         onDismissDialog = viewModel::onDismissDialog,
         onCall = { context.dial(it) },
         onOpenMap = { context.openMap(it) },
+        onTabSelected = viewModel::onTabSelected,
+        onRecordPayment = onRecordPayment,
+        onAddCharge = onAddCharge,
+        onEntryClick = viewModel::onEntryClick,
+        onConfirmDeleteEntry = viewModel::onConfirmDeleteEntry,
     )
 }
 
@@ -88,6 +103,11 @@ internal fun ClientDetailScreen(
     onDismissDialog: () -> Unit,
     onCall: (String) -> Unit,
     onOpenMap: (String) -> Unit,
+    onTabSelected: (ClientTab) -> Unit = {},
+    onRecordPayment: (Long) -> Unit = {},
+    onAddCharge: (Long) -> Unit = {},
+    onEntryClick: (LedgerEntry) -> Unit = {},
+    onConfirmDeleteEntry: (LedgerEntry) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier.fillMaxSize().background(PmTheme.colors.background)) {
@@ -115,13 +135,21 @@ internal fun ClientDetailScreen(
                 title = stringResource(R.string.feature_clients_not_found),
                 message = "",
             )
-            is ClientDetailUiState.Loaded -> ClientDetailContent(state.summary, onCall, onOpenMap)
+            is ClientDetailUiState.Loaded -> ClientDetailContent(
+                state = state,
+                onCall = onCall,
+                onOpenMap = onOpenMap,
+                onTabSelected = onTabSelected,
+                onRecordPayment = { onRecordPayment(state.summary.client.id) },
+                onAddCharge = { onAddCharge(state.summary.client.id) },
+                onEntryClick = onEntryClick,
+            )
         }
     }
 
     if (state is ClientDetailUiState.Loaded) {
-        when (state.dialog) {
-            ClientDetailDialog.CONFIRM_DELETE -> PmConfirmDialog(
+        when (val dialog = state.dialog) {
+            ClientDetailDialog.ConfirmDelete -> PmConfirmDialog(
                 title = stringResource(R.string.feature_clients_delete_title),
                 message = stringResource(R.string.feature_clients_delete_message, state.summary.client.name),
                 confirmText = stringResource(R.string.feature_clients_delete),
@@ -130,12 +158,24 @@ internal fun ClientDetailScreen(
                 onDismiss = onDismissDialog,
                 destructive = true,
             )
-            ClientDetailDialog.DELETE_BLOCKED -> PmMessageDialog(
+            ClientDetailDialog.DeleteBlocked -> PmMessageDialog(
                 title = stringResource(R.string.feature_clients_delete_blocked_title),
                 message = stringResource(R.string.feature_clients_delete_blocked_message),
                 okText = stringResource(R.string.feature_clients_ok),
                 onDismiss = onDismissDialog,
             )
+            is ClientDetailDialog.ConfirmDeleteEntry -> {
+                val (tag, _) = dialog.entry.tag()
+                PmConfirmDialog(
+                    title = stringResource(R.string.feature_clients_delete_entry_title),
+                    message = "$tag · ${dialog.entry.date.formatShort()} · ${dialog.entry.amount.format()}",
+                    confirmText = stringResource(R.string.feature_clients_delete),
+                    dismissText = stringResource(R.string.feature_clients_cancel),
+                    onConfirm = { onConfirmDeleteEntry(dialog.entry) },
+                    onDismiss = onDismissDialog,
+                    destructive = true,
+                )
+            }
             null -> Unit
         }
     }
@@ -143,10 +183,15 @@ internal fun ClientDetailScreen(
 
 @Composable
 private fun ClientDetailContent(
-    summary: ClientSummary,
+    state: ClientDetailUiState.Loaded,
     onCall: (String) -> Unit,
     onOpenMap: (String) -> Unit,
+    onTabSelected: (ClientTab) -> Unit,
+    onRecordPayment: () -> Unit,
+    onAddCharge: () -> Unit,
+    onEntryClick: (LedgerEntry) -> Unit,
 ) {
+    val summary = state.summary
     val client = summary.client
     Column(
         modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
@@ -177,32 +222,63 @@ private fun ClientDetailContent(
                     enabled = client.addresses.isNotEmpty(),
                     onClick = { client.addresses.firstOrNull()?.let { onOpenMap(it.address) } },
                 )
+                QuickAction(
+                    icon = PmIcons.Payments,
+                    label = stringResource(R.string.feature_clients_action_cash),
+                    enabled = true,
+                    onClick = onRecordPayment,
+                )
             }
             BalanceBanner(summary.balance)
         }
 
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+        SecondaryTabRow(
+            selectedTabIndex = state.tab.ordinal,
+            containerColor = PmTheme.colors.surface,
+            contentColor = PmTheme.colors.primary,
         ) {
-            SectionTitle(stringResource(R.string.feature_clients_section_phones))
-            ContactCard(
-                rows = client.phones.map { it.number to it.label },
-                emptyText = stringResource(R.string.feature_clients_no_phones),
-                icon = PmIcons.Call,
-                onClick = onCall,
-            )
-            SectionTitle(stringResource(R.string.feature_clients_section_addresses))
-            ContactCard(
-                rows = client.addresses.map { it.address to it.label },
-                emptyText = stringResource(R.string.feature_clients_no_addresses),
-                icon = PmIcons.Map,
-                onClick = onOpenMap,
-            )
-            if (client.note.isNotBlank()) {
-                SectionTitle(stringResource(R.string.feature_clients_section_note))
-                PmCard(Modifier.fillMaxWidth()) {
-                    Text(client.note, modifier = Modifier.padding(14.dp), style = MaterialTheme.typography.bodyMedium)
+            ClientTab.entries.forEach { tab ->
+                Tab(
+                    selected = tab == state.tab,
+                    onClick = { onTabSelected(tab) },
+                    text = {
+                        Text(
+                            stringResource(if (tab == ClientTab.INFO) R.string.feature_clients_tab_info else R.string.feature_clients_tab_finance),
+                            style = MaterialTheme.typography.labelLarge,
+                        )
+                    },
+                    selectedContentColor = PmTheme.colors.primary,
+                    unselectedContentColor = PmTheme.colors.inkMuted,
+                )
+            }
+        }
+
+        if (state.tab == ClientTab.FINANCE) {
+            FinanceSection(summary, state.ledger, onRecordPayment, onAddCharge, onEntryClick)
+        } else {
+            Column(
+                modifier = Modifier.padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                SectionTitle(stringResource(R.string.feature_clients_section_phones))
+                ContactCard(
+                    rows = client.phones.map { it.number to it.label },
+                    emptyText = stringResource(R.string.feature_clients_no_phones),
+                    icon = PmIcons.Call,
+                    onClick = onCall,
+                )
+                SectionTitle(stringResource(R.string.feature_clients_section_addresses))
+                ContactCard(
+                    rows = client.addresses.map { it.address to it.label },
+                    emptyText = stringResource(R.string.feature_clients_no_addresses),
+                    icon = PmIcons.Map,
+                    onClick = onOpenMap,
+                )
+                if (client.note.isNotBlank()) {
+                    SectionTitle(stringResource(R.string.feature_clients_section_note))
+                    PmCard(Modifier.fillMaxWidth()) {
+                        Text(client.note, modifier = Modifier.padding(14.dp), style = MaterialTheme.typography.bodyMedium)
+                    }
                 }
             }
         }
@@ -312,7 +388,14 @@ private fun ClientDetailScreenPreview() {
                         addresses = listOf(ClientAddress(1, "Երևան, Կոմիտասի 5, գրասենյակ 12", "")),
                     ),
                     printerCount = 3,
-                    balance = Money.ofDram(180_000),
+                    charged = Money.ofDram(420_000),
+                    paid = Money.ofDram(240_000),
+                ),
+                tab = ClientTab.FINANCE,
+                ledger = listOf(
+                    LedgerEntry.Charge(1, LocalDate.of(2026, 10, 2), Money.ofDram(60_000), "", 3, ChargeSource.INVOICE_IMPORT, "0451"),
+                    LedgerEntry.Payment(2, LocalDate.of(2026, 9, 28), Money.ofDram(120_000), "", 2, PaymentMethod.BANK, "88231"),
+                    LedgerEntry.Payment(3, LocalDate.of(2026, 9, 12), Money.ofDram(35_000), "Այցի ժամանակ", 1, PaymentMethod.CASH, null),
                 ),
             ),
             onBack = {}, onEdit = {}, onDelete = {}, onConfirmDelete = {}, onDismissDialog = {},

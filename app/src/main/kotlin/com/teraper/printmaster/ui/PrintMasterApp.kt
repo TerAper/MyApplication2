@@ -23,6 +23,7 @@ import androidx.navigation.compose.rememberNavController
 import com.teraper.printmaster.core.designsystem.theme.PmTheme
 import com.teraper.printmaster.navigation.PrintMasterNavHost
 import com.teraper.printmaster.navigation.TopLevelDestination
+import com.teraper.printmaster.navigation.isFullScreen
 
 @Composable
 fun PrintMasterApp(navController: NavHostController = rememberNavController()) {
@@ -32,10 +33,12 @@ fun PrintMasterApp(navController: NavHostController = rememberNavController()) {
     Scaffold(
         containerColor = PmTheme.colors.background,
         bottomBar = {
-            PrintMasterBottomBar(
-                currentDestination = currentDestination,
-                onTabSelected = { navController.navigateToTab(it) },
-            )
+            if (!currentDestination.isFullScreen()) {
+                PrintMasterBottomBar(
+                    currentDestination = currentDestination,
+                    onTabSelected = { navController.navigateToTab(it) },
+                )
+            }
         },
     ) { padding ->
         PrintMasterNavHost(navController = navController, modifier = Modifier.padding(padding))

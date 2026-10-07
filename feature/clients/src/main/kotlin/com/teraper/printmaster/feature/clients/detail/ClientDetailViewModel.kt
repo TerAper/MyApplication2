@@ -5,7 +5,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.teraper.printmaster.core.data.repository.ClientsRepository
 import com.teraper.printmaster.core.data.repository.DeleteClientResult
+import com.teraper.printmaster.core.data.repository.PaymentsRepository
 import com.teraper.printmaster.core.model.ClientSummary
+import com.teraper.printmaster.core.model.LedgerEntry
 import com.teraper.printmaster.feature.clients.navigation.CLIENT_ID_ARG
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
@@ -20,16 +22,24 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+enum class ClientTab { INFO, FINANCE }
+
 sealed interface ClientDetailUiState {
     data object Loading : ClientDetailUiState
     data object NotFound : ClientDetailUiState
     data class Loaded(
         val summary: ClientSummary,
+        val ledger: List<LedgerEntry> = emptyList(),
+        val tab: ClientTab = ClientTab.INFO,
         val dialog: ClientDetailDialog? = null,
     ) : ClientDetailUiState
 }
 
-enum class ClientDetailDialog { CONFIRM_DELETE, DELETE_BLOCKED }
+sealed interface ClientDetailDialog {
+    data object ConfirmDelete : ClientDetailDialog
+    data object DeleteBlocked : ClientDetailDialog
+    data class ConfirmDeleteEntry(val entry: LedgerEntry) : ClientDetailDialog
+}
 
 sealed interface ClientDetailEvent {
     data object Deleted : ClientDetailEvent
@@ -39,10 +49,12 @@ sealed interface ClientDetailEvent {
 class ClientDetailViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val clientsRepository: ClientsRepository,
+    private val paymentsRepository: PaymentsRepository,
 ) : ViewModel() {
 
     private val clientId: Long = checkNotNull(savedStateHandle[CLIENT_ID_ARG])
     private val dialog = MutableStateFlow<ClientDetailDialog?>(null)
+    private val tab = MutableStateFlow(ClientTab.INFO)
     private val deleting = MutableStateFlow(false)
 
     private val _events = Channel<ClientDetailEvent>(Channel.BUFFERED)
@@ -50,18 +62,26 @@ class ClientDetailViewModel @Inject constructor(
 
     val uiState: StateFlow<ClientDetailUiState> = combine(
         clientsRepository.observeClientSummary(clientId),
+        paymentsRepository.observeLedger(clientId),
+        tab,
         dialog,
         deleting,
-    ) { summary, dialog, deleting ->
+    ) { summary, ledger, tab, dialog, deleting ->
         when {
-            summary != null -> ClientDetailUiState.Loaded(summary, dialog)
+            summary != null -> ClientDetailUiState.Loaded(summary, ledger, tab, dialog)
             // Just deleted: keep showing Loading for the moment before the screen closes.
             deleting -> ClientDetailUiState.Loading
             else -> ClientDetailUiState.NotFound
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ClientDetailUiState.Loading)
 
-    fun onDeleteClick() = dialog.update { ClientDetailDialog.CONFIRM_DELETE }
+    fun onTabSelected(tab: ClientTab) = this.tab.update { tab }
+
+    fun onDeleteClick() = dialog.update { ClientDetailDialog.ConfirmDelete }
+
+    fun onEntryClick(entry: LedgerEntry) {
+        if (entry.canDelete) dialog.value = ClientDetailDialog.ConfirmDeleteEntry(entry)
+    }
 
     fun onDismissDialog() = dialog.update { null }
 
@@ -73,9 +93,14 @@ class ClientDetailViewModel @Inject constructor(
                 DeleteClientResult.DELETED, DeleteClientResult.NOT_FOUND -> _events.send(ClientDetailEvent.Deleted)
                 DeleteClientResult.HAS_RECORDS -> {
                     deleting.value = false
-                    dialog.value = ClientDetailDialog.DELETE_BLOCKED
+                    dialog.value = ClientDetailDialog.DeleteBlocked
                 }
             }
         }
+    }
+
+    fun onConfirmDeleteEntry(entry: LedgerEntry) {
+        dialog.value = null
+        viewModelScope.launch { paymentsRepository.deleteEntry(entry) }
     }
 }

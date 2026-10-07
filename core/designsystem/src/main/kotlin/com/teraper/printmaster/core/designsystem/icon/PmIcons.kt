@@ -2,6 +2,7 @@ package com.teraper.printmaster.core.designsystem.icon
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
+import androidx.compose.material.icons.automirrored.rounded.Backspace
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.AccountBalanceWallet
 import androidx.compose.material.icons.rounded.CalendarMonth
@@ -34,4 +35,5 @@ object PmIcons {
     val ImportExcel: ImageVector = Icons.Rounded.UploadFile
     val Edit: ImageVector = Icons.Rounded.Edit
     val Delete: ImageVector = Icons.Rounded.Delete
+    val Backspace: ImageVector = Icons.AutoMirrored.Rounded.Backspace
 }

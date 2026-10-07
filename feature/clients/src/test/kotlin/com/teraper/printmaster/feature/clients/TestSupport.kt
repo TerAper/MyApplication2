@@ -2,6 +2,8 @@ package com.teraper.printmaster.feature.clients
 
 import com.teraper.printmaster.core.data.repository.ClientsRepository
 import com.teraper.printmaster.core.data.repository.DeleteClientResult
+import com.teraper.printmaster.core.data.repository.PaymentsRepository
+import com.teraper.printmaster.core.data.repository.SaveMoneyEntryResult
 import com.teraper.printmaster.core.data.repository.SaveClientResult
 import com.teraper.printmaster.core.model.Client
 import com.teraper.printmaster.core.model.ClientAddress
@@ -9,6 +11,10 @@ import com.teraper.printmaster.core.model.ClientDraft
 import com.teraper.printmaster.core.model.ClientPhone
 import com.teraper.printmaster.core.model.ClientSummary
 import com.teraper.printmaster.core.model.ClientType
+import com.teraper.printmaster.core.model.IncomeTotals
+import com.teraper.printmaster.core.model.LedgerEntry
+import com.teraper.printmaster.core.model.MoneyEntryDraft
+import java.time.LocalDate
 import com.teraper.printmaster.core.model.Money
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -36,8 +42,8 @@ fun summary(
     balance: Long = 0,
 ) = ClientSummary(
     client = Client(id, name, type, taxId, "", listOfNotNull(phone?.let { ClientPhone(id, it, "") }), emptyList()),
-    printerCount = 0,
-    balance = Money.ofDram(balance),
+    charged = Money.ofDram(balance.coerceAtLeast(0)),
+    paid = Money.ofDram((-balance).coerceAtLeast(0)),
 )
 
 /** In-memory stand-in for the database-backed repository. */
@@ -65,7 +71,7 @@ class FakeClientsRepository(initial: List<ClientSummary> = emptyList()) : Client
             clean.phones.mapIndexed { i, p -> ClientPhone(i + 1L, p.value, p.label) },
             clean.addresses.mapIndexed { i, a -> ClientAddress(i + 1L, a.value, a.label) },
         )
-        clients.value = clients.value.filterNot { it.client.id == id } + ClientSummary(client, 0, Money.ZERO)
+        clients.value = clients.value.filterNot { it.client.id == id } + ClientSummary(client)
         return SaveClientResult.Saved(id)
     }
 
@@ -76,5 +82,23 @@ class FakeClientsRepository(initial: List<ClientSummary> = emptyList()) : Client
             clients.value = clients.value.filterNot { it.client.id == id }
             DeleteClientResult.DELETED
         }
+    }
+}
+
+/** In-memory ledger per client. */
+class FakePaymentsRepository : PaymentsRepository {
+    val ledgers = MutableStateFlow<Map<Long, List<LedgerEntry>>>(emptyMap())
+    val deleted = mutableListOf<LedgerEntry>()
+
+    override fun observeLedger(clientId: Long): Flow<List<LedgerEntry>> = ledgers.map { it[clientId].orEmpty() }
+
+    override fun observeIncome(from: LocalDate, to: LocalDate): Flow<IncomeTotals> = MutableStateFlow(IncomeTotals())
+
+    override suspend fun saveMoneyEntry(draft: MoneyEntryDraft): SaveMoneyEntryResult = SaveMoneyEntryResult.Saved(1)
+
+    override suspend fun deleteEntry(entry: LedgerEntry): Boolean {
+        deleted += entry
+        ledgers.value = ledgers.value.mapValues { (_, list) -> list - entry }
+        return true
     }
 }

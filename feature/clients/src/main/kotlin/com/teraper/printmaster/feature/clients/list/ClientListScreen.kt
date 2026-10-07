@@ -192,7 +192,8 @@ internal fun BalanceAmount(balance: Money, modifier: Modifier = Modifier) {
 private fun previewClient(id: Long, name: String, type: ClientType, taxId: String?, balance: Long) = ClientSummary(
     client = Client(id, name, type, taxId, "", listOf(ClientPhone(id, "091 123456", "")), emptyList()),
     printerCount = if (type == ClientType.FIRM) 3 else 0,
-    balance = Money.ofDram(balance),
+    charged = Money.ofDram(balance.coerceAtLeast(0)),
+    paid = Money.ofDram((-balance).coerceAtLeast(0)),
 )
 
 @Preview(showBackground = true, widthDp = 390, heightDp = 760)
