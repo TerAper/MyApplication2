@@ -6,6 +6,8 @@ import androidx.lifecycle.viewModelScope
 import com.teraper.printmaster.core.data.repository.ClientsRepository
 import com.teraper.printmaster.core.data.repository.DeleteClientResult
 import com.teraper.printmaster.core.data.repository.PaymentsRepository
+import com.teraper.printmaster.core.data.repository.PrintersRepository
+import com.teraper.printmaster.core.model.ClientPrinter
 import com.teraper.printmaster.core.model.ClientSummary
 import com.teraper.printmaster.core.model.LedgerEntry
 import com.teraper.printmaster.feature.clients.navigation.CLIENT_ID_ARG
@@ -22,7 +24,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-enum class ClientTab { INFO, FINANCE }
+enum class ClientTab { INFO, PRINTERS, FINANCE }
 
 sealed interface ClientDetailUiState {
     data object Loading : ClientDetailUiState
@@ -30,6 +32,7 @@ sealed interface ClientDetailUiState {
     data class Loaded(
         val summary: ClientSummary,
         val ledger: List<LedgerEntry> = emptyList(),
+        val printers: List<ClientPrinter> = emptyList(),
         val tab: ClientTab = ClientTab.INFO,
         val dialog: ClientDetailDialog? = null,
     ) : ClientDetailUiState
@@ -50,6 +53,7 @@ class ClientDetailViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val clientsRepository: ClientsRepository,
     private val paymentsRepository: PaymentsRepository,
+    printersRepository: PrintersRepository,
 ) : ViewModel() {
 
     private val clientId: Long = checkNotNull(savedStateHandle[CLIENT_ID_ARG])
@@ -60,15 +64,20 @@ class ClientDetailViewModel @Inject constructor(
     private val _events = Channel<ClientDetailEvent>(Channel.BUFFERED)
     val events: Flow<ClientDetailEvent> = _events.receiveAsFlow()
 
-    val uiState: StateFlow<ClientDetailUiState> = combine(
+    private val records = combine(
         clientsRepository.observeClientSummary(clientId),
         paymentsRepository.observeLedger(clientId),
+        printersRepository.observeClientPrinters(clientId),
+    ) { summary, ledger, printers -> Triple(summary, ledger, printers) }
+
+    val uiState: StateFlow<ClientDetailUiState> = combine(
+        records,
         tab,
         dialog,
         deleting,
-    ) { summary, ledger, tab, dialog, deleting ->
+    ) { (summary, ledger, printers), tab, dialog, deleting ->
         when {
-            summary != null -> ClientDetailUiState.Loaded(summary, ledger, tab, dialog)
+            summary != null -> ClientDetailUiState.Loaded(summary, ledger, printers, tab, dialog)
             // Just deleted: keep showing Loading for the moment before the screen closes.
             deleting -> ClientDetailUiState.Loading
             else -> ClientDetailUiState.NotFound

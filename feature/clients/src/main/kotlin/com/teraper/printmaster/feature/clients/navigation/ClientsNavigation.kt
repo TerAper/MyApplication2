@@ -8,6 +8,7 @@ import androidx.navigation.navigation
 import com.teraper.printmaster.feature.clients.detail.ClientDetailRoute
 import com.teraper.printmaster.feature.clients.edit.ClientEditRoute
 import com.teraper.printmaster.feature.clients.list.ClientListRoute
+import com.teraper.printmaster.feature.clients.printer.PrinterEditRoute
 import kotlinx.serialization.Serializable
 
 /** The whole Clients tab (list + card + form), so the tab stays highlighted on every screen of it. */
@@ -24,7 +25,12 @@ data class ClientDetailDestination(val clientId: Long)
 @Serializable
 data class ClientEditDestination(val clientId: Long = 0)
 
+/** [printerId] 0 = add a printer to the client. */
+@Serializable
+data class PrinterEditDestination(val clientId: Long, val printerId: Long = 0)
+
 internal const val CLIENT_ID_ARG = "clientId"
+internal const val PRINTER_ID_ARG = "printerId"
 
 fun NavController.navigateToClients(navOptions: NavOptions? = null) = navigate(ClientsGraph, navOptions)
 
@@ -54,7 +60,12 @@ fun NavGraphBuilder.clientsGraph(
                 onEdit = { navController.navigate(ClientEditDestination(it)) },
                 onRecordPayment = onRecordPayment,
                 onAddCharge = onAddCharge,
+                onAddPrinter = { navController.navigate(PrinterEditDestination(it)) },
+                onPrinterClick = { clientId, printerId -> navController.navigate(PrinterEditDestination(clientId, printerId)) },
             )
+        }
+        composable<PrinterEditDestination> {
+            PrinterEditRoute(onClose = navController::popBackStack)
         }
         composable<ClientEditDestination> {
             ClientEditRoute(

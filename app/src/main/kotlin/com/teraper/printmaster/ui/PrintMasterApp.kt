@@ -16,7 +16,6 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavDestination
 import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.NavDestination.Companion.hierarchy
-import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
@@ -24,6 +23,7 @@ import com.teraper.printmaster.core.designsystem.theme.PmTheme
 import com.teraper.printmaster.navigation.PrintMasterNavHost
 import com.teraper.printmaster.navigation.TopLevelDestination
 import com.teraper.printmaster.navigation.isFullScreen
+import com.teraper.printmaster.navigation.navigateToTab
 
 @Composable
 fun PrintMasterApp(navController: NavHostController = rememberNavController()) {
@@ -75,14 +75,5 @@ private fun PrintMasterBottomBar(
                 ),
             )
         }
-    }
-}
-
-/** Switch tabs keeping each tab's own back stack and scroll position. */
-private fun NavHostController.navigateToTab(tab: TopLevelDestination) {
-    navigate(tab.route) {
-        popUpTo(graph.findStartDestination().id) { saveState = true }
-        launchSingleTop = true
-        restoreState = true
     }
 }

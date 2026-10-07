@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="core_designsystem_print_laser">Լազերային</string>
+    <string name="core_designsystem_print_ink">Թանաքային</string>
+    <string name="core_designsystem_color_mono">Սև/սպիտակ</string>
+    <string name="core_designsystem_color_color">Գունավոր</string>
+</resources>

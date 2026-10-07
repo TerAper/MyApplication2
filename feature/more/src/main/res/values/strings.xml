@@ -1,6 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="feature_more_title">Ավելին</string>
-    <string name="feature_more_empty_title">Շուտով</string>
-    <string name="feature_more_empty_message">Գնացուցակ, տպիչների կատալոգ, հաշվետվություններ, պահուստավորում և կարգավորումներ։</string>
+    <string name="feature_more_soon">Շուտով</string>
+    <string name="feature_more_section_work">ԱՇԽԱՏԱՆՔ</string>
+    <string name="feature_more_section_money">ՓՈՂ</string>
+    <string name="feature_more_section_data">ՏՎՅԱԼՆԵՐ</string>
+    <string name="feature_more_price_list">Գնացուցակ</string>
+    <string name="feature_more_price_list_sub">Քարտրիջ · Տպիչ · Այլ</string>
+    <string name="feature_more_catalog">Տպիչների կատալոգ</string>
+    <string name="feature_more_catalog_sub">Բրենդներ, մոդելներ, քարտրիջներ, չիպեր</string>
+    <string name="feature_more_reports">Հաշվետվություններ</string>
+    <string name="feature_more_reports_sub">Եկամուտ՝ կանխիկ և անկանխիկ</string>
+    <string name="feature_more_export">Պարտքերի արտահանում</string>
+    <string name="feature_more_export_sub">Excel ֆայլ</string>
+    <string name="feature_more_imports">Ներմուծումների պատմություն</string>
+    <string name="feature_more_imports_sub">Excel ներմուծումներ և չեղարկում</string>
+    <string name="feature_more_backup">Պահուստավորում</string>
+    <string name="feature_more_backup_sub">Պահպանել և վերականգնել տվյալները</string>
+    <string name="feature_more_settings">Կարգավորումներ</string>
+    <string name="feature_more_settings_sub">Լեզու, Excel սյունակներ</string>
 </resources>

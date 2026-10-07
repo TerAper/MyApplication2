@@ -82,4 +82,34 @@
     <string name="feature_clients_tag_bank">BANK</string>
     <string name="feature_clients_number">No. %1$s</string>
     <string name="feature_clients_delete_entry_title">Delete this entry?</string>
+
+    <string name="feature_clients_tab_printers">Printers</string>
+    <string name="feature_clients_no_printers">No printers yet.</string>
+    <string name="feature_clients_add_printer">Add printer</string>
+    <string name="feature_clients_printer_cartridges_value">Cartridges: %1$s</string>
+    <string name="feature_clients_printer_new">New printer</string>
+    <string name="feature_clients_printer_edit">Printer</string>
+    <string name="feature_clients_printer_section_model">MODEL</string>
+    <string name="feature_clients_printer_section_cartridges">CARTRIDGES</string>
+    <string name="feature_clients_printer_section_place">PLACE</string>
+    <string name="feature_clients_printer_model_search">Find model</string>
+    <string name="feature_clients_printer_model_search_hint">e.g. M125 or CF283A</string>
+    <string name="feature_clients_printer_error_no_model">Choose a model or add a new one</string>
+    <string name="feature_clients_printer_not_in_catalog">Not in the catalog. Add it as a new model.</string>
+    <string name="feature_clients_printer_new_model">New model</string>
+    <string name="feature_clients_printer_new_model_named">New model “%1$s”</string>
+    <string name="feature_clients_printer_change_model">Change</string>
+    <string name="feature_clients_printer_pick_from_catalog">Pick from catalog</string>
+    <string name="feature_clients_printer_brand">Brand</string>
+    <string name="feature_clients_printer_error_brand">Enter the brand</string>
+    <string name="feature_clients_printer_model_name">Model</string>
+    <string name="feature_clients_printer_model_name_hint">e.g. LaserJet M125</string>
+    <string name="feature_clients_printer_error_model">Enter the model</string>
+    <string name="feature_clients_printer_no_cartridges">No cartridges yet. Add one below.</string>
+    <string name="feature_clients_printer_chip_value">Chip: %1$s</string>
+    <string name="feature_clients_printer_add_cartridge">Cartridge</string>
+    <string name="feature_clients_printer_chip">Chip</string>
+    <string name="feature_clients_printer_location">Where it stands</string>
+    <string name="feature_clients_printer_location_hint">e.g. Accounting room</string>
+    <string name="feature_clients_printer_delete_title">Delete this printer?</string>
 </resources>

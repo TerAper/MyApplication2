@@ -63,6 +63,8 @@ internal fun ClientDetailRoute(
     onEdit: (Long) -> Unit,
     onRecordPayment: (Long) -> Unit,
     onAddCharge: (Long) -> Unit,
+    onAddPrinter: (clientId: Long) -> Unit,
+    onPrinterClick: (clientId: Long, printerId: Long) -> Unit,
     viewModel: ClientDetailViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -90,6 +92,8 @@ internal fun ClientDetailRoute(
         onAddCharge = onAddCharge,
         onEntryClick = viewModel::onEntryClick,
         onConfirmDeleteEntry = viewModel::onConfirmDeleteEntry,
+        onAddPrinter = onAddPrinter,
+        onPrinterClick = onPrinterClick,
     )
 }
 
@@ -108,6 +112,8 @@ internal fun ClientDetailScreen(
     onAddCharge: (Long) -> Unit = {},
     onEntryClick: (LedgerEntry) -> Unit = {},
     onConfirmDeleteEntry: (LedgerEntry) -> Unit = {},
+    onAddPrinter: (Long) -> Unit = {},
+    onPrinterClick: (Long, Long) -> Unit = { _, _ -> },
     modifier: Modifier = Modifier,
 ) {
     Column(modifier = modifier.fillMaxSize().background(PmTheme.colors.background)) {
@@ -143,6 +149,8 @@ internal fun ClientDetailScreen(
                 onRecordPayment = { onRecordPayment(state.summary.client.id) },
                 onAddCharge = { onAddCharge(state.summary.client.id) },
                 onEntryClick = onEntryClick,
+                onAddPrinter = { onAddPrinter(state.summary.client.id) },
+                onPrinterClick = { onPrinterClick(state.summary.client.id, it) },
             )
         }
     }
@@ -190,6 +198,8 @@ private fun ClientDetailContent(
     onRecordPayment: () -> Unit,
     onAddCharge: () -> Unit,
     onEntryClick: (LedgerEntry) -> Unit,
+    onAddPrinter: () -> Unit,
+    onPrinterClick: (Long) -> Unit,
 ) {
     val summary = state.summary
     val client = summary.client
@@ -243,7 +253,13 @@ private fun ClientDetailContent(
                     onClick = { onTabSelected(tab) },
                     text = {
                         Text(
-                            stringResource(if (tab == ClientTab.INFO) R.string.feature_clients_tab_info else R.string.feature_clients_tab_finance),
+                            stringResource(
+                                when (tab) {
+                                    ClientTab.INFO -> R.string.feature_clients_tab_info
+                                    ClientTab.PRINTERS -> R.string.feature_clients_tab_printers
+                                    ClientTab.FINANCE -> R.string.feature_clients_tab_finance
+                                },
+                            ),
                             style = MaterialTheme.typography.labelLarge,
                         )
                     },
@@ -255,6 +271,8 @@ private fun ClientDetailContent(
 
         if (state.tab == ClientTab.FINANCE) {
             FinanceSection(summary, state.ledger, onRecordPayment, onAddCharge, onEntryClick)
+        } else if (state.tab == ClientTab.PRINTERS) {
+            PrintersSection(state.printers, onAddPrinter, onPrinterClick)
         } else {
             Column(
                 modifier = Modifier.padding(16.dp),

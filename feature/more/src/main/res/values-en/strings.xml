@@ -1,6 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="feature_more_title">More</string>
-    <string name="feature_more_empty_title">Coming soon</string>
-    <string name="feature_more_empty_message">Price list, printer catalog, reports, backup and settings.</string>
+    <string name="feature_more_soon">Soon</string>
+    <string name="feature_more_section_work">WORK SETUP</string>
+    <string name="feature_more_section_money">MONEY</string>
+    <string name="feature_more_section_data">DATA</string>
+    <string name="feature_more_price_list">Price list</string>
+    <string name="feature_more_price_list_sub">Cartridge · Printer · Other</string>
+    <string name="feature_more_catalog">Printer catalog</string>
+    <string name="feature_more_catalog_sub">Brands, models, cartridges, chips</string>
+    <string name="feature_more_reports">Reports</string>
+    <string name="feature_more_reports_sub">Income: cash vs bank</string>
+    <string name="feature_more_export">Export debt report</string>
+    <string name="feature_more_export_sub">Excel file</string>
+    <string name="feature_more_imports">Import history</string>
+    <string name="feature_more_imports_sub">See or undo past Excel imports</string>
+    <string name="feature_more_backup">Backup &amp; restore</string>
+    <string name="feature_more_backup_sub">Save and restore your data</string>
+    <string name="feature_more_settings">Settings</string>
+    <string name="feature_more_settings_sub">Language, Excel columns</string>
 </resources>

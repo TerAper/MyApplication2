@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="feature_catalog_title">Տպիչների կատալոգ</string>
+    <string name="feature_catalog_back">Հետ</string>
+    <string name="feature_catalog_search_hint">Բրենդ, մոդել, քարտրիջ կամ չիպ</string>
+    <string name="feature_catalog_clear_search">Մաքրել</string>
+    <string name="feature_catalog_empty_title">Կատալոգը դատարկ է</string>
+    <string name="feature_catalog_empty_message">Մոդելներն այստեղ են հայտնվում, երբ հաճախորդին տպիչ եք ավելացնում, կամ ավելացրեք դրանք ուղղակիորեն։</string>
+    <string name="feature_catalog_no_results">Ոչինչ չի գտնվել</string>
+    <string name="feature_catalog_new_model">Նոր մոդել</string>
+    <string name="feature_catalog_edit_model">Մոդել</string>
+    <string name="feature_catalog_cancel">Չեղարկել</string>
+    <string name="feature_catalog_delete">Ջնջել</string>
+    <string name="feature_catalog_save">Պահպանել</string>
+    <string name="feature_catalog_ok">Լավ</string>
+    <string name="feature_catalog_brand">Բրենդ</string>
+    <string name="feature_catalog_error_brand">Նշեք բրենդը</string>
+    <string name="feature_catalog_model">Մոդել</string>
+    <string name="feature_catalog_model_hint">օր.՝ LaserJet M125</string>
+    <string name="feature_catalog_error_model">Նշեք մոդելը</string>
+    <string name="feature_catalog_error_taken">%1$s արդեն կա կատալոգում</string>
+    <string name="feature_catalog_section_cartridges">ՔԱՐՏՐԻՋՆԵՐ ԵՎ ՉԻՊԵՐ</string>
+    <string name="feature_catalog_cartridges_help">Մի քանի չիպ գրեք ստորակետով։ Քարտրիջի չիպը նույնն է բոլոր մոդելներում։</string>
+    <string name="feature_catalog_cartridge">Քարտրիջ</string>
+    <string name="feature_catalog_add_cartridge">Նոր քարտրիջ</string>
+    <string name="feature_catalog_chips">Չիպ</string>
+    <string name="feature_catalog_remove_cartridge">Հեռացնել քարտրիջը</string>
+    <string name="feature_catalog_section_owners">ՈՒՄ ՄՈՏ ԿԱ (%1$d)</string>
+    <string name="feature_catalog_discard_title">Չպահպանե՞լ փոփոխությունները</string>
+    <string name="feature_catalog_discard">Չպահպանել</string>
+    <string name="feature_catalog_keep_editing">Շարունակել</string>
+    <string name="feature_catalog_delete_title">Ջնջե՞լ մոդելը կատալոգից</string>
+    <string name="feature_catalog_in_use_title">Չի կարելի ջնջել</string>
+    <string name="feature_catalog_in_use_message">Այս մոդելով տպիչներ կան հաճախորդների մոտ։ Նախ ջնջեք կամ փոխեք այդ տպիչները։</string>
+    <plurals name="feature_catalog_printer_count">
+        <item quantity="one">%1$d տպիչ</item>
+        <item quantity="other">%1$d տպիչ</item>
+    </plurals>
+</resources>

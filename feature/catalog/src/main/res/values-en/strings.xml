@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="feature_catalog_title">Printer catalog</string>
+    <string name="feature_catalog_back">Back</string>
+    <string name="feature_catalog_search_hint">Brand, model, cartridge or chip</string>
+    <string name="feature_catalog_clear_search">Clear</string>
+    <string name="feature_catalog_empty_title">The catalog is empty</string>
+    <string name="feature_catalog_empty_message">Models appear here when you add a printer to a client, or add them directly.</string>
+    <string name="feature_catalog_no_results">Nothing found</string>
+    <string name="feature_catalog_new_model">New model</string>
+    <string name="feature_catalog_edit_model">Model</string>
+    <string name="feature_catalog_cancel">Cancel</string>
+    <string name="feature_catalog_delete">Delete</string>
+    <string name="feature_catalog_save">Save</string>
+    <string name="feature_catalog_ok">OK</string>
+    <string name="feature_catalog_brand">Brand</string>
+    <string name="feature_catalog_error_brand">Enter the brand</string>
+    <string name="feature_catalog_model">Model</string>
+    <string name="feature_catalog_model_hint">e.g. LaserJet M125</string>
+    <string name="feature_catalog_error_model">Enter the model</string>
+    <string name="feature_catalog_error_taken">%1$s is already in the catalog</string>
+    <string name="feature_catalog_section_cartridges">CARTRIDGES AND CHIPS</string>
+    <string name="feature_catalog_cartridges_help">Separate several chips with commas. A cartridge has the same chip in every model.</string>
+    <string name="feature_catalog_cartridge">Cartridge</string>
+    <string name="feature_catalog_add_cartridge">New cartridge</string>
+    <string name="feature_catalog_chips">Chip</string>
+    <string name="feature_catalog_remove_cartridge">Remove cartridge</string>
+    <string name="feature_catalog_section_owners">CLIENTS WHO HAVE IT (%1$d)</string>
+    <string name="feature_catalog_discard_title">Discard changes?</string>
+    <string name="feature_catalog_discard">Discard</string>
+    <string name="feature_catalog_keep_editing">Keep editing</string>
+    <string name="feature_catalog_delete_title">Delete this model from the catalog?</string>
+    <string name="feature_catalog_in_use_title">Can’t delete</string>
+    <string name="feature_catalog_in_use_message">Clients have printers of this model. Delete or change those printers first.</string>
+    <plurals name="feature_catalog_printer_count">
+        <item quantity="one">%1$d printer</item>
+        <item quantity="other">%1$d printers</item>
+    </plurals>
+</resources>

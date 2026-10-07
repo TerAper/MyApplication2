@@ -82,4 +82,34 @@
     <string name="feature_clients_tag_bank">ԱՆԿԱՆԽԻԿ</string>
     <string name="feature_clients_number">№ %1$s</string>
     <string name="feature_clients_delete_entry_title">Ջնջե՞լ գրառումը</string>
+
+    <string name="feature_clients_tab_printers">Տպիչներ</string>
+    <string name="feature_clients_no_printers">Տպիչներ դեռ չկան։</string>
+    <string name="feature_clients_add_printer">Ավելացնել տպիչ</string>
+    <string name="feature_clients_printer_cartridges_value">Քարտրիջներ՝ %1$s</string>
+    <string name="feature_clients_printer_new">Նոր տպիչ</string>
+    <string name="feature_clients_printer_edit">Տպիչ</string>
+    <string name="feature_clients_printer_section_model">ՄՈԴԵԼ</string>
+    <string name="feature_clients_printer_section_cartridges">ՔԱՐՏՐԻՋՆԵՐ</string>
+    <string name="feature_clients_printer_section_place">ՏԵՂԸ</string>
+    <string name="feature_clients_printer_model_search">Որոնել մոդել</string>
+    <string name="feature_clients_printer_model_search_hint">օր.՝ M125 կամ CF283A</string>
+    <string name="feature_clients_printer_error_no_model">Ընտրեք մոդել կամ ավելացրեք նորը</string>
+    <string name="feature_clients_printer_not_in_catalog">Կատալոգում չկա։ Ավելացրեք որպես նոր մոդել։</string>
+    <string name="feature_clients_printer_new_model">Նոր մոդել</string>
+    <string name="feature_clients_printer_new_model_named">Նոր մոդել «%1$s»</string>
+    <string name="feature_clients_printer_change_model">Փոխել</string>
+    <string name="feature_clients_printer_pick_from_catalog">Ընտրել կատալոգից</string>
+    <string name="feature_clients_printer_brand">Բրենդ</string>
+    <string name="feature_clients_printer_error_brand">Նշեք բրենդը</string>
+    <string name="feature_clients_printer_model_name">Մոդել</string>
+    <string name="feature_clients_printer_model_name_hint">օր.՝ LaserJet M125</string>
+    <string name="feature_clients_printer_error_model">Նշեք մոդելը</string>
+    <string name="feature_clients_printer_no_cartridges">Քարտրիջներ չկան։ Ավելացրեք ներքևում։</string>
+    <string name="feature_clients_printer_chip_value">Չիպ՝ %1$s</string>
+    <string name="feature_clients_printer_add_cartridge">Քարտրիջ</string>
+    <string name="feature_clients_printer_chip">Չիպ</string>
+    <string name="feature_clients_printer_location">Որտեղ է կանգնած</string>
+    <string name="feature_clients_printer_location_hint">օր.՝ Հաշվապահություն</string>
+    <string name="feature_clients_printer_delete_title">Ջնջե՞լ տպիչը</string>
 </resources>
