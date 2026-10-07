@@ -9,10 +9,22 @@ import com.teraper.printmaster.core.model.ChargeSource
 import com.teraper.printmaster.core.model.ImportKind
 import com.teraper.printmaster.core.model.PaymentMethod
 
-/** One Excel file import. Deleting it undoes the import (its rows cascade). */
-@Entity(tableName = "import_batches")
+/** One Excel file import, always for one company. Deleting it undoes the import (its rows cascade). */
+@Entity(
+    tableName = "import_batches",
+    foreignKeys = [
+        ForeignKey(
+            entity = CompanyEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["company_id"],
+            onDelete = ForeignKey.RESTRICT,
+        ),
+    ],
+    indices = [Index(value = ["company_id"])],
+)
 data class ImportBatchEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    @ColumnInfo(name = "company_id") val companyId: Long,
     val kind: ImportKind,
     @ColumnInfo(name = "file_name") val fileName: String,
     @ColumnInfo(name = "imported_at") val importedAt: Long,
@@ -28,6 +40,12 @@ data class ImportBatchEntity(
 @Entity(
     tableName = "charges",
     foreignKeys = [
+        ForeignKey(
+            entity = CompanyEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["company_id"],
+            onDelete = ForeignKey.RESTRICT,
+        ),
         ForeignKey(
             entity = ClientEntity::class,
             parentColumns = ["id"],
@@ -53,11 +71,13 @@ data class ImportBatchEntity(
         Index(value = ["import_batch_id"]),
         Index(value = ["date_epoch_day"]),
         // Re-importing the same invoice file adds nothing twice.
-        Index(value = ["source", "document_number", "date_epoch_day", "amount_minor"], unique = true),
+        Index(value = ["company_id"]),
+        Index(value = ["company_id", "source", "document_number", "date_epoch_day", "amount_minor"], unique = true),
     ],
 )
 data class ChargeEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    @ColumnInfo(name = "company_id") val companyId: Long,
     @ColumnInfo(name = "client_id") val clientId: Long?,
     val source: ChargeSource,
     @ColumnInfo(name = "document_number") val documentNumber: String?,
@@ -79,6 +99,12 @@ data class ChargeEntity(
 @Entity(
     tableName = "payments",
     foreignKeys = [
+        ForeignKey(
+            entity = CompanyEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["company_id"],
+            onDelete = ForeignKey.RESTRICT,
+        ),
         ForeignKey(
             entity = ClientEntity::class,
             parentColumns = ["id"],
@@ -104,11 +130,13 @@ data class ChargeEntity(
         Index(value = ["import_batch_id"]),
         Index(value = ["date_epoch_day"]),
         // Re-importing the same bank statement adds nothing twice.
-        Index(value = ["method", "reference", "date_epoch_day", "amount_minor"], unique = true),
+        Index(value = ["company_id"]),
+        Index(value = ["company_id", "method", "reference", "date_epoch_day", "amount_minor"], unique = true),
     ],
 )
 data class PaymentEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    @ColumnInfo(name = "company_id") val companyId: Long,
     @ColumnInfo(name = "client_id") val clientId: Long?,
     val method: PaymentMethod,
     @ColumnInfo(name = "amount_minor") val amountMinor: Long,

@@ -12,6 +12,18 @@ import com.teraper.printmaster.core.model.RepairCategory
 @Entity(
     tableName = "orders",
     foreignKeys = [
+        ForeignKey(
+            entity = CompanyEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["company_id"],
+            onDelete = ForeignKey.RESTRICT,
+        ),
+        ForeignKey(
+            entity = MasterEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["master_id"],
+            onDelete = ForeignKey.SET_NULL,
+        ),
         // A client with orders can't be deleted by accident.
         ForeignKey(
             entity = ClientEntity::class,
@@ -34,6 +46,8 @@ import com.teraper.printmaster.core.model.RepairCategory
     ],
     indices = [
         Index(value = ["client_id"]),
+        Index(value = ["company_id"]),
+        Index(value = ["master_id"]),
         Index(value = ["scheduled_at"]),
         Index(value = ["address_id"]),
         Index(value = ["phone_id"]),
@@ -41,6 +55,9 @@ import com.teraper.printmaster.core.model.RepairCategory
 )
 data class OrderEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
+    @ColumnInfo(name = "company_id") val companyId: Long,
+    /** Who does the job; null = not assigned. */
+    @ColumnInfo(name = "master_id") val masterId: Long? = null,
     @ColumnInfo(name = "client_id") val clientId: Long,
     /** Epoch millis of the planned visit, in the phone's time zone when shown. */
     @ColumnInfo(name = "scheduled_at") val scheduledAt: Long,

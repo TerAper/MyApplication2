@@ -4,4 +4,7 @@
     <string name="tab_orders">Orders</string>
     <string name="tab_payments">Payments</string>
     <string name="tab_more">More</string>
+    <string name="switch_company">Switch company</string>
+    <string name="switch_company_title">Show data of which company?</string>
+    <string name="manage_companies">Manage companies</string>
 </resources>

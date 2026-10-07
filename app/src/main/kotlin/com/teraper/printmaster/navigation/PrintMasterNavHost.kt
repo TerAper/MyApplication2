@@ -7,6 +7,11 @@ import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import com.teraper.printmaster.core.model.MoneyEntryKind
+import com.teraper.printmaster.feature.account.navigation.CompanyEditDestination
+import com.teraper.printmaster.feature.account.navigation.accountScreens
+import com.teraper.printmaster.feature.account.navigation.navigateToCompanies
+import com.teraper.printmaster.feature.account.navigation.navigateToCompany
+import com.teraper.printmaster.feature.account.navigation.navigateToMasters
 import com.teraper.printmaster.feature.catalog.navigation.ModelEditDestination
 import com.teraper.printmaster.feature.catalog.navigation.catalogScreens
 import com.teraper.printmaster.feature.catalog.navigation.navigateToCatalog
@@ -14,6 +19,7 @@ import com.teraper.printmaster.feature.clients.navigation.ClientEditDestination
 import com.teraper.printmaster.feature.clients.navigation.PrinterEditDestination
 import com.teraper.printmaster.feature.clients.navigation.clientsGraph
 import com.teraper.printmaster.feature.clients.navigation.navigateToClientDetail
+import com.teraper.printmaster.feature.more.MoreActions
 import com.teraper.printmaster.feature.more.navigation.moreGraph
 import com.teraper.printmaster.feature.orders.navigation.ordersScreen
 import com.teraper.printmaster.feature.payments.navigation.MoneyEntryDestination
@@ -44,8 +50,16 @@ fun PrintMasterNavHost(navController: NavHostController, modifier: Modifier = Mo
             navController = navController,
             onOpenClient = navController::openClientFromOtherTab,
         )
-        moreGraph(onOpenCatalog = navController::navigateToCatalog) {
+        moreGraph(
+            actions = MoreActions(
+                onOpenCatalog = navController::navigateToCatalog,
+                onOpenCompanies = navController::navigateToCompanies,
+                onOpenCompany = navController::navigateToCompany,
+                onOpenMasters = navController::navigateToMasters,
+            ),
+        ) {
             catalogScreens(navController, onOpenClient = navController::openClientFromOtherTab)
+            accountScreens(navController)
         }
     }
 }
@@ -65,6 +79,7 @@ private val fullScreenRoutes = listOf(
     PrinterEditDestination::class,
     MoneyEntryDestination::class,
     ModelEditDestination::class,
+    CompanyEditDestination::class,
 )
 
 fun NavDestination?.isFullScreen(): Boolean = this != null && fullScreenRoutes.any { hasRoute(it) }

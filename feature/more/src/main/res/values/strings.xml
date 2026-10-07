@@ -19,4 +19,16 @@
     <string name="feature_more_backup_sub">Պահպանել և վերականգնել տվյալները</string>
     <string name="feature_more_settings">Կարգավորումներ</string>
     <string name="feature_more_settings_sub">Լեզու, Excel սյունակներ</string>
+    <string name="feature_more_section_account">ՀԱՇԻՎ</string>
+    <string name="feature_more_companies">Ընկերություններ</string>
+    <string name="feature_more_companies_sub">Ձեր ընկերությունները</string>
+    <string name="feature_more_default_company">հիմնականը՝ %1$s</string>
+    <string name="feature_more_company">Ընկերություն</string>
+    <string name="feature_more_company_sub">Անվանում, ՀՎՀՀ, հաշիվներ</string>
+    <string name="feature_more_masters">Վարպետներ</string>
+    <string name="feature_more_masters_sub">Ովքեր են կատարում աշխատանքը</string>
+    <plurals name="feature_more_company_count">
+        <item quantity="one">%1$d ընկերություն</item>
+        <item quantity="other">%1$d ընկերություն</item>
+    </plurals>
 </resources>

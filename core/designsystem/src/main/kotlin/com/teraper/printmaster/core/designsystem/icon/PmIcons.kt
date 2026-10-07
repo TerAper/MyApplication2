@@ -15,6 +15,11 @@ import androidx.compose.material.icons.rounded.CloudUpload
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.Download
 import androidx.compose.material.icons.rounded.Edit
+import androidx.compose.material.icons.rounded.Engineering
+import androidx.compose.material.icons.rounded.ExpandMore
+import androidx.compose.material.icons.rounded.Business
+import androidx.compose.material.icons.rounded.Check
+import androidx.compose.material.icons.rounded.Star
 import androidx.compose.material.icons.rounded.GridView
 import androidx.compose.material.icons.rounded.Group
 import androidx.compose.material.icons.rounded.History
@@ -55,4 +60,9 @@ object PmIcons {
     val Backup: ImageVector = Icons.Rounded.CloudUpload
     val Settings: ImageVector = Icons.Rounded.Settings
     val Invoice: ImageVector = Icons.AutoMirrored.Rounded.ReceiptLong
+    val Company: ImageVector = Icons.Rounded.Business
+    val Master: ImageVector = Icons.Rounded.Engineering
+    val Dropdown: ImageVector = Icons.Rounded.ExpandMore
+    val Check: ImageVector = Icons.Rounded.Check
+    val Default: ImageVector = Icons.Rounded.Star
 }

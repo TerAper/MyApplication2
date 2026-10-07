@@ -10,12 +10,14 @@ import com.teraper.printmaster.core.model.Client
 import com.teraper.printmaster.core.model.ClientDraft
 import com.teraper.printmaster.core.model.ClientSummary
 import com.teraper.printmaster.core.model.ClientType
+import com.teraper.printmaster.core.model.Company
 import com.teraper.printmaster.core.model.IncomeTotals
 import com.teraper.printmaster.core.model.LedgerEntry
 import com.teraper.printmaster.core.model.Money
 import com.teraper.printmaster.core.model.MoneyEntryDraft
 import com.teraper.printmaster.core.model.MoneyEntryError
 import com.teraper.printmaster.core.model.MoneyEntryKind
+import com.teraper.printmaster.core.testing.FakeCompaniesRepository
 import com.teraper.printmaster.feature.payments.entry.MoneyEntryEvent
 import com.teraper.printmaster.feature.payments.entry.MoneyEntryViewModel
 import com.teraper.printmaster.feature.payments.overview.BalanceFilter
@@ -72,6 +74,8 @@ class PaymentsViewModelsTest {
         override suspend fun deleteClient(id: Long) = DeleteClientResult.DELETED
     }
 
+    private val companies = FakeCompaniesRepository(listOf(Company(1, "Main"), Company(2, "Second")))
+
     private val payments = object : PaymentsRepository {
         val saved = mutableListOf<MoneyEntryDraft>()
         val income = MutableStateFlow(IncomeTotals(cash = Money.ofDram(3_000), bank = Money.ofDram(7_000)))
@@ -113,7 +117,7 @@ class PaymentsViewModelsTest {
     }
 
     private fun entryVm(clientId: Long = 0, isCharge: Boolean = false) = MoneyEntryViewModel(
-        SavedStateHandle(mapOf("clientId" to clientId, "isCharge" to isCharge)), clients, payments, clock,
+        SavedStateHandle(mapOf("clientId" to clientId, "isCharge" to isCharge)), clients, payments, companies, clock,
     )
 
     @Test
@@ -131,7 +135,24 @@ class PaymentsViewModelsTest {
 
         vm.onSave()
         assertEquals(MoneyEntryEvent.Saved, vm.events.first())
-        assertEquals(MoneyEntryDraft(MoneyEntryKind.CASH_PAYMENT, 2, "100000", today), payments.saved.single())
+        assertEquals(
+            MoneyEntryDraft(MoneyEntryKind.CASH_PAYMENT, clientId = 2, companyId = 1, amountDigits = "100000", date = today),
+            payments.saved.single(),
+        )
+    }
+
+    @Test
+    fun cashGoesUnderTheCompanyPickedOnTheForm() = runTest {
+        val vm = entryVm(clientId = 2)
+        collect(vm.uiState)
+        assertEquals("Main", vm.uiState.value.company?.name)
+
+        vm.onCompanySelected(2)
+        assertEquals("Second", vm.uiState.value.company?.name)
+        vm.onKey("5")
+        vm.onSave()
+        assertEquals(MoneyEntryEvent.Saved, vm.events.first())
+        assertEquals(2L, payments.saved.single().companyId)
     }
 
     @Test

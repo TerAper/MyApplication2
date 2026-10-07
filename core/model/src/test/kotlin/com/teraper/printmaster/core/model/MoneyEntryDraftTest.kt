@@ -27,8 +27,11 @@ class MoneyEntryDraftTest {
 
     @Test
     fun `client and positive amount are required`() {
-        assertEquals(setOf(MoneyEntryError.CLIENT_REQUIRED, MoneyEntryError.AMOUNT_REQUIRED), draft().validate())
-        assertTrue(draft().copy(clientId = 1).typed("5").validate().isEmpty())
+        assertEquals(
+            setOf(MoneyEntryError.CLIENT_REQUIRED, MoneyEntryError.COMPANY_REQUIRED, MoneyEntryError.AMOUNT_REQUIRED),
+            draft().validate(),
+        )
+        assertTrue(draft().copy(clientId = 1, companyId = 1).typed("5").validate().isEmpty())
     }
 
     @Test

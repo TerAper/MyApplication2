@@ -1,6 +1,5 @@
 package com.teraper.printmaster.core.data
 
-import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.teraper.printmaster.core.data.repository.OfflineClientsRepository
 import com.teraper.printmaster.core.data.repository.OfflinePaymentsRepository
@@ -31,26 +30,29 @@ import java.time.ZoneOffset
 @RunWith(AndroidJUnit4::class)
 class OfflinePaymentsRepositoryTest {
 
+    private lateinit var repos: TestRepos
     private lateinit var db: PrintMasterDatabase
     private lateinit var clients: OfflineClientsRepository
     private lateinit var payments: OfflinePaymentsRepository
     private var clientId = 0L
+    private var companyId = 0L
     private val day = LocalDate.of(2026, 10, 7)
 
     @Before
     fun setUp() = runTest {
-        db = PrintMasterDatabase.create(ApplicationProvider.getApplicationContext(), inMemory = true)
-        val clock = Clock.fixed(Instant.parse("2026-10-07T10:00:00Z"), ZoneOffset.UTC)
-        clients = OfflineClientsRepository(db, db.clientDao(), clock)
-        payments = OfflinePaymentsRepository(db.ledgerDao(), db.clientDao(), clock)
+        repos = TestRepos()
+        db = repos.db
+        clients = repos.clients
+        payments = repos.payments
+        companyId = repos.register()
         clientId = (clients.saveClient(ClientDraft(name = "Firm")) as SaveClientResult.Saved).clientId
     }
 
     @After
     fun tearDown() = db.close()
 
-    private suspend fun save(kind: MoneyEntryKind, dram: Long, date: LocalDate = day) =
-        payments.saveMoneyEntry(MoneyEntryDraft(kind, clientId, dram.toString(), date, " note "))
+    private suspend fun save(kind: MoneyEntryKind, dram: Long, date: LocalDate = day, company: Long = companyId) =
+        payments.saveMoneyEntry(MoneyEntryDraft(kind, clientId, company, dram.toString(), date, " note "))
 
     @Test
     fun cashAndDebtUpdateBalanceAndLedger() = runTest {
@@ -74,8 +76,8 @@ class OfflinePaymentsRepositoryTest {
         save(MoneyEntryKind.CASH_PAYMENT, 10_000, day)
         save(MoneyEntryKind.CASH_PAYMENT, 5_000, day.minusMonths(1))
         db.openHelper.writableDatabase.execSQL(
-            "INSERT INTO payments (client_id, method, amount_minor, date_epoch_day, reference, note, created_at) " +
-                "VALUES ($clientId, 'BANK', 2000000, ${day.toEpochDay()}, '88231', '', 0)",
+            "INSERT INTO payments (company_id, client_id, method, amount_minor, date_epoch_day, reference, note, created_at) " +
+                "VALUES ($companyId, $clientId, 'BANK', 2000000, ${day.toEpochDay()}, '88231', '', 0)",
         )
 
         val income = payments.observeIncome(day.withDayOfMonth(1), day).first()
@@ -87,8 +89,8 @@ class OfflinePaymentsRepositoryTest {
         save(MoneyEntryKind.CASH_PAYMENT, 1_000)
         save(MoneyEntryKind.MANUAL_CHARGE, 2_000)
         db.openHelper.writableDatabase.execSQL(
-            "INSERT INTO payments (client_id, method, amount_minor, date_epoch_day, reference, note, created_at) " +
-                "VALUES ($clientId, 'BANK', 300000, ${day.toEpochDay()}, '1', '', 0)",
+            "INSERT INTO payments (company_id, client_id, method, amount_minor, date_epoch_day, reference, note, created_at) " +
+                "VALUES ($companyId, $clientId, 'BANK', 300000, ${day.toEpochDay()}, '1', '', 0)",
         )
 
         val ledger = payments.observeLedger(clientId).first()
@@ -103,11 +105,32 @@ class OfflinePaymentsRepositoryTest {
     fun invalidOrUnknownClientIsRejected() = runTest {
         assertEquals(
             SaveMoneyEntryResult.Invalid(setOf(MoneyEntryError.AMOUNT_REQUIRED)),
-            payments.saveMoneyEntry(MoneyEntryDraft(MoneyEntryKind.CASH_PAYMENT, clientId, "", day)),
+            payments.saveMoneyEntry(MoneyEntryDraft(MoneyEntryKind.CASH_PAYMENT, clientId, companyId, "", day)),
         )
         assertEquals(
             SaveMoneyEntryResult.Invalid(setOf(MoneyEntryError.CLIENT_REQUIRED)),
-            payments.saveMoneyEntry(MoneyEntryDraft(MoneyEntryKind.CASH_PAYMENT, 999, "5", day)),
+            payments.saveMoneyEntry(MoneyEntryDraft(MoneyEntryKind.CASH_PAYMENT, 999, companyId, "5", day)),
         )
+        assertEquals(
+            SaveMoneyEntryResult.Invalid(setOf(MoneyEntryError.COMPANY_REQUIRED)),
+            payments.saveMoneyEntry(MoneyEntryDraft(MoneyEntryKind.CASH_PAYMENT, clientId, 999, "5", day)),
+        )
+    }
+
+    @Test
+    fun eachCompanySeesOnlyItsOwnMoney() = runTest {
+        val other = repos.addCompany("Second")
+        save(MoneyEntryKind.MANUAL_CHARGE, 50_000)
+        save(MoneyEntryKind.MANUAL_CHARGE, 8_000, company = other)
+        save(MoneyEntryKind.CASH_PAYMENT, 3_000, company = other)
+
+        // The default company is shown first.
+        assertEquals(Money.ofDram(50_000), clients.observeClientSummary(clientId).first()!!.balance)
+        assertEquals(1, payments.observeLedger(clientId).first().size)
+
+        repos.companies.selectCompany(other)
+        assertEquals(Money.ofDram(5_000), clients.observeClientSummary(clientId).first()!!.balance)
+        assertEquals(2, payments.observeLedger(clientId).first().size)
+        assertEquals(Money.ofDram(3_000), payments.observeIncome(day, day).first().cash)
     }
 }

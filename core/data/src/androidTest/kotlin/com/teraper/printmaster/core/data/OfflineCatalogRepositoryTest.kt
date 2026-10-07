@@ -6,6 +6,7 @@ import com.teraper.printmaster.core.data.repository.CatalogWriter
 import com.teraper.printmaster.core.data.repository.DeleteModelResult
 import com.teraper.printmaster.core.data.repository.OfflineCatalogRepository
 import com.teraper.printmaster.core.data.repository.OfflineClientsRepository
+import com.teraper.printmaster.core.data.repository.OfflineCompaniesRepository
 import com.teraper.printmaster.core.data.repository.OfflinePrintersRepository
 import com.teraper.printmaster.core.data.repository.SaveClientResult
 import com.teraper.printmaster.core.data.repository.SaveModelResult
@@ -42,7 +43,7 @@ class OfflineCatalogRepositoryTest {
         val writer = CatalogWriter(db.catalogDao())
         catalog = OfflineCatalogRepository(db, db.catalogDao(), writer)
         printers = OfflinePrintersRepository(db, db.catalogDao(), writer)
-        val clients = OfflineClientsRepository(db, db.clientDao(), Clock.systemUTC())
+        val clients = OfflineClientsRepository(db, db.clientDao(), Clock.systemUTC(), OfflineCompaniesRepository(db, db.companyDao(), Clock.systemUTC()))
         clientId = (clients.saveClient(ClientDraft(name = "Firm")) as SaveClientResult.Saved).clientId
     }
 

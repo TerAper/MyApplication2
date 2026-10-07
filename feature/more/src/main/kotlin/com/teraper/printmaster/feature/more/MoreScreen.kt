@@ -18,6 +18,12 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.res.pluralStringResource
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.teraper.printmaster.core.model.AccountMode
+import com.teraper.printmaster.core.model.Company
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -31,24 +37,54 @@ import com.teraper.printmaster.core.designsystem.component.TagTone
 import com.teraper.printmaster.core.designsystem.icon.PmIcons
 import com.teraper.printmaster.core.designsystem.theme.PmTheme
 
-/** One menu row; [onClick] null = not built yet (shown as "Soon"). */
+/** One menu row; [onClick] null = not built yet (shown as "Soon"). [subtitleText] overrides [subtitle]. */
 private data class MoreItem(
     val icon: ImageVector,
     @param:StringRes val title: Int,
     @param:StringRes val subtitle: Int,
     val onClick: (() -> Unit)?,
+    val subtitleText: String? = null,
 )
 
 private data class MoreSection(@param:StringRes val title: Int, val items: List<MoreItem>)
 
+/** Where the More menu can go; the app wires each to its feature. */
+data class MoreActions(
+    val onOpenCatalog: () -> Unit = {},
+    val onOpenCompanies: () -> Unit = {},
+    val onOpenCompany: (Long) -> Unit = {},
+    val onOpenMasters: () -> Unit = {},
+)
+
 @Composable
-internal fun MoreRoute(onOpenCatalog: () -> Unit, modifier: Modifier = Modifier) {
-    MoreScreen(onOpenCatalog = onOpenCatalog, modifier = modifier)
+internal fun MoreRoute(actions: MoreActions, modifier: Modifier = Modifier, viewModel: MoreViewModel = hiltViewModel()) {
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
+    MoreScreen(state = state, actions = actions, modifier = modifier)
 }
 
 @Composable
-internal fun MoreScreen(onOpenCatalog: () -> Unit, modifier: Modifier = Modifier) {
-    val sections = listOf(
+internal fun MoreScreen(state: MoreUiState, actions: MoreActions, modifier: Modifier = Modifier) {
+    val onOpenCatalog = actions.onOpenCatalog
+    val account = when (state.mode) {
+        AccountMode.MASTER -> listOf(
+            MoreItem(
+                PmIcons.Company, R.string.feature_more_companies, R.string.feature_more_companies_sub, actions.onOpenCompanies,
+                subtitleText = pluralStringResource(R.plurals.feature_more_company_count, state.companies.size, state.companies.size) +
+                    (state.defaultCompany?.let { " · " + stringResource(R.string.feature_more_default_company, it.name) } ?: ""),
+            ),
+        )
+        AccountMode.COMPANY -> listOf(
+            MoreItem(
+                PmIcons.Company, R.string.feature_more_company, R.string.feature_more_company_sub,
+                { state.defaultCompany?.let { actions.onOpenCompany(it.id) } },
+                subtitleText = state.defaultCompany?.name,
+            ),
+            MoreItem(PmIcons.Master, R.string.feature_more_masters, R.string.feature_more_masters_sub, actions.onOpenMasters),
+        )
+        null -> emptyList()
+    }
+    val sections = listOfNotNull(
+        account.takeIf { it.isNotEmpty() }?.let { MoreSection(R.string.feature_more_section_account, it) },
         MoreSection(
             R.string.feature_more_section_work,
             listOf(
@@ -116,7 +152,7 @@ private fun MoreRow(item: MoreItem) {
                 style = MaterialTheme.typography.titleSmall,
                 color = if (enabled) PmTheme.colors.ink else PmTheme.colors.inkMuted,
             )
-            Text(stringResource(item.subtitle), style = MaterialTheme.typography.bodySmall, color = PmTheme.colors.inkMuted)
+            Text(item.subtitleText ?: stringResource(item.subtitle), style = MaterialTheme.typography.bodySmall, color = PmTheme.colors.inkMuted)
         }
         if (enabled) {
             Icon(PmIcons.Chevron, contentDescription = null, tint = PmTheme.colors.outlineStrong)
@@ -129,5 +165,10 @@ private fun MoreRow(item: MoreItem) {
 @Preview(showBackground = true, widthDp = 390, heightDp = 760)
 @Composable
 private fun MoreScreenPreview() {
-    PmTheme { MoreScreen(onOpenCatalog = {}) }
+    PmTheme {
+        MoreScreen(
+            MoreUiState(AccountMode.MASTER, listOf(Company(1, "«Ալֆա» ՍՊԸ"), Company(2, "Beta")), Company(1, "«Ալֆա» ՍՊԸ")),
+            MoreActions(),
+        )
+    }
 }

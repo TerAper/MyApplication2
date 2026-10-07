@@ -4,10 +4,12 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.teraper.printmaster.core.data.repository.ClientsRepository
+import com.teraper.printmaster.core.data.repository.CompaniesRepository
 import com.teraper.printmaster.core.data.repository.PaymentsRepository
 import com.teraper.printmaster.core.data.repository.SaveMoneyEntryResult
 import com.teraper.printmaster.core.model.ClientSearch
 import com.teraper.printmaster.core.model.ClientSummary
+import com.teraper.printmaster.core.model.Company
 import com.teraper.printmaster.core.model.Money
 import com.teraper.printmaster.core.model.MoneyEntryDraft
 import com.teraper.printmaster.core.model.MoneyEntryError
@@ -43,6 +45,10 @@ data class MoneyEntryUiState(
     val today: LocalDate,
     /** The chosen client with their current balance; null until one is picked. */
     val client: ClientSummary? = null,
+    /** The money goes under this company: the one being viewed. */
+    val company: Company? = null,
+    /** All companies; the form offers a switch when there is more than one. */
+    val companies: List<Company> = emptyList(),
 ) {
     val draft get() = form.draft
     val isPayment get() = draft.kind == MoneyEntryKind.CASH_PAYMENT
@@ -61,6 +67,7 @@ class MoneyEntryViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     clientsRepository: ClientsRepository,
     private val paymentsRepository: PaymentsRepository,
+    private val companiesRepository: CompaniesRepository,
     clock: Clock,
 ) : ViewModel() {
 
@@ -79,8 +86,22 @@ class MoneyEntryViewModel @Inject constructor(
     private val allClients = clientsRepository.observeClientSummaries()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
-    val uiState: StateFlow<MoneyEntryUiState> = combine(form, allClients) { form, clients ->
-        MoneyEntryUiState(form = form, today = today, client = clients.firstOrNull { it.client.id == form.draft.clientId })
+    private val activeCompany = companiesRepository.observeActiveCompany()
+        .stateIn(viewModelScope, SharingStarted.Eagerly, null)
+
+    val uiState: StateFlow<MoneyEntryUiState> = combine(
+        form,
+        allClients,
+        activeCompany,
+        companiesRepository.observeCompanies(),
+    ) { form, clients, company, companies ->
+        MoneyEntryUiState(
+            form = form,
+            today = today,
+            client = clients.firstOrNull { it.client.id == form.draft.clientId },
+            company = company,
+            companies = companies,
+        )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), MoneyEntryUiState(form.value, today))
 
     // Picker search kept separate so typing stays instant.
@@ -114,6 +135,12 @@ class MoneyEntryViewModel @Inject constructor(
         editDraft { it.copy(clientId = clientId) }
     }
 
+    /**
+     * Switching the company here switches what the whole app shows, so the client's
+     * balance on this form is always the balance with the chosen company.
+     */
+    fun onCompanySelected(companyId: Long) = companiesRepository.selectCompany(companyId)
+
     fun onDismissClientPicker() = form.update { it.copy(showClientPicker = false) }
 
     fun onOpenDatePicker() = form.update { it.copy(showDatePicker = true) }
@@ -128,7 +155,8 @@ class MoneyEntryViewModel @Inject constructor(
         if (current.isSaving) return
         viewModelScope.launch {
             form.update { it.copy(isSaving = true) }
-            when (val result = paymentsRepository.saveMoneyEntry(current.draft)) {
+            val draft = current.draft.copy(companyId = activeCompany.value?.id)
+            when (val result = paymentsRepository.saveMoneyEntry(draft)) {
                 is SaveMoneyEntryResult.Saved -> _events.send(MoneyEntryEvent.Saved)
                 is SaveMoneyEntryResult.Invalid -> form.update { it.copy(isSaving = false, errors = result.errors) }
             }

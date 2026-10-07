@@ -15,9 +15,12 @@ import com.teraper.printmaster.core.model.ClientPhone
 import com.teraper.printmaster.core.model.ClientSearch
 import com.teraper.printmaster.core.model.ClientSummary
 import com.teraper.printmaster.core.model.Money
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import java.time.Clock
 import java.time.LocalDate
@@ -27,13 +30,33 @@ internal class OfflineClientsRepository @Inject constructor(
     private val database: PrintMasterDatabase,
     private val clientDao: ClientDao,
     private val clock: Clock,
+    private val companies: CompaniesRepository,
 ) : ClientsRepository {
 
-    override fun observeClientSummaries(): Flow<List<ClientSummary>> = combine(
+    /** Clients are shared; their money is counted for the company being viewed. */
+    @OptIn(ExperimentalCoroutinesApi::class)
+    override fun observeClientSummaries(): Flow<List<ClientSummary>> =
+        companies.observeActiveCompany().map { it?.id }.distinctUntilChanged().flatMapLatest { companyId ->
+            if (companyId == null) {
+                summaries(flowOf(emptyList()), flowOf(emptyList()), flowOf(emptyList()))
+            } else {
+                summaries(
+                    clientDao.observeChargeTotals(companyId),
+                    clientDao.observePaymentTotals(companyId),
+                    clientDao.observeLastPaymentDays(companyId),
+                )
+            }
+        }
+
+    private fun summaries(
+        chargeTotals: Flow<List<ClientTotal>>,
+        paymentTotals: Flow<List<ClientTotal>>,
+        lastPaymentDays: Flow<List<ClientTotal>>,
+    ): Flow<List<ClientSummary>> = combine(
         clientDao.observeClientsWithContacts(),
-        clientDao.observeChargeTotals(),
-        clientDao.observePaymentTotals(),
-        clientDao.observeLastPaymentDays(),
+        chargeTotals,
+        paymentTotals,
+        lastPaymentDays,
         clientDao.observePrinterCounts(),
     ) { clients, charges, payments, lastPayments, printers ->
         val chargeBy = charges.byClient()

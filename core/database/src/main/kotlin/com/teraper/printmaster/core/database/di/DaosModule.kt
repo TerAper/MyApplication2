@@ -3,6 +3,7 @@ package com.teraper.printmaster.core.database.di
 import com.teraper.printmaster.core.database.PrintMasterDatabase
 import com.teraper.printmaster.core.database.dao.CatalogDao
 import com.teraper.printmaster.core.database.dao.ClientDao
+import com.teraper.printmaster.core.database.dao.CompanyDao
 import com.teraper.printmaster.core.database.dao.LedgerDao
 import dagger.Module
 import dagger.Provides
@@ -20,4 +21,7 @@ internal object DaosModule {
 
     @Provides
     fun provideCatalogDao(database: PrintMasterDatabase): CatalogDao = database.catalogDao()
+
+    @Provides
+    fun provideCompanyDao(database: PrintMasterDatabase): CompanyDao = database.companyDao()
 }

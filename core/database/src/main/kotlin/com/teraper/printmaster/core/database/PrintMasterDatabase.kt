@@ -7,7 +7,9 @@ import androidx.room.RoomDatabase
 import androidx.sqlite.db.SupportSQLiteDatabase
 import com.teraper.printmaster.core.database.dao.CatalogDao
 import com.teraper.printmaster.core.database.dao.ClientDao
+import com.teraper.printmaster.core.database.dao.CompanyDao
 import com.teraper.printmaster.core.database.dao.LedgerDao
+import com.teraper.printmaster.core.database.entity.AppProfileEntity
 import com.teraper.printmaster.core.database.entity.BrandEntity
 import com.teraper.printmaster.core.database.entity.CartridgeChipCrossRef
 import com.teraper.printmaster.core.database.entity.CartridgeEntity
@@ -19,7 +21,9 @@ import com.teraper.printmaster.core.database.entity.ClientEntity
 import com.teraper.printmaster.core.database.entity.ClientPhoneEntity
 import com.teraper.printmaster.core.database.entity.ClientPrinterCartridgeEntity
 import com.teraper.printmaster.core.database.entity.ClientPrinterEntity
+import com.teraper.printmaster.core.database.entity.CompanyEntity
 import com.teraper.printmaster.core.database.entity.ImportBatchEntity
+import com.teraper.printmaster.core.database.entity.MasterEntity
 import com.teraper.printmaster.core.database.entity.ModelCartridgeCrossRef
 import com.teraper.printmaster.core.database.entity.OrderEntity
 import com.teraper.printmaster.core.database.entity.PaymentEntity
@@ -30,6 +34,9 @@ import com.teraper.printmaster.core.database.entity.RepairPartEntity
 
 @Database(
     entities = [
+        CompanyEntity::class,
+        MasterEntity::class,
+        AppProfileEntity::class,
         ClientEntity::class,
         ClientPhoneEntity::class,
         ClientAddressEntity::class,
@@ -50,13 +57,14 @@ import com.teraper.printmaster.core.database.entity.RepairPartEntity
         ChargeEntity::class,
         PaymentEntity::class,
     ],
-    version = 1,
+    version = 2,
     exportSchema = true,
 )
 abstract class PrintMasterDatabase : RoomDatabase() {
     abstract fun clientDao(): ClientDao
     abstract fun ledgerDao(): LedgerDao
     abstract fun catalogDao(): CatalogDao
+    abstract fun companyDao(): CompanyDao
 
     companion object {
         private const val DATABASE_NAME = "printmaster.db"
@@ -68,7 +76,11 @@ abstract class PrintMasterDatabase : RoomDatabase() {
             } else {
                 Room.databaseBuilder(context, PrintMasterDatabase::class.java, DATABASE_NAME)
             }
-            return builder.addCallback(ForeignKeysOn).build()
+            return builder
+                .addCallback(ForeignKeysOn)
+                // Version 1 only ever existed on development phones (before companies were added).
+                .fallbackToDestructiveMigrationFrom(dropAllTables = true, 1)
+                .build()
         }
     }
 }

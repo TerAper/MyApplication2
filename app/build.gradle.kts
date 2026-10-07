@@ -26,6 +26,7 @@ android {
 dependencies {
     implementation(projects.core.designsystem)
     implementation(projects.core.database)
+    implementation(projects.core.data)
 
     implementation(projects.feature.today)
     implementation(projects.feature.clients)
@@ -33,11 +34,14 @@ dependencies {
     implementation(projects.feature.payments)
     implementation(projects.feature.more)
     implementation(projects.feature.catalog)
+    implementation(projects.feature.account)
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.navigation.compose)
+    implementation(libs.androidx.hilt.lifecycle.viewmodel.compose)
+    implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.kotlinx.serialization.json)
 
     testImplementation(libs.junit)

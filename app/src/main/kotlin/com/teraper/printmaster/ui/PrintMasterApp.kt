@@ -1,5 +1,8 @@
 package com.teraper.printmaster.ui
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -10,6 +13,13 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.teraper.printmaster.feature.account.navigation.navigateToCompanies
+import com.teraper.printmaster.feature.account.onboarding.OnboardingRoute
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.sp
@@ -26,14 +36,36 @@ import com.teraper.printmaster.navigation.isFullScreen
 import com.teraper.printmaster.navigation.navigateToTab
 
 @Composable
-fun PrintMasterApp(navController: NavHostController = rememberNavController()) {
+fun PrintMasterApp(viewModel: AppViewModel = hiltViewModel()) {
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
+    when (val current = state) {
+        AppUiState.Loading -> Box(Modifier.fillMaxSize().background(PmTheme.colors.background))
+        AppUiState.NeedsRegistration -> OnboardingRoute()
+        is AppUiState.Ready -> MainApp(current, onCompanySelected = viewModel::onCompanySelected)
+    }
+}
+
+@Composable
+private fun MainApp(
+    state: AppUiState.Ready,
+    onCompanySelected: (Long) -> Unit,
+    navController: NavHostController = rememberNavController(),
+) {
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentDestination = backStackEntry?.destination
+    var showSwitch by rememberSaveable { mutableStateOf(false) }
+    val fullScreen = currentDestination.isFullScreen()
 
     Scaffold(
         containerColor = PmTheme.colors.background,
+        topBar = {
+            val company = state.activeCompany
+            if (state.showCompanySwitch && company != null && !fullScreen) {
+                CompanyStrip(company, onClick = { showSwitch = true })
+            }
+        },
         bottomBar = {
-            if (!currentDestination.isFullScreen()) {
+            if (!fullScreen) {
                 PrintMasterBottomBar(
                     currentDestination = currentDestination,
                     onTabSelected = { navController.navigateToTab(it) },
@@ -42,6 +74,23 @@ fun PrintMasterApp(navController: NavHostController = rememberNavController()) {
         },
     ) { padding ->
         PrintMasterNavHost(navController = navController, modifier = Modifier.padding(padding))
+    }
+
+    if (showSwitch) {
+        CompanySwitchSheet(
+            companies = state.companies,
+            activeId = state.activeCompany?.id,
+            onSelect = {
+                onCompanySelected(it)
+                showSwitch = false
+            },
+            onManage = {
+                showSwitch = false
+                navController.navigateToTab(TopLevelDestination.MORE)
+                navController.navigateToCompanies()
+            },
+            onDismiss = { showSwitch = false },
+        )
     }
 }
 

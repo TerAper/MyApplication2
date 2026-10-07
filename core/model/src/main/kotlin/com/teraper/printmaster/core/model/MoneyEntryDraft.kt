@@ -16,6 +16,8 @@ enum class MoneyEntryKind {
 data class MoneyEntryDraft(
     val kind: MoneyEntryKind,
     val clientId: Long? = null,
+    /** Company the money goes under; starts as the company being viewed. */
+    val companyId: Long? = null,
     val amountDigits: String = "",
     val date: LocalDate,
     val note: String = "",
@@ -24,6 +26,7 @@ data class MoneyEntryDraft(
 
     fun validate(): Set<MoneyEntryError> = buildSet {
         if (clientId == null) add(MoneyEntryError.CLIENT_REQUIRED)
+        if (companyId == null) add(MoneyEntryError.COMPANY_REQUIRED)
         if (!amount.isPositive) add(MoneyEntryError.AMOUNT_REQUIRED)
     }
 
@@ -45,4 +48,4 @@ data class MoneyEntryDraft(
     }
 }
 
-enum class MoneyEntryError { CLIENT_REQUIRED, AMOUNT_REQUIRED }
+enum class MoneyEntryError { CLIENT_REQUIRED, COMPANY_REQUIRED, AMOUNT_REQUIRED }

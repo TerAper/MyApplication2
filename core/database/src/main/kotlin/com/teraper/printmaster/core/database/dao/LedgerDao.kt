@@ -13,21 +13,22 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface LedgerDao {
 
-    @Query("SELECT * FROM charges WHERE client_id = :clientId")
-    fun observeCharges(clientId: Long): Flow<List<ChargeEntity>>
+    @Query("SELECT * FROM charges WHERE client_id = :clientId AND company_id = :companyId")
+    fun observeCharges(clientId: Long, companyId: Long): Flow<List<ChargeEntity>>
 
-    @Query("SELECT * FROM payments WHERE client_id = :clientId")
-    fun observePayments(clientId: Long): Flow<List<PaymentEntity>>
+    @Query("SELECT * FROM payments WHERE client_id = :clientId AND company_id = :companyId")
+    fun observePayments(clientId: Long, companyId: Long): Flow<List<PaymentEntity>>
 
-    /** Money received between two days (inclusive), per payment method. */
+    /** Money the company received between two days (inclusive), per payment method. */
     @Query(
         """
         SELECT method, SUM(amount_minor) AS total FROM payments
-        WHERE client_id IS NOT NULL AND date_epoch_day BETWEEN :fromEpochDay AND :toEpochDay
+        WHERE client_id IS NOT NULL AND company_id = :companyId
+          AND date_epoch_day BETWEEN :fromEpochDay AND :toEpochDay
         GROUP BY method
         """,
     )
-    fun observeIncomeByMethod(fromEpochDay: Long, toEpochDay: Long): Flow<List<MethodTotal>>
+    fun observeIncomeByMethod(companyId: Long, fromEpochDay: Long, toEpochDay: Long): Flow<List<MethodTotal>>
 
     @Insert
     suspend fun insertCharge(charge: ChargeEntity): Long

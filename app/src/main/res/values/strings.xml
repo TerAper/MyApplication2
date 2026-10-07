@@ -7,4 +7,7 @@
     <string name="tab_orders">Պատվեր</string>
     <string name="tab_payments">Վճարում</string>
     <string name="tab_more">Ավելին</string>
+    <string name="switch_company">Փոխել ընկերությունը</string>
+    <string name="switch_company_title">Ո՞ր ընկերության տվյալները ցույց տալ</string>
+    <string name="manage_companies">Կառավարել ընկերությունները</string>
 </resources>

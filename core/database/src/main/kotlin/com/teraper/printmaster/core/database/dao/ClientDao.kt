@@ -24,15 +24,26 @@ interface ClientDao {
     @Query("SELECT * FROM clients WHERE id = :id")
     fun observeClientWithContacts(id: Long): Flow<ClientWithContacts?>
 
-    @Query("SELECT client_id, SUM(amount_minor) AS total FROM charges WHERE client_id IS NOT NULL GROUP BY client_id")
-    fun observeChargeTotals(): Flow<List<ClientTotal>>
+    // Money is always counted for one company: each company's debts are separate.
 
-    @Query("SELECT client_id, SUM(amount_minor) AS total FROM payments WHERE client_id IS NOT NULL GROUP BY client_id")
-    fun observePaymentTotals(): Flow<List<ClientTotal>>
+    @Query(
+        "SELECT client_id, SUM(amount_minor) AS total FROM charges " +
+            "WHERE client_id IS NOT NULL AND company_id = :companyId GROUP BY client_id",
+    )
+    fun observeChargeTotals(companyId: Long): Flow<List<ClientTotal>>
 
-    /** Day (epoch day) of each client's most recent payment. */
-    @Query("SELECT client_id, MAX(date_epoch_day) AS total FROM payments WHERE client_id IS NOT NULL GROUP BY client_id")
-    fun observeLastPaymentDays(): Flow<List<ClientTotal>>
+    @Query(
+        "SELECT client_id, SUM(amount_minor) AS total FROM payments " +
+            "WHERE client_id IS NOT NULL AND company_id = :companyId GROUP BY client_id",
+    )
+    fun observePaymentTotals(companyId: Long): Flow<List<ClientTotal>>
+
+    /** Day (epoch day) of each client's most recent payment to the company. */
+    @Query(
+        "SELECT client_id, MAX(date_epoch_day) AS total FROM payments " +
+            "WHERE client_id IS NOT NULL AND company_id = :companyId GROUP BY client_id",
+    )
+    fun observeLastPaymentDays(companyId: Long): Flow<List<ClientTotal>>
 
     @Query("SELECT client_id, COUNT(*) AS total FROM client_printers GROUP BY client_id")
     fun observePrinterCounts(): Flow<List<ClientTotal>>

@@ -19,4 +19,16 @@
     <string name="feature_more_backup_sub">Save and restore your data</string>
     <string name="feature_more_settings">Settings</string>
     <string name="feature_more_settings_sub">Language, Excel columns</string>
+    <string name="feature_more_section_account">ACCOUNT</string>
+    <string name="feature_more_companies">Companies</string>
+    <string name="feature_more_companies_sub">Your companies</string>
+    <string name="feature_more_default_company">default: %1$s</string>
+    <string name="feature_more_company">Company</string>
+    <string name="feature_more_company_sub">Name, ՀՎՀՀ, bank accounts</string>
+    <string name="feature_more_masters">Masters</string>
+    <string name="feature_more_masters_sub">Who does the work</string>
+    <plurals name="feature_more_company_count">
+        <item quantity="one">%1$d company</item>
+        <item quantity="other">%1$d companies</item>
+    </plurals>
 </resources>

@@ -1,5 +1,19 @@
 package com.teraper.printmaster.feature.payments.entry
 
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.material3.AssistChip
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.Icon
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import com.teraper.printmaster.core.designsystem.component.CompanyBadge
+import com.teraper.printmaster.core.model.Company
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -18,7 +32,6 @@ import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SelectableDates
@@ -89,6 +102,7 @@ internal fun MoneyEntryRoute(
             onOpenDatePicker = viewModel::onOpenDatePicker,
             onDatePicked = viewModel::onDatePicked,
             onSave = viewModel::onSave,
+            onCompanySelected = viewModel::onCompanySelected,
         ),
     )
 
@@ -116,6 +130,7 @@ internal data class MoneyEntryActions(
     val onOpenDatePicker: () -> Unit = {},
     val onDatePicked: (LocalDate?) -> Unit = {},
     val onSave: () -> Unit = {},
+    val onCompanySelected: (Long) -> Unit = {},
 )
 
 @Composable
@@ -157,7 +172,14 @@ internal fun MoneyEntryScreen(
                 BalanceAfter(state.balanceAfter)
             }
 
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+            Row(
+                Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                if (state.companies.size > 1 && state.company != null) {
+                    CompanyChip(state.company, state.companies, actions.onCompanySelected)
+                }
                 val debt = state.client?.balance
                 if (state.isPayment && debt != null && debt.isPositive) {
                     PmFilterChip(
@@ -200,6 +222,34 @@ internal fun MoneyEntryScreen(
 
     if (state.form.showDatePicker) {
         DateDialog(initial = draft.date, today = state.today, onPicked = actions.onDatePicked)
+    }
+}
+
+/** Which company the money goes under; tap to pick another. */
+@Composable
+private fun CompanyChip(company: Company, companies: List<Company>, onSelect: (Long) -> Unit) {
+    var expanded by remember { mutableStateOf(false) }
+    Box {
+        AssistChip(
+            onClick = { expanded = true },
+            label = { Text(company.name, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.widthIn(max = 140.dp)) },
+            leadingIcon = { CompanyBadge(company.initials, company.colorIndex, size = 22.dp) },
+            trailingIcon = { Icon(PmIcons.Dropdown, contentDescription = null, modifier = Modifier.size(18.dp)) },
+            modifier = Modifier.heightIn(min = 40.dp),
+        )
+        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            companies.forEach { option ->
+                DropdownMenuItem(
+                    text = { Text(option.name) },
+                    leadingIcon = { CompanyBadge(option.initials, option.colorIndex, size = 26.dp) },
+                    trailingIcon = { if (option.id == company.id) Icon(PmIcons.Check, contentDescription = null) },
+                    onClick = {
+                        expanded = false
+                        onSelect(option.id)
+                    },
+                )
+            }
+        }
     }
 }
 
@@ -358,8 +408,10 @@ private fun MoneyEntryPreview() {
     PmTheme {
         MoneyEntryScreen(
             state = MoneyEntryUiState(
-                form = MoneyEntryForm(MoneyEntryDraft(MoneyEntryKind.CASH_PAYMENT, 1, "17000", today)),
+                form = MoneyEntryForm(MoneyEntryDraft(MoneyEntryKind.CASH_PAYMENT, clientId = 1, amountDigits = "17000", date = today)),
                 today = today,
+                company = Company(1, "«Ալֆա» ՍՊԸ", colorIndex = 0),
+                companies = listOf(Company(1, "«Ալֆա» ՍՊԸ", colorIndex = 0), Company(2, "Beta Print", colorIndex = 3)),
                 client = ClientSummary(
                     client = Client(1, "«ԱԲԳ Սերվիս» ՍՊԸ", ClientType.FIRM, null, "", emptyList(), emptyList()),
                     charged = Money.ofDram(420_000),

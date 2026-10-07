@@ -1,6 +1,5 @@
 package com.teraper.printmaster.core.data
 
-import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.teraper.printmaster.core.data.repository.DeleteClientResult
 import com.teraper.printmaster.core.data.repository.OfflineClientsRepository
@@ -27,13 +26,17 @@ import java.time.ZoneOffset
 @RunWith(AndroidJUnit4::class)
 class OfflineClientsRepositoryTest {
 
+    private lateinit var repos: TestRepos
     private lateinit var db: PrintMasterDatabase
     private lateinit var repo: OfflineClientsRepository
+    private var companyId = 0L
 
     @Before
-    fun setUp() {
-        db = PrintMasterDatabase.create(ApplicationProvider.getApplicationContext(), inMemory = true)
-        repo = OfflineClientsRepository(db, db.clientDao(), Clock.fixed(Instant.EPOCH, ZoneOffset.UTC))
+    fun setUp() = runTest {
+        repos = TestRepos(Clock.fixed(Instant.EPOCH, ZoneOffset.UTC))
+        db = repos.db
+        repo = repos.clients
+        companyId = repos.register()
     }
 
     @After
@@ -125,7 +128,7 @@ class OfflineClientsRepositoryTest {
     @Test
     fun clientWithOrdersCannotBeDeleted() = runTest {
         val id = save(ClientDraft(name = "Busy"))
-        sql("INSERT INTO orders (client_id, scheduled_at, description, status, created_at) VALUES ($id, 0, 'x', 'NEW', 0)")
+        sql("INSERT INTO orders (company_id, client_id, scheduled_at, description, status, created_at) VALUES ($companyId, $id, 0, 'x', 'NEW', 0)")
 
         assertEquals(DeleteClientResult.HAS_RECORDS, repo.deleteClient(id))
         assertEquals(DeleteClientResult.NOT_FOUND, repo.deleteClient(9999))
@@ -134,8 +137,8 @@ class OfflineClientsRepositoryTest {
     @Test
     fun balanceIsChargesMinusPayments() = runTest {
         val id = save(ClientDraft(name = "Debtor"))
-        sql("INSERT INTO charges (client_id, source, amount_minor, date_epoch_day, note, created_at) VALUES ($id, 'MANUAL', 4200000, 0, '', 0)")
-        sql("INSERT INTO payments (client_id, method, amount_minor, date_epoch_day, note, created_at) VALUES ($id, 'CASH', 1200000, 0, '', 0)")
+        sql("INSERT INTO charges (company_id, client_id, source, amount_minor, date_epoch_day, note, created_at) VALUES ($companyId, $id, 'MANUAL', 4200000, 0, '', 0)")
+        sql("INSERT INTO payments (company_id, client_id, method, amount_minor, date_epoch_day, note, created_at) VALUES ($companyId, $id, 'CASH', 1200000, 0, '', 0)")
 
         assertEquals(Money.ofDram(30_000), repo.observeClientSummary(id).first()!!.balance)
     }

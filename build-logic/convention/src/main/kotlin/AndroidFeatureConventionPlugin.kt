@@ -27,6 +27,7 @@ class AndroidFeatureConventionPlugin : Plugin<Project> {
                 add("implementation", libs.lib("androidx-lifecycle-viewmodel-compose"))
                 add("implementation", libs.lib("kotlinx-serialization-json"))
 
+                add("testImplementation", project(":core:testing"))
                 add("testImplementation", libs.lib("kotlinx-coroutines-test"))
             }
         }

@@ -2,6 +2,8 @@ package com.teraper.printmaster.core.data.di
 
 import com.teraper.printmaster.core.data.repository.CatalogRepository
 import com.teraper.printmaster.core.data.repository.ClientsRepository
+import com.teraper.printmaster.core.data.repository.CompaniesRepository
+import com.teraper.printmaster.core.data.repository.OfflineCompaniesRepository
 import com.teraper.printmaster.core.data.repository.OfflineCatalogRepository
 import com.teraper.printmaster.core.data.repository.OfflineClientsRepository
 import com.teraper.printmaster.core.data.repository.OfflinePaymentsRepository
@@ -24,6 +26,9 @@ internal abstract class DataModule {
 
     @Binds
     abstract fun bindPaymentsRepository(impl: OfflinePaymentsRepository): PaymentsRepository
+
+    @Binds
+    abstract fun bindCompaniesRepository(impl: OfflineCompaniesRepository): CompaniesRepository
 
     @Binds
     abstract fun bindCatalogRepository(impl: OfflineCatalogRepository): CatalogRepository
