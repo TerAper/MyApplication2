@@ -57,6 +57,7 @@ internal fun OrderDetailRoute(
     onBack: () -> Unit,
     onEdit: (Long) -> Unit,
     onOpenClient: (Long) -> Unit,
+    onOpenRepair: (orderId: Long, repairId: Long) -> Unit,
     viewModel: OrderDetailViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -77,6 +78,9 @@ internal fun OrderDetailRoute(
             onCall = { context.open(Intent.ACTION_DIAL, "tel:$it") },
             onOpenMap = { context.open(Intent.ACTION_VIEW, "geo:0,0?q=" + android.net.Uri.encode(it)) },
             onStatusChange = viewModel::onStatusChange,
+            onOpenRepair = onOpenRepair,
+            onFinish = viewModel::onFinish,
+            onConfirmReopen = viewModel::onConfirmReopen,
             onConfirmCancel = viewModel::onConfirmCancel,
             onDelete = viewModel::onDeleteClick,
             onConfirmDelete = viewModel::onConfirmDelete,
@@ -100,6 +104,10 @@ internal data class OrderDetailActions(
     val onCall: (String) -> Unit = {},
     val onOpenMap: (String) -> Unit = {},
     val onStatusChange: (OrderStatus) -> Unit = {},
+    /** repairId 0 = add new work. */
+    val onOpenRepair: (orderId: Long, repairId: Long) -> Unit = { _, _ -> },
+    val onFinish: (paidInCash: Boolean) -> Unit = {},
+    val onConfirmReopen: () -> Unit = {},
     val onConfirmCancel: () -> Unit = {},
     val onDelete: () -> Unit = {},
     val onConfirmDelete: () -> Unit = {},
@@ -128,7 +136,7 @@ internal fun OrderDetailScreen(state: OrderDetailUiState, actions: OrderDetailAc
         when (state) {
             OrderDetailUiState.Loading -> Unit
             OrderDetailUiState.NotFound -> PmEmptyState(PmIcons.Orders, stringResource(R.string.feature_orders_not_found), "")
-            is OrderDetailUiState.Loaded -> OrderContent(state.order, state.today, actions)
+            is OrderDetailUiState.Loaded -> OrderContent(state, actions)
         }
     }
 
@@ -158,13 +166,23 @@ internal fun OrderDetailScreen(state: OrderDetailUiState, actions: OrderDetailAc
                 onDismiss = actions.onDismissDialog,
                 destructive = true,
             )
+            OrderDetailDialog.CONFIRM_REOPEN -> PmConfirmDialog(
+                title = stringResource(R.string.feature_orders_reopen_title),
+                message = stringResource(R.string.feature_orders_reopen_message),
+                confirmText = stringResource(R.string.feature_orders_action_reopen),
+                dismissText = stringResource(R.string.feature_orders_cancel),
+                onConfirm = actions.onConfirmReopen,
+                onDismiss = actions.onDismissDialog,
+            )
             null -> Unit
         }
     }
 }
 
 @Composable
-private fun OrderContent(order: Order, today: LocalDate, actions: OrderDetailActions) {
+private fun OrderContent(state: OrderDetailUiState.Loaded, actions: OrderDetailActions) {
+    val order = state.order
+    val today = state.today
     Column(Modifier.fillMaxSize()) {
         Column(
             Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(16.dp),
@@ -195,6 +213,14 @@ private fun OrderContent(order: Order, today: LocalDate, actions: OrderDetailAct
                     InfoRow(PmIcons.Master, master, stringResource(R.string.feature_orders_master), onClick = null)
                 }
             }
+
+            if (state.canEditWork || state.work.repairs.isNotEmpty()) {
+                WorkSection(
+                    work = state.work,
+                    canEdit = state.canEditWork,
+                    onOpenRepair = { actions.onOpenRepair(order.id, it) },
+                )
+            }
         }
 
         // Status buttons: the main next step is the big one.
@@ -203,6 +229,10 @@ private fun OrderContent(order: Order, today: LocalDate, actions: OrderDetailAct
             Modifier.fillMaxWidth().background(PmTheme.colors.surface).padding(horizontal = 16.dp, vertical = 12.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
+            if (state.canFinishWithWork) {
+                FinishButtons(state.work.total, actions)
+                return@Column
+            }
             next.firstOrNull()?.let { main ->
                 PmPrimaryButton(
                     text = main.actionLabel(),

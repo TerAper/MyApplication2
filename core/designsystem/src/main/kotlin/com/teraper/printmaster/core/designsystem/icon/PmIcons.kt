@@ -26,6 +26,8 @@ import androidx.compose.material.icons.rounded.History
 import androidx.compose.material.icons.rounded.Home
 import androidx.compose.material.icons.rounded.Place
 import androidx.compose.material.icons.rounded.Print
+import androidx.compose.material.icons.rounded.Remove
+import androidx.compose.material.icons.rounded.Build
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.rounded.Sell
 import androidx.compose.material.icons.rounded.Settings
@@ -65,4 +67,6 @@ object PmIcons {
     val Dropdown: ImageVector = Icons.Rounded.ExpandMore
     val Check: ImageVector = Icons.Rounded.Check
     val Default: ImageVector = Icons.Rounded.Star
+    val Remove: ImageVector = Icons.Rounded.Remove
+    val Repair: ImageVector = Icons.Rounded.Build
 }

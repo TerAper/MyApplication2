@@ -16,6 +16,7 @@ import com.teraper.printmaster.core.model.OrderDraftError
 import com.teraper.printmaster.core.model.OrderStatus
 import com.teraper.printmaster.core.testing.FakeCompaniesRepository
 import com.teraper.printmaster.core.testing.FakeOrdersRepository
+import com.teraper.printmaster.core.testing.FakeRepairsRepository
 import com.teraper.printmaster.core.testing.MainDispatcherRule
 import com.teraper.printmaster.feature.orders.detail.OrderDetailDialog
 import com.teraper.printmaster.feature.orders.detail.OrderDetailUiState
@@ -144,7 +145,7 @@ class OrdersViewModelsTest {
     fun detailChangesStatusAsksBeforeCancellingAndBlocksDelete() = runTest {
         val orders = FakeOrdersRepository(listOf(order(1, today, 10)))
         orders.blockedIds = setOf(1)
-        val vm = OrderDetailViewModel(SavedStateHandle(mapOf("orderId" to 1L)), orders, clock)
+        val vm = OrderDetailViewModel(SavedStateHandle(mapOf("orderId" to 1L)), orders, FakeRepairsRepository(), clock)
         collect(vm.uiState)
         val loaded = { vm.uiState.value as OrderDetailUiState.Loaded }
 

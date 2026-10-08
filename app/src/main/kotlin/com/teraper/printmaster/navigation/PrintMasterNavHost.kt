@@ -22,6 +22,7 @@ import com.teraper.printmaster.feature.clients.navigation.navigateToClientDetail
 import com.teraper.printmaster.feature.more.MoreActions
 import com.teraper.printmaster.feature.more.navigation.moreGraph
 import com.teraper.printmaster.feature.orders.navigation.OrderEditDestination
+import com.teraper.printmaster.feature.orders.navigation.RepairEditDestination
 import com.teraper.printmaster.feature.orders.navigation.navigateToNewOrder
 import com.teraper.printmaster.feature.orders.navigation.navigateToOrder
 import com.teraper.printmaster.feature.orders.navigation.orderScreens
@@ -102,6 +103,7 @@ private val fullScreenRoutes = listOf(
     CompanyEditDestination::class,
     OrderEditDestination::class,
     PriceItemEditDestination::class,
+    RepairEditDestination::class,
 )
 
 fun NavDestination?.isFullScreen(): Boolean = this != null && fullScreenRoutes.any { hasRoute(it) }

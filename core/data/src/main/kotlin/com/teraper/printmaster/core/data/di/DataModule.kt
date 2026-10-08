@@ -11,9 +11,11 @@ import com.teraper.printmaster.core.data.repository.OfflineClientsRepository
 import com.teraper.printmaster.core.data.repository.OfflinePaymentsRepository
 import com.teraper.printmaster.core.data.repository.OfflinePriceListRepository
 import com.teraper.printmaster.core.data.repository.OfflinePrintersRepository
+import com.teraper.printmaster.core.data.repository.OfflineRepairsRepository
 import com.teraper.printmaster.core.data.repository.PaymentsRepository
 import com.teraper.printmaster.core.data.repository.PriceListRepository
 import com.teraper.printmaster.core.data.repository.PrintersRepository
+import com.teraper.printmaster.core.data.repository.RepairsRepository
 import dagger.Binds
 import dagger.Module
 import dagger.Provides
@@ -45,6 +47,9 @@ internal abstract class DataModule {
 
     @Binds
     abstract fun bindPriceListRepository(impl: OfflinePriceListRepository): PriceListRepository
+
+    @Binds
+    abstract fun bindRepairsRepository(impl: OfflineRepairsRepository): RepairsRepository
 
     companion object {
         @Provides

@@ -49,10 +49,13 @@ interface OrderDao {
     @Query("UPDATE orders SET status = :status WHERE id = :id")
     suspend fun setStatus(id: Long, status: OrderStatus): Int
 
-    /** Repairs and payments tied to the order; deleting would lose or orphan them. */
+    /**
+     * Money tied to the order: charges for its repairs and payments. Deleting would lose them.
+     * Unbilled repairs don't count; they are deleted with the order.
+     */
     @Query(
         """
-        SELECT (SELECT COUNT(*) FROM repairs WHERE order_id = :id)
+        SELECT (SELECT COUNT(*) FROM charges WHERE repair_id IN (SELECT id FROM repairs WHERE order_id = :id))
              + (SELECT COUNT(*) FROM payments WHERE order_id = :id)
         """,
     )

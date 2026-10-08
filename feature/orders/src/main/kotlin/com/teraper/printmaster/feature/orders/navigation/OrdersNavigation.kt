@@ -8,6 +8,7 @@ import androidx.navigation.navigation
 import com.teraper.printmaster.feature.orders.detail.OrderDetailRoute
 import com.teraper.printmaster.feature.orders.edit.OrderEditRoute
 import com.teraper.printmaster.feature.orders.list.OrdersRoute
+import com.teraper.printmaster.feature.orders.repair.RepairEditRoute
 import kotlinx.serialization.Serializable
 import java.time.LocalDate
 
@@ -28,7 +29,12 @@ data class OrderDetailDestination(val orderId: Long)
 @Serializable
 data class OrderEditDestination(val orderId: Long = 0, val clientId: Long = 0, val dateEpochDay: Long = NO_DATE)
 
+/** Work on order [orderId]; [repairId] 0 = new. */
+@Serializable
+data class RepairEditDestination(val orderId: Long, val repairId: Long = 0)
+
 internal const val ORDER_ID_ARG = "orderId"
+internal const val REPAIR_ID_ARG = "repairId"
 internal const val CLIENT_ID_ARG = "clientId"
 internal const val DATE_ARG = "dateEpochDay"
 const val NO_DATE = Long.MIN_VALUE
@@ -62,7 +68,11 @@ fun NavGraphBuilder.orderScreens(navController: NavController, onOpenClient: (Lo
             onBack = navController::popBackStack,
             onEdit = { navController.navigate(OrderEditDestination(orderId = it)) },
             onOpenClient = onOpenClient,
+            onOpenRepair = { orderId, repairId -> navController.navigate(RepairEditDestination(orderId, repairId)) },
         )
+    }
+    composable<RepairEditDestination> {
+        RepairEditRoute(onClose = navController::popBackStack)
     }
     composable<OrderEditDestination> {
         OrderEditRoute(

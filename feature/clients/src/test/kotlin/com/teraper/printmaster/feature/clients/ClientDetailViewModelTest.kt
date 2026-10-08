@@ -21,6 +21,7 @@ import org.junit.Assert.assertNull
 import org.junit.Rule
 import org.junit.Test
 import com.teraper.printmaster.core.testing.FakeOrdersRepository
+import com.teraper.printmaster.core.testing.FakePrintersRepository
 import java.time.Clock
 import java.time.LocalDate
 

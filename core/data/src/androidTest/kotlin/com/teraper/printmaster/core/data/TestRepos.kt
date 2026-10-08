@@ -1,10 +1,14 @@
 package com.teraper.printmaster.core.data
 
 import androidx.test.core.app.ApplicationProvider
+import com.teraper.printmaster.core.data.repository.CatalogWriter
 import com.teraper.printmaster.core.data.repository.OfflineClientsRepository
 import com.teraper.printmaster.core.data.repository.OfflineCompaniesRepository
 import com.teraper.printmaster.core.data.repository.OfflinePaymentsRepository
+import com.teraper.printmaster.core.data.repository.OfflineOrdersRepository
 import com.teraper.printmaster.core.data.repository.OfflinePriceListRepository
+import com.teraper.printmaster.core.data.repository.OfflinePrintersRepository
+import com.teraper.printmaster.core.data.repository.OfflineRepairsRepository
 import com.teraper.printmaster.core.data.repository.SaveCompanyResult
 import com.teraper.printmaster.core.database.PrintMasterDatabase
 import com.teraper.printmaster.core.model.AccountMode
@@ -20,6 +24,9 @@ internal class TestRepos(clock: Clock = Clock.fixed(Instant.parse("2026-10-07T10
     val clients = OfflineClientsRepository(db, db.clientDao(), clock, companies)
     val payments = OfflinePaymentsRepository(db.ledgerDao(), db.clientDao(), db.companyDao(), clock, companies)
     val priceList = OfflinePriceListRepository(db, db.priceListDao())
+    val printers = OfflinePrintersRepository(db, db.catalogDao(), CatalogWriter(db.catalogDao()))
+    val orders = OfflineOrdersRepository(db.orderDao(), db.clientDao(), companies, clock)
+    val repairs = OfflineRepairsRepository(db, db.repairDao(), db.orderDao(), db.ledgerDao(), printers, clock)
 
     /** Registers as a master with one company and returns its id. */
     suspend fun register(companyName: String = "Main"): Long =

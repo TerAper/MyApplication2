@@ -14,6 +14,7 @@ import com.teraper.printmaster.feature.clients.printer.ModelStep
 import com.teraper.printmaster.feature.clients.printer.PrinterEditDialog
 import com.teraper.printmaster.feature.clients.printer.PrinterEditEvent
 import com.teraper.printmaster.feature.clients.printer.PrinterEditViewModel
+import com.teraper.printmaster.core.testing.FakePrintersRepository
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
