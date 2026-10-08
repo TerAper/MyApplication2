@@ -3,6 +3,9 @@
     <string name="core_designsystem_print_laser">Laser</string>
     <string name="core_designsystem_print_ink">Inkjet</string>
     <string name="core_designsystem_color_mono">Black/white</string>
+    <string name="core_designsystem_category_cartridge">Cartridge</string>
+    <string name="core_designsystem_category_printer">Printer</string>
+    <string name="core_designsystem_category_other">Other</string>
     <string name="core_designsystem_color_color">Color</string>
     <string name="core_designsystem_order_new">New</string>
     <string name="core_designsystem_order_in_progress">In progress</string>

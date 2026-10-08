@@ -6,6 +6,7 @@ import com.teraper.printmaster.core.database.dao.ClientDao
 import com.teraper.printmaster.core.database.dao.CompanyDao
 import com.teraper.printmaster.core.database.dao.LedgerDao
 import com.teraper.printmaster.core.database.dao.OrderDao
+import com.teraper.printmaster.core.database.dao.PriceListDao
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -28,4 +29,7 @@ internal object DaosModule {
 
     @Provides
     fun provideOrderDao(database: PrintMasterDatabase): OrderDao = database.orderDao()
+
+    @Provides
+    fun providePriceListDao(database: PrintMasterDatabase): PriceListDao = database.priceListDao()
 }

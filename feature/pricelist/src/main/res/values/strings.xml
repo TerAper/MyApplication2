@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="feature_pricelist_title">Գնացուցակ</string>
+    <string name="feature_pricelist_back">Հետ</string>
+    <string name="feature_pricelist_search_hint">Անվանում կամ նկարագրություն</string>
+    <string name="feature_pricelist_clear_search">Մաքրել</string>
+    <string name="feature_pricelist_all">Բոլորը %1$d</string>
+    <string name="feature_pricelist_empty_title">Գնացուցակը դատարկ է</string>
+    <string name="feature_pricelist_empty_message">Ավելացրեք ծառայություններն ու պահեստամասերը՝ գնով և ինքնարժեքով։ Այցի ժամանակ դրանք կընտրեք այստեղից։</string>
+    <string name="feature_pricelist_no_results">Ոչինչ չի գտնվել</string>
+    <string name="feature_pricelist_add">Ավելացնել</string>
+    <string name="feature_pricelist_new_item">Նոր կետ</string>
+    <string name="feature_pricelist_edit_item">Գնացուցակի կետ</string>
+    <string name="feature_pricelist_profit_short">շահույթ %1$s</string>
+    <string name="feature_pricelist_cancel">Չեղարկել</string>
+    <string name="feature_pricelist_delete">Ջնջել</string>
+    <string name="feature_pricelist_save">Պահպանել</string>
+    <string name="feature_pricelist_name">Անվանում</string>
+    <string name="feature_pricelist_name_hint">օր.՝ Լիցքավորում 85A</string>
+    <string name="feature_pricelist_error_name">Նշեք անվանումը</string>
+    <string name="feature_pricelist_error_taken">Այս անունով կետ արդեն կա «%1$s» խմբում</string>
+    <string name="feature_pricelist_description">Նկարագրություն (ըստ ցանկության)</string>
+    <string name="feature_pricelist_description_hint">օր.՝ որ մոդելների համար է</string>
+    <string name="feature_pricelist_price">Գին</string>
+    <string name="feature_pricelist_cost">Ինքնարժեք</string>
+    <string name="feature_pricelist_error_price">Նշեք գինը</string>
+    <string name="feature_pricelist_cost_help">Ինքնարժեքը ձեր ծախսն է (փոշի, չիպ, պահեստամաս)։ Հաճախորդը այն չի տեսնում․ այն պետք է շահույթը հաշվելու համար։</string>
+    <string name="feature_pricelist_profit">Շահույթ</string>
+    <string name="feature_pricelist_margin">գնի %1$d%%-ը</string>
+    <string name="feature_pricelist_discard_title">Չպահպանե՞լ փոփոխությունները</string>
+    <string name="feature_pricelist_discard">Չպահպանել</string>
+    <string name="feature_pricelist_keep_editing">Շարունակել</string>
+    <string name="feature_pricelist_delete_title">Ջնջե՞լ կետը գնացուցակից</string>
+    <string name="feature_pricelist_delete_message">Արդեն կատարված աշխատանքներում այն կմնա նույն անունով և գնով։</string>
+</resources>

@@ -50,6 +50,7 @@ private data class MoreSection(@param:StringRes val title: Int, val items: List<
 
 /** Where the More menu can go; the app wires each to its feature. */
 data class MoreActions(
+    val onOpenPriceList: () -> Unit = {},
     val onOpenCatalog: () -> Unit = {},
     val onOpenCompanies: () -> Unit = {},
     val onOpenCompany: (Long) -> Unit = {},
@@ -88,7 +89,7 @@ internal fun MoreScreen(state: MoreUiState, actions: MoreActions, modifier: Modi
         MoreSection(
             R.string.feature_more_section_work,
             listOf(
-                MoreItem(PmIcons.PriceList, R.string.feature_more_price_list, R.string.feature_more_price_list_sub, null),
+                MoreItem(PmIcons.PriceList, R.string.feature_more_price_list, R.string.feature_more_price_list_sub, actions.onOpenPriceList),
                 MoreItem(PmIcons.Printer, R.string.feature_more_catalog, R.string.feature_more_catalog_sub, onOpenCatalog),
             ),
         ),

@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="feature_pricelist_title">Price list</string>
+    <string name="feature_pricelist_back">Back</string>
+    <string name="feature_pricelist_search_hint">Name or description</string>
+    <string name="feature_pricelist_clear_search">Clear</string>
+    <string name="feature_pricelist_all">All %1$d</string>
+    <string name="feature_pricelist_empty_title">The price list is empty</string>
+    <string name="feature_pricelist_empty_message">Add your services and parts with price and cost. During a visit you will pick them from here.</string>
+    <string name="feature_pricelist_no_results">Nothing found</string>
+    <string name="feature_pricelist_add">Add</string>
+    <string name="feature_pricelist_new_item">New item</string>
+    <string name="feature_pricelist_edit_item">Price item</string>
+    <string name="feature_pricelist_profit_short">profit %1$s</string>
+    <string name="feature_pricelist_cancel">Cancel</string>
+    <string name="feature_pricelist_delete">Delete</string>
+    <string name="feature_pricelist_save">Save</string>
+    <string name="feature_pricelist_name">Name</string>
+    <string name="feature_pricelist_name_hint">e.g. Refill 85A</string>
+    <string name="feature_pricelist_error_name">Enter a name</string>
+    <string name="feature_pricelist_error_taken">%1$s already has an item with this name</string>
+    <string name="feature_pricelist_description">Description (optional)</string>
+    <string name="feature_pricelist_description_hint">e.g. which models it is for</string>
+    <string name="feature_pricelist_price">Price</string>
+    <string name="feature_pricelist_cost">Cost</string>
+    <string name="feature_pricelist_error_price">Enter the price</string>
+    <string name="feature_pricelist_cost_help">Cost is what it costs you (toner, chip, part). The client never sees it; it is used to work out profit.</string>
+    <string name="feature_pricelist_profit">Profit</string>
+    <string name="feature_pricelist_margin">%1$d%% of the price</string>
+    <string name="feature_pricelist_discard_title">Discard changes?</string>
+    <string name="feature_pricelist_discard">Discard</string>
+    <string name="feature_pricelist_keep_editing">Keep editing</string>
+    <string name="feature_pricelist_delete_title">Delete this item from the price list?</string>
+    <string name="feature_pricelist_delete_message">Finished jobs keep its name and price as they were.</string>
+</resources>

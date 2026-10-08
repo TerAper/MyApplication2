@@ -29,6 +29,9 @@ import com.teraper.printmaster.feature.orders.navigation.ordersGraph
 import com.teraper.printmaster.feature.payments.navigation.MoneyEntryDestination
 import com.teraper.printmaster.feature.payments.navigation.navigateToMoneyEntry
 import com.teraper.printmaster.feature.payments.navigation.paymentsGraph
+import com.teraper.printmaster.feature.pricelist.navigation.PriceItemEditDestination
+import com.teraper.printmaster.feature.pricelist.navigation.navigateToPriceList
+import com.teraper.printmaster.feature.pricelist.navigation.priceListScreens
 import com.teraper.printmaster.feature.today.TodayActions
 import com.teraper.printmaster.feature.today.navigation.TodayDestination
 import com.teraper.printmaster.feature.today.navigation.todayScreen
@@ -67,12 +70,14 @@ fun PrintMasterNavHost(navController: NavHostController, modifier: Modifier = Mo
         )
         moreGraph(
             actions = MoreActions(
+                onOpenPriceList = navController::navigateToPriceList,
                 onOpenCatalog = navController::navigateToCatalog,
                 onOpenCompanies = navController::navigateToCompanies,
                 onOpenCompany = navController::navigateToCompany,
                 onOpenMasters = navController::navigateToMasters,
             ),
         ) {
+            priceListScreens(navController)
             catalogScreens(navController, onOpenClient = navController::openClientFromOtherTab)
             accountScreens(navController)
         }
@@ -96,6 +101,7 @@ private val fullScreenRoutes = listOf(
     ModelEditDestination::class,
     CompanyEditDestination::class,
     OrderEditDestination::class,
+    PriceItemEditDestination::class,
 )
 
 fun NavDestination?.isFullScreen(): Boolean = this != null && fullScreenRoutes.any { hasRoute(it) }

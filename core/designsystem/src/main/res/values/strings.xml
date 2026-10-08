@@ -3,6 +3,9 @@
     <string name="core_designsystem_print_laser">Լազերային</string>
     <string name="core_designsystem_print_ink">Թանաքային</string>
     <string name="core_designsystem_color_mono">Սև/սպիտակ</string>
+    <string name="core_designsystem_category_cartridge">Քարտրիջ</string>
+    <string name="core_designsystem_category_printer">Տպիչ</string>
+    <string name="core_designsystem_category_other">Այլ</string>
     <string name="core_designsystem_color_color">Գունավոր</string>
     <string name="core_designsystem_order_new">Նոր</string>
     <string name="core_designsystem_order_in_progress">Ընթացքում</string>
