@@ -116,4 +116,10 @@
     <string name="feature_clients_action_order">Պատվեր</string>
     <string name="feature_clients_new_order">Նոր պատվեր</string>
     <string name="feature_clients_no_orders">Պատվերներ դեռ չկան։</string>
+    <string name="feature_clients_section_calls">ԶԱՆԳԵՐ · %1$d</string>
+    <string name="feature_clients_calls_show_all">Ցույց տալ բոլոր %1$d-ը</string>
+    <string name="feature_clients_call_missing">Ձայնագրության ֆայլն այլևս այս հեռախոսում չէ։</string>
+    <string name="feature_clients_call_play">Նվագարկել</string>
+    <string name="feature_clients_call_pause">Դադար</string>
+    <string name="feature_clients_from_contacts">Հեռախոսագրքից</string>
 </resources>

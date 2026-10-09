@@ -12,6 +12,8 @@ import com.teraper.printmaster.feature.account.navigation.accountScreens
 import com.teraper.printmaster.feature.account.navigation.navigateToCompanies
 import com.teraper.printmaster.feature.account.navigation.navigateToCompany
 import com.teraper.printmaster.feature.account.navigation.navigateToMasters
+import com.teraper.printmaster.feature.calls.navigation.callsScreens
+import com.teraper.printmaster.feature.calls.navigation.navigateToCalls
 import com.teraper.printmaster.feature.catalog.navigation.ModelEditDestination
 import com.teraper.printmaster.feature.catalog.navigation.catalogScreens
 import com.teraper.printmaster.feature.catalog.navigation.navigateToCatalog
@@ -86,6 +88,7 @@ fun PrintMasterNavHost(navController: NavHostController, modifier: Modifier = Mo
                 onOpenReports = navController::navigateToReports,
                 onOpenDebtExport = navController::navigateToDebtExport,
                 onOpenSettings = navController::navigateToSettings,
+                onOpenCalls = navController::navigateToCalls,
             ),
         ) {
             priceListScreens(navController)
@@ -93,6 +96,7 @@ fun PrintMasterNavHost(navController: NavHostController, modifier: Modifier = Mo
             accountScreens(navController)
             settingsScreens(navController)
             reportsScreens(navController, onOpenClient = navController::openClientFromOtherTab)
+            callsScreens(navController, onOpenClient = navController::openClientFromOtherTab)
         }
     }
 }

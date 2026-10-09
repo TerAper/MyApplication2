@@ -19,6 +19,7 @@ import com.teraper.printmaster.core.testing.FakeOrdersRepository
 import com.teraper.printmaster.core.testing.FakePriceListRepository
 import com.teraper.printmaster.core.testing.FakePrintersRepository
 import com.teraper.printmaster.core.testing.FakeRepairsRepository
+import com.teraper.printmaster.core.testing.FakeCallRecordingsRepository
 import com.teraper.printmaster.core.testing.MainDispatcherRule
 import com.teraper.printmaster.feature.orders.detail.OrderDetailDialog
 import com.teraper.printmaster.feature.orders.detail.OrderDetailUiState
@@ -126,7 +127,7 @@ class RepairViewModelsTest {
     @Test
     fun detailFinishesWithWorkAndAsksBeforeReopening() = runTest {
         repairs.repairs.value = listOf(Repair(3, 1, lines = listOf(RepairLine(1, "Refill", Money.ofDram(3_000), quantity = 2))))
-        val vm = OrderDetailViewModel(SavedStateHandle(mapOf("orderId" to 1L)), orders, repairs, clock)
+        val vm = OrderDetailViewModel(SavedStateHandle(mapOf("orderId" to 1L)), orders, repairs, FakeCallRecordingsRepository(), clock)
         backgroundScope.launch(UnconfinedTestDispatcher()) { vm.uiState.collect {} }
         val loaded = { vm.uiState.value as OrderDetailUiState.Loaded }
         assertTrue(loaded().canFinishWithWork)

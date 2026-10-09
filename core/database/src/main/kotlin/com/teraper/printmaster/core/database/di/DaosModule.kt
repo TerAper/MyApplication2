@@ -1,6 +1,7 @@
 package com.teraper.printmaster.core.database.di
 
 import com.teraper.printmaster.core.database.PrintMasterDatabase
+import com.teraper.printmaster.core.database.dao.CallRecordingDao
 import com.teraper.printmaster.core.database.dao.CatalogDao
 import com.teraper.printmaster.core.database.dao.ClientDao
 import com.teraper.printmaster.core.database.dao.CompanyDao
@@ -40,4 +41,7 @@ internal object DaosModule {
 
     @Provides
     fun provideReportDao(database: PrintMasterDatabase): ReportDao = database.reportDao()
+
+    @Provides
+    fun provideCallRecordingDao(database: PrintMasterDatabase): CallRecordingDao = database.callRecordingDao()
 }

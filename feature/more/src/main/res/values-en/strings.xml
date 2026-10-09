@@ -9,6 +9,8 @@
     <string name="feature_more_price_list_sub">Cartridge · Printer · Other</string>
     <string name="feature_more_catalog">Printer catalog</string>
     <string name="feature_more_catalog_sub">Brands, models, cartridges, chips</string>
+    <string name="feature_more_calls">Call recordings</string>
+    <string name="feature_more_calls_sub">Attach calls to clients</string>
     <string name="feature_more_reports">Reports</string>
     <string name="feature_more_reports_sub">Income: cash vs bank</string>
     <string name="feature_more_export">Export debt report</string>

@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="feature_calls_title">Զանգերի ձայնագրություններ</string>
+    <string name="feature_calls_back">Հետ</string>
+    <string name="feature_calls_refresh">Թարմացնել</string>
+    <string name="feature_calls_setup_title">Կցել զանգերը հաճախորդներին</string>
+    <string name="feature_calls_setup_message">Ընտրեք այն թղթապանակը, որտեղ հեռախոսը պահում է զանգերի ձայնագրությունները (Samsung-ում՝ Recordings › Call)։ Յուրաքանչյուր զանգից հետո հավելվածը կգտնի նոր ձայնագրությունը և հեռախոսահամարով կկցի այն հաճախորդի քարտին։</string>
+    <string name="feature_calls_pick_folder">Ընտրել ձայնագրությունների թղթապանակը</string>
+    <string name="feature_calls_folder">Թղթապանակ՝ %1$s</string>
+    <string name="feature_calls_change">Փոխել</string>
+    <string name="feature_calls_folder_error">Այդ թղթապանակը հնարավոր չէ կարդալ։ Ընտրեք այն նորից։</string>
+    <string name="feature_calls_contacts_message">Ձեր կոնտակտների ձայնագրություններն անվանված են անունով, ոչ թե համարով։ Թույլատրեք հեռախոսագիրքը, որ հավելվածը գտնի նրանց համարները։</string>
+    <string name="feature_calls_contacts_off">Հեռախոսագիրքը թույլատրված չէ</string>
+    <string name="feature_calls_allow">Թույլատրել</string>
+    <string name="feature_calls_tab_unmatched">Չկցված · %1$d</string>
+    <string name="feature_calls_tab_all">Բոլորը · %1$d</string>
+    <string name="feature_calls_all_matched">Բոլոր զանգերը կցված են</string>
+    <string name="feature_calls_all_matched_message">Այստեղ կհայտնվեն այն համարների զանգերը, որոնք հաճախորդ չեն՝ կցելու կամ անտեսելու համար։</string>
+    <string name="feature_calls_none">Ձայնագրություններ դեռ չկան</string>
+    <string name="feature_calls_none_message">Նոր ձայնագրություններն այստեղ կհայտնվեն յուրաքանչյուր զանգից հետո։</string>
+    <string name="feature_calls_ignore">Անտեսել</string>
+    <string name="feature_calls_unignore">Վերադարձնել</string>
+    <string name="feature_calls_ignored">Անտեսված</string>
+    <string name="feature_calls_attach">Կցել հաճախորդին</string>
+    <string name="feature_calls_attach_title">Ում զանգն է՝ %1$s</string>
+    <string name="feature_calls_search_hint">Անուն, ՀՎՀՀ կամ հեռախոս</string>
+    <string name="feature_calls_clear">Մաքրել</string>
+    <string name="feature_calls_open_client">Բացել հաճախորդին</string>
+    <string name="feature_calls_play">Նվագարկել</string>
+    <string name="feature_calls_pause">Դադար</string>
+    <string name="feature_calls_file_missing">Ձայնագրության ֆայլն այլևս այս հեռախոսում չէ։</string>
+</resources>

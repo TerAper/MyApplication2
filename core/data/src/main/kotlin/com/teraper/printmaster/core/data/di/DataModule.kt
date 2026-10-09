@@ -2,6 +2,7 @@ package com.teraper.printmaster.core.data.di
 
 import com.teraper.printmaster.core.data.repository.AndroidLanguageRepository
 import com.teraper.printmaster.core.data.repository.BackupRepository
+import com.teraper.printmaster.core.data.repository.CallRecordingsRepository
 import com.teraper.printmaster.core.data.repository.CatalogRepository
 import com.teraper.printmaster.core.data.repository.ClientsRepository
 import com.teraper.printmaster.core.data.repository.CompaniesRepository
@@ -13,6 +14,7 @@ import com.teraper.printmaster.core.data.repository.OfflineOrdersRepository
 import com.teraper.printmaster.core.data.repository.OrdersRepository
 import com.teraper.printmaster.core.data.repository.LanguageRepository
 import com.teraper.printmaster.core.data.repository.OfflineBackupRepository
+import com.teraper.printmaster.core.data.repository.OfflineCallRecordingsRepository
 import com.teraper.printmaster.core.data.repository.OfflineCatalogRepository
 import com.teraper.printmaster.core.data.repository.OfflineClientsRepository
 import com.teraper.printmaster.core.data.repository.OfflinePaymentsRepository
@@ -70,6 +72,9 @@ internal abstract class DataModule {
 
     @Binds
     abstract fun bindLanguageRepository(impl: AndroidLanguageRepository): LanguageRepository
+
+    @Binds
+    abstract fun bindCallRecordingsRepository(impl: OfflineCallRecordingsRepository): CallRecordingsRepository
 
     companion object {
         @Provides

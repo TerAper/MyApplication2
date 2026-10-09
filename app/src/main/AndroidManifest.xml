@@ -2,6 +2,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <!-- Turns a contact name in a recording's file name into a phone number. -->
+    <uses-permission android:name="android.permission.READ_CONTACTS" />
+
     <application
         android:name=".PrintMasterApplication"
         android:allowBackup="true"

@@ -92,4 +92,8 @@
     <string name="feature_orders_reopen_title">Reopen the order?</string>
     <string name="feature_orders_reopen_message">The amount charged when it was finished (and the cash payment) will be removed from the client\'s history, so you can change the work.</string>
     <string name="feature_orders_finish_cancel">Cancel order</string>
+    <string name="feature_orders_calls_that_day">CALLS THAT DAY · %1$d</string>
+    <string name="feature_orders_call_missing">The recording file is not on this phone any more.</string>
+    <string name="feature_orders_call_play">Play</string>
+    <string name="feature_orders_call_pause">Pause</string>
 </resources>

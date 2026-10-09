@@ -9,6 +9,8 @@
     <string name="feature_more_price_list_sub">Քարտրիջ · Տպիչ · Այլ</string>
     <string name="feature_more_catalog">Տպիչների կատալոգ</string>
     <string name="feature_more_catalog_sub">Բրենդներ, մոդելներ, քարտրիջներ, չիպեր</string>
+    <string name="feature_more_calls">Զանգերի ձայնագրություններ</string>
+    <string name="feature_more_calls_sub">Կցել զանգերը հաճախորդներին</string>
     <string name="feature_more_reports">Հաշվետվություններ</string>
     <string name="feature_more_reports_sub">Եկամուտ՝ կանխիկ և անկանխիկ</string>
     <string name="feature_more_export">Պարտքերի արտահանում</string>

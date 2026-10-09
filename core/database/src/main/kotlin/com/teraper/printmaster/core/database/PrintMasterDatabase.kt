@@ -1,10 +1,12 @@
 package com.teraper.printmaster.core.database
 
 import android.content.Context
+import androidx.room.AutoMigration
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.sqlite.db.SupportSQLiteDatabase
+import com.teraper.printmaster.core.database.dao.CallRecordingDao
 import com.teraper.printmaster.core.database.dao.CatalogDao
 import com.teraper.printmaster.core.database.dao.ClientDao
 import com.teraper.printmaster.core.database.dao.CompanyDao
@@ -15,6 +17,8 @@ import com.teraper.printmaster.core.database.dao.RepairDao
 import com.teraper.printmaster.core.database.dao.ReportDao
 import com.teraper.printmaster.core.database.entity.AppProfileEntity
 import com.teraper.printmaster.core.database.entity.BrandEntity
+import com.teraper.printmaster.core.database.entity.CallRecordingClientEntity
+import com.teraper.printmaster.core.database.entity.CallRecordingEntity
 import com.teraper.printmaster.core.database.entity.CartridgeChipCrossRef
 import com.teraper.printmaster.core.database.entity.CartridgeEntity
 import com.teraper.printmaster.core.database.entity.ChargeEntity
@@ -60,9 +64,15 @@ import com.teraper.printmaster.core.database.entity.RepairPartEntity
         ImportBatchEntity::class,
         ChargeEntity::class,
         PaymentEntity::class,
+        CallRecordingEntity::class,
+        CallRecordingClientEntity::class,
     ],
     version = PrintMasterDatabase.VERSION,
     exportSchema = true,
+    autoMigrations = [
+        // 3: call recordings.
+        AutoMigration(from = 2, to = 3),
+    ],
 )
 abstract class PrintMasterDatabase : RoomDatabase() {
     abstract fun clientDao(): ClientDao
@@ -73,9 +83,10 @@ abstract class PrintMasterDatabase : RoomDatabase() {
     abstract fun priceListDao(): PriceListDao
     abstract fun repairDao(): RepairDao
     abstract fun reportDao(): ReportDao
+    abstract fun callRecordingDao(): CallRecordingDao
 
     companion object {
-        const val VERSION = 2
+        const val VERSION = 3
 
         /** Oldest version a backup file may have; older ones only existed on development phones. */
         const val OLDEST_RESTORABLE_VERSION = 2

@@ -94,6 +94,26 @@ class ClientEditViewModel @Inject constructor(
     fun onRemoveContact(list: ContactList, index: Int) =
         editContacts(list) { rows -> rows.filterIndexed { i, _ -> i != index }.ifEmpty { listOf(ContactDraft()) } }
 
+    /**
+     * A number picked from the phone book goes into phone row [index] (null = a new row, or the
+     * first empty one). The contact's name becomes the client's name if none was typed yet,
+     * otherwise the phone's label (e.g. "Armen accountant").
+     */
+    fun onContactPicked(index: Int?, contactName: String?, number: String) {
+        val name = contactName?.trim().orEmpty()
+        editDraft { draft ->
+            val takeName = draft.name.isBlank() && name.isNotEmpty()
+            val picked = ContactDraft(value = number.trim(), label = if (takeName) "" else name)
+            val target = index ?: draft.phones.indexOfFirst { it.value.isBlank() }.takeIf { it >= 0 }
+            val phones = if (target == null) {
+                draft.phones + picked
+            } else {
+                draft.phones.mapIndexed { i, row -> if (i == target) row.copy(value = picked.value, label = row.label.ifBlank { picked.label }) else row }
+            }
+            draft.copy(name = if (takeName) name else draft.name, phones = phones)
+        }
+    }
+
     fun onSave() {
         val state = _uiState.value
         if (state.isSaving || state.isLoading) return

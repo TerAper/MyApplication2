@@ -25,6 +25,24 @@ class ClientEditViewModelTest {
     private fun editVm(id: Long) = ClientEditViewModel(SavedStateHandle(mapOf("clientId" to id)), repo)
 
     @Test
+    fun pickedContactFillsNameAndPhone() = runTest {
+        val vm = newVm()
+        vm.onContactPicked(null, "Armen", "077 00 10 20")
+        assertEquals("Armen", vm.uiState.value.draft.name)
+        assertEquals(listOf("077 00 10 20" to ""), vm.uiState.value.draft.phones.map { it.value to it.label })
+
+        // Name already there: the contact name becomes the phone's label, in a new row.
+        vm.onContactPicked(null, "Armen accountant", "091 222222")
+        assertEquals("Armen", vm.uiState.value.draft.name)
+        assertEquals("091 222222" to "Armen accountant", vm.uiState.value.draft.phones[1].let { it.value to it.label })
+
+        // Picked for a given row: replaces that number.
+        vm.onContactPicked(0, "Armen", "093 333333")
+        assertEquals("093 333333", vm.uiState.value.draft.phones[0].value)
+        assertEquals(2, vm.uiState.value.draft.phones.size)
+    }
+
+    @Test
     fun errorsShowOnlyAfterSaveAndUpdateLive() = runTest {
         val vm = newVm()
         vm.onTaxIdChange("12")

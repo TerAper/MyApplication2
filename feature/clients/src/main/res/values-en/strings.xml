@@ -116,4 +116,10 @@
     <string name="feature_clients_action_order">Order</string>
     <string name="feature_clients_new_order">New order</string>
     <string name="feature_clients_no_orders">No orders yet.</string>
+    <string name="feature_clients_section_calls">CALLS · %1$d</string>
+    <string name="feature_clients_calls_show_all">Show all %1$d</string>
+    <string name="feature_clients_call_missing">The recording file is not on this phone any more.</string>
+    <string name="feature_clients_call_play">Play</string>
+    <string name="feature_clients_call_pause">Pause</string>
+    <string name="feature_clients_from_contacts">From contacts</string>
 </resources>

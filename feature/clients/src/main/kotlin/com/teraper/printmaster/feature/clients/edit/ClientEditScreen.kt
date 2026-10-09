@@ -1,6 +1,14 @@
 package com.teraper.printmaster.feature.clients.edit
 
+import android.app.Activity
+import android.content.ActivityNotFoundException
+import android.content.Context
+import android.content.Intent
+import android.net.Uri
+import android.provider.ContactsContract
 import androidx.activity.compose.BackHandler
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContract
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -19,8 +27,12 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
@@ -48,6 +60,13 @@ internal fun ClientEditRoute(
     viewModel: ClientEditViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val context = LocalContext.current
+    // Which phone row the picked contact goes into; -1 = a new row.
+    var pickFor by rememberSaveable { mutableIntStateOf(-1) }
+    val contactPicker = rememberLauncherForActivityResult(PickPhoneNumber()) { uri ->
+        val picked = uri?.let { context.readPickedPhone(it) } ?: return@rememberLauncherForActivityResult
+        viewModel.onContactPicked(pickFor.takeIf { it >= 0 }, picked.first, picked.second)
+    }
 
     LaunchedEffect(viewModel) {
         viewModel.events.collect { event ->
@@ -71,6 +90,14 @@ internal fun ClientEditRoute(
             onContactLabelChange = viewModel::onContactLabelChange,
             onAddContact = viewModel::onAddContact,
             onRemoveContact = viewModel::onRemoveContact,
+            onPickContact = { index ->
+                pickFor = index ?: -1
+                try {
+                    contactPicker.launch(Unit)
+                } catch (_: ActivityNotFoundException) {
+                    // No contacts app on this phone.
+                }
+            },
             onSave = viewModel::onSave,
             onDiscardConfirmed = viewModel::onDiscardConfirmed,
             onDiscardDismissed = viewModel::onDiscardDismissed,
@@ -89,6 +116,8 @@ internal data class ClientEditActions(
     val onContactLabelChange: (ContactList, Int, String) -> Unit = { _, _, _ -> },
     val onAddContact: (ContactList) -> Unit = {},
     val onRemoveContact: (ContactList, Int) -> Unit = { _, _ -> },
+    /** Phone row index, or null for a new row. */
+    val onPickContact: (Int?) -> Unit = {},
     val onSave: () -> Unit = {},
     val onDiscardConfirmed: () -> Unit = {},
     val onDiscardDismissed: () -> Unit = {},
@@ -228,13 +257,26 @@ private fun ContactSection(
                         label = stringResource(R.string.feature_clients_field_contact_label),
                     )
                 }
+                if (list == ContactList.PHONES) {
+                    IconButton(onClick = { actions.onPickContact(index) }, modifier = Modifier.padding(top = 8.dp)) {
+                        Icon(PmIcons.Contacts, contentDescription = stringResource(R.string.feature_clients_from_contacts), tint = PmTheme.colors.primary)
+                    }
+                }
                 IconButton(onClick = { actions.onRemoveContact(list, index) }, modifier = Modifier.padding(top = 8.dp)) {
                     Icon(PmIcons.Close, contentDescription = stringResource(R.string.feature_clients_remove), tint = PmTheme.colors.inkMuted)
                 }
             }
         }
-        TextButton(onClick = { actions.onAddContact(list) }) {
-            Text(addText, style = MaterialTheme.typography.labelLarge)
+        Row {
+            TextButton(onClick = { actions.onAddContact(list) }) {
+                Text(addText, style = MaterialTheme.typography.labelLarge)
+            }
+            if (list == ContactList.PHONES) {
+                TextButton(onClick = { actions.onPickContact(null) }) {
+                    Icon(PmIcons.Contacts, contentDescription = null, modifier = Modifier.padding(end = 6.dp))
+                    Text(stringResource(R.string.feature_clients_from_contacts), style = MaterialTheme.typography.labelLarge)
+                }
+            }
         }
     }
 }
@@ -251,4 +293,25 @@ private fun ClientEditScreenPreview() {
             actions = ClientEditActions(),
         )
     }
+}
+
+/** Opens the phone book to pick one phone number; Android lets us read just that one, no permission needed. */
+private class PickPhoneNumber : ActivityResultContract<Unit, Uri?>() {
+    override fun createIntent(context: Context, input: Unit) =
+        Intent(Intent.ACTION_PICK, ContactsContract.CommonDataKinds.Phone.CONTENT_URI)
+
+    override fun parseResult(resultCode: Int, intent: Intent?): Uri? = intent?.data.takeIf { resultCode == Activity.RESULT_OK }
+}
+
+/** Contact name and number of the picked phone row. */
+private fun Context.readPickedPhone(uri: Uri): Pair<String?, String>? = try {
+    contentResolver.query(
+        uri,
+        arrayOf(ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME, ContactsContract.CommonDataKinds.Phone.NUMBER),
+        null, null, null,
+    )?.use { cursor ->
+        if (cursor.moveToFirst()) cursor.getString(1)?.let { number -> cursor.getString(0) to number } else null
+    }
+} catch (_: SecurityException) {
+    null
 }

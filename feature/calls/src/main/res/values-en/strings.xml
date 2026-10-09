@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="feature_calls_title">Call recordings</string>
+    <string name="feature_calls_back">Back</string>
+    <string name="feature_calls_refresh">Refresh</string>
+    <string name="feature_calls_setup_title">Attach calls to clients</string>
+    <string name="feature_calls_setup_message">Pick the folder where your phone saves call recordings (on Samsung: Recordings › Call). After every call the app finds the new recording and puts it on the client\'s card by phone number.</string>
+    <string name="feature_calls_pick_folder">Pick the recordings folder</string>
+    <string name="feature_calls_folder">Folder: %1$s</string>
+    <string name="feature_calls_change">Change</string>
+    <string name="feature_calls_folder_error">That folder can\'t be read. Pick it again.</string>
+    <string name="feature_calls_contacts_message">Recordings of your contacts are named by contact name, not number. Allow the phone book so the app can find their numbers.</string>
+    <string name="feature_calls_contacts_off">Phone book not allowed</string>
+    <string name="feature_calls_allow">Allow</string>
+    <string name="feature_calls_tab_unmatched">Not matched · %1$d</string>
+    <string name="feature_calls_tab_all">All · %1$d</string>
+    <string name="feature_calls_all_matched">All calls are matched</string>
+    <string name="feature_calls_all_matched_message">Calls from numbers that aren\'t clients show up here, to attach or ignore.</string>
+    <string name="feature_calls_none">No recordings yet</string>
+    <string name="feature_calls_none_message">New recordings appear here after each call.</string>
+    <string name="feature_calls_ignore">Ignore</string>
+    <string name="feature_calls_unignore">Restore</string>
+    <string name="feature_calls_ignored">Ignored</string>
+    <string name="feature_calls_attach">Attach to a client</string>
+    <string name="feature_calls_attach_title">Whose call: %1$s</string>
+    <string name="feature_calls_search_hint">Name, ՀՎՀՀ or phone</string>
+    <string name="feature_calls_clear">Clear</string>
+    <string name="feature_calls_open_client">Open client</string>
+    <string name="feature_calls_play">Play</string>
+    <string name="feature_calls_pause">Pause</string>
+    <string name="feature_calls_file_missing">The recording file is not on this phone any more.</string>
+</resources>

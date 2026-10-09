@@ -92,4 +92,8 @@
     <string name="feature_orders_reopen_title">Նորից բացե՞լ պատվերը</string>
     <string name="feature_orders_reopen_message">Ավարտելիս գրանցված գումարը (և կանխիկ վճարումը) կհեռացվեն հաճախորդի պատմությունից, որ կարողանաք փոխել աշխատանքը։</string>
     <string name="feature_orders_finish_cancel">Չեղարկել</string>
+    <string name="feature_orders_calls_that_day">ԶԱՆԳԵՐ ԱՅԴ ՕՐԸ · %1$d</string>
+    <string name="feature_orders_call_missing">Ձայնագրության ֆայլն այլևս այս հեռախոսում չէ։</string>
+    <string name="feature_orders_call_play">Նվագարկել</string>
+    <string name="feature_orders_call_pause">Դադար</string>
 </resources>

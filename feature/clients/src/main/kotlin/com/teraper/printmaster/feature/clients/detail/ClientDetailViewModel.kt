@@ -3,11 +3,13 @@ package com.teraper.printmaster.feature.clients.detail
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.teraper.printmaster.core.data.repository.CallRecordingsRepository
 import com.teraper.printmaster.core.data.repository.ClientsRepository
 import com.teraper.printmaster.core.data.repository.DeleteClientResult
 import com.teraper.printmaster.core.data.repository.PaymentsRepository
 import com.teraper.printmaster.core.data.repository.OrdersRepository
 import com.teraper.printmaster.core.data.repository.PrintersRepository
+import com.teraper.printmaster.core.model.CallRecording
 import com.teraper.printmaster.core.model.ClientPrinter
 import com.teraper.printmaster.core.model.ClientSummary
 import com.teraper.printmaster.core.model.LedgerEntry
@@ -41,6 +43,10 @@ sealed interface ClientDetailUiState {
         val today: LocalDate? = null,
         val tab: ClientTab = ClientTab.INFO,
         val dialog: ClientDetailDialog? = null,
+        /** Recorded calls with this client, newest first. */
+        val calls: List<CallRecording> = emptyList(),
+        val showAllCalls: Boolean = false,
+        val playing: CallRecording? = null,
     ) : ClientDetailUiState
 }
 
@@ -61,6 +67,7 @@ class ClientDetailViewModel @Inject constructor(
     private val paymentsRepository: PaymentsRepository,
     printersRepository: PrintersRepository,
     ordersRepository: OrdersRepository,
+    callRecordingsRepository: CallRecordingsRepository,
     clock: Clock,
 ) : ViewModel() {
 
@@ -70,6 +77,8 @@ class ClientDetailViewModel @Inject constructor(
     private val dialog = MutableStateFlow<ClientDetailDialog?>(null)
     private val tab = MutableStateFlow(ClientTab.INFO)
     private val deleting = MutableStateFlow(false)
+    private val showAllCalls = MutableStateFlow(false)
+    private val playing = MutableStateFlow<CallRecording?>(null)
 
     private val _events = Channel<ClientDetailEvent>(Channel.BUFFERED)
     val events: Flow<ClientDetailEvent> = _events.receiveAsFlow()
@@ -79,6 +88,7 @@ class ClientDetailViewModel @Inject constructor(
         val ledger: List<LedgerEntry>,
         val printers: List<ClientPrinter>,
         val orders: List<Order>,
+        val calls: List<CallRecording>,
     )
 
     private val records = combine(
@@ -86,18 +96,25 @@ class ClientDetailViewModel @Inject constructor(
         paymentsRepository.observeLedger(clientId),
         printersRepository.observeClientPrinters(clientId),
         ordersRepository.observeClientOrders(clientId),
+        callRecordingsRepository.observeClientRecordings(clientId),
         ::Records,
     )
+
+    private val callsView = combine(showAllCalls, playing) { all, playing -> all to playing }
 
     val uiState: StateFlow<ClientDetailUiState> = combine(
         records,
         tab,
         dialog,
         deleting,
-    ) { records, tab, dialog, deleting ->
+        callsView,
+    ) { records, tab, dialog, deleting, (showAll, playing) ->
         val summary = records.summary
         when {
-            summary != null -> ClientDetailUiState.Loaded(summary, records.ledger, records.printers, records.orders, today, tab, dialog)
+            summary != null -> ClientDetailUiState.Loaded(
+                summary, records.ledger, records.printers, records.orders, today, tab, dialog,
+                calls = records.calls, showAllCalls = showAll, playing = playing,
+            )
             // Just deleted: keep showing Loading for the moment before the screen closes.
             deleting -> ClientDetailUiState.Loading
             else -> ClientDetailUiState.NotFound
@@ -105,6 +122,12 @@ class ClientDetailViewModel @Inject constructor(
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ClientDetailUiState.Loading)
 
     fun onTabSelected(tab: ClientTab) = this.tab.update { tab }
+
+    fun onShowAllCalls() = showAllCalls.update { true }
+
+    fun onPlayCall(recording: CallRecording) = playing.update { recording }
+
+    fun onStopCall() = playing.update { null }
 
     fun onDeleteClick() = dialog.update { ClientDetailDialog.ConfirmDelete }
 

@@ -15,17 +15,23 @@ import androidx.compose.material.icons.rounded.Call
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.CloudUpload
+import androidx.compose.material.icons.rounded.Contacts
 import androidx.compose.material.icons.rounded.Delete
 import androidx.compose.material.icons.rounded.Download
 import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material.icons.rounded.Engineering
 import androidx.compose.material.icons.rounded.ExpandMore
+import androidx.compose.material.icons.rounded.Folder
 import androidx.compose.material.icons.rounded.GridView
 import androidx.compose.material.icons.rounded.Group
 import androidx.compose.material.icons.rounded.History
 import androidx.compose.material.icons.rounded.Home
 import androidx.compose.material.icons.rounded.Language
+import androidx.compose.material.icons.rounded.Link
+import androidx.compose.material.icons.rounded.Mic
+import androidx.compose.material.icons.rounded.Pause
 import androidx.compose.material.icons.rounded.Place
+import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.Print
 import androidx.compose.material.icons.rounded.Remove
 import androidx.compose.material.icons.rounded.Search
@@ -77,4 +83,10 @@ object PmIcons {
     val Warning: ImageVector = Icons.Rounded.WarningAmber
     val Language: ImageVector = Icons.Rounded.Language
     val Share: ImageVector = Icons.Rounded.Share
+    val Play: ImageVector = Icons.Rounded.PlayArrow
+    val Pause: ImageVector = Icons.Rounded.Pause
+    val Recording: ImageVector = Icons.Rounded.Mic
+    val Contacts: ImageVector = Icons.Rounded.Contacts
+    val Folder: ImageVector = Icons.Rounded.Folder
+    val Link: ImageVector = Icons.Rounded.Link
 }

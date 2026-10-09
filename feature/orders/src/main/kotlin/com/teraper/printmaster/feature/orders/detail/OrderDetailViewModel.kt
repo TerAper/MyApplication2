@@ -3,20 +3,27 @@ package com.teraper.printmaster.feature.orders.detail
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.teraper.printmaster.core.data.repository.CallRecordingsRepository
 import com.teraper.printmaster.core.data.repository.DeleteOrderResult
 import com.teraper.printmaster.core.data.repository.OrdersRepository
 import com.teraper.printmaster.core.data.repository.RepairsRepository
+import com.teraper.printmaster.core.model.CallRecording
 import com.teraper.printmaster.core.model.Order
 import com.teraper.printmaster.core.model.OrderStatus
 import com.teraper.printmaster.core.model.OrderWork
 import com.teraper.printmaster.feature.orders.navigation.ORDER_ID_ARG
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -35,6 +42,9 @@ sealed interface OrderDetailUiState {
         val today: LocalDate,
         val work: OrderWork = OrderWork(),
         val dialog: OrderDetailDialog? = null,
+        /** Recorded calls with the client on the order's day. */
+        val calls: List<CallRecording> = emptyList(),
+        val playing: CallRecording? = null,
     ) : OrderDetailUiState {
         /** Work can be added or changed only while the order is open. */
         val canEditWork: Boolean get() = order.isOpen && !work.isBilled
@@ -48,11 +58,13 @@ sealed interface OrderDetailEvent {
     data object Deleted : OrderDetailEvent
 }
 
+@OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class OrderDetailViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val ordersRepository: OrdersRepository,
     private val repairsRepository: RepairsRepository,
+    callRecordingsRepository: CallRecordingsRepository,
     clock: Clock,
 ) : ViewModel() {
 
@@ -60,18 +72,31 @@ class OrderDetailViewModel @Inject constructor(
     private val today = LocalDate.now(clock)
     private val dialog = MutableStateFlow<OrderDetailDialog?>(null)
     private val deleting = MutableStateFlow(false)
+    private val playing = MutableStateFlow<CallRecording?>(null)
 
     private val _events = Channel<OrderDetailEvent>(Channel.BUFFERED)
     val events: Flow<OrderDetailEvent> = _events.receiveAsFlow()
 
+    private val order = ordersRepository.observeOrder(orderId)
+
+    private val calls = order.map { it?.clientId to it?.date }.distinctUntilChanged().flatMapLatest { (clientId, date) ->
+        if (clientId == null) {
+            flowOf(emptyList())
+        } else {
+            callRecordingsRepository.observeClientRecordings(clientId).map { list -> list.filter { it.startedAt.toLocalDate() == date } }
+        }
+    }
+
+    private val view = combine(dialog, deleting, playing) { dialog, deleting, playing -> Triple(dialog, deleting, playing) }
+
     val uiState: StateFlow<OrderDetailUiState> = combine(
-        ordersRepository.observeOrder(orderId),
+        order,
         repairsRepository.observeOrderWork(orderId),
-        dialog,
-        deleting,
-    ) { order, work, dialog, deleting ->
+        calls,
+        view,
+    ) { order, work, calls, (dialog, deleting, playing) ->
         when {
-            order != null -> OrderDetailUiState.Loaded(order, today, work, dialog)
+            order != null -> OrderDetailUiState.Loaded(order, today, work, dialog, calls, playing)
             deleting -> OrderDetailUiState.Loading
             else -> OrderDetailUiState.NotFound
         }
@@ -104,6 +129,10 @@ class OrderDetailViewModel @Inject constructor(
     }
 
     fun onDeleteClick() = dialog.update { OrderDetailDialog.CONFIRM_DELETE }
+
+    fun onPlayCall(recording: CallRecording) = playing.update { recording }
+
+    fun onStopCall() = playing.update { null }
 
     fun onConfirmDelete() {
         dialog.value = null

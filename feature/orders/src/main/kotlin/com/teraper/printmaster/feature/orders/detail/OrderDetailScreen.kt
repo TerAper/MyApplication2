@@ -36,6 +36,8 @@ import com.teraper.printmaster.core.designsystem.component.PmConfirmDialog
 import com.teraper.printmaster.core.designsystem.component.PmEmptyState
 import com.teraper.printmaster.core.designsystem.component.PmMessageDialog
 import com.teraper.printmaster.core.designsystem.component.PmPrimaryButton
+import com.teraper.printmaster.core.designsystem.component.PmRecordingPlayerSheet
+import com.teraper.printmaster.core.designsystem.component.PmRecordingRow
 import com.teraper.printmaster.core.designsystem.component.PmSecondaryButton
 import com.teraper.printmaster.core.designsystem.component.PmTag
 import com.teraper.printmaster.core.designsystem.component.PmTopBar
@@ -45,6 +47,7 @@ import com.teraper.printmaster.core.designsystem.component.relativeLabel
 import com.teraper.printmaster.core.designsystem.component.tagTone
 import com.teraper.printmaster.core.designsystem.icon.PmIcons
 import com.teraper.printmaster.core.designsystem.theme.PmTheme
+import com.teraper.printmaster.core.model.CallRecording
 import com.teraper.printmaster.core.model.Order
 import com.teraper.printmaster.core.model.OrderStatus
 import com.teraper.printmaster.core.model.nextActions
@@ -85,6 +88,8 @@ internal fun OrderDetailRoute(
             onDelete = viewModel::onDeleteClick,
             onConfirmDelete = viewModel::onConfirmDelete,
             onDismissDialog = viewModel::onDismissDialog,
+            onPlayCall = viewModel::onPlayCall,
+            onStopCall = viewModel::onStopCall,
         ),
     )
 }
@@ -112,10 +117,13 @@ internal data class OrderDetailActions(
     val onDelete: () -> Unit = {},
     val onConfirmDelete: () -> Unit = {},
     val onDismissDialog: () -> Unit = {},
+    val onPlayCall: (CallRecording) -> Unit = {},
+    val onStopCall: () -> Unit = {},
 )
 
 @Composable
 internal fun OrderDetailScreen(state: OrderDetailUiState, actions: OrderDetailActions, modifier: Modifier = Modifier) {
+    OrderCallPlayer(state, actions)
     val loaded = state as? OrderDetailUiState.Loaded
     Column(modifier.fillMaxSize().background(PmTheme.colors.background)) {
         PmTopBar(
@@ -221,6 +229,21 @@ private fun OrderContent(state: OrderDetailUiState.Loaded, actions: OrderDetailA
                     onOpenRepair = { actions.onOpenRepair(order.id, it) },
                 )
             }
+
+            if (state.calls.isNotEmpty()) {
+                Text(
+                    stringResource(R.string.feature_orders_calls_that_day, state.calls.size),
+                    modifier = Modifier.padding(start = 2.dp, top = 8.dp),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = PmTheme.colors.inkMuted,
+                )
+                PmCard(Modifier.fillMaxWidth()) {
+                    state.calls.forEachIndexed { index, recording ->
+                        if (index > 0) HorizontalDivider(color = PmTheme.colors.surfaceMuted)
+                        PmRecordingRow(recording, onPlay = { actions.onPlayCall(recording) })
+                    }
+                }
+            }
         }
 
         // Status buttons: the main next step is the big one.
@@ -250,6 +273,18 @@ private fun OrderContent(state: OrderDetailUiState.Loaded, actions: OrderDetailA
             }
         }
     }
+}
+
+@Composable
+internal fun OrderCallPlayer(state: OrderDetailUiState, actions: OrderDetailActions) {
+    val recording = (state as? OrderDetailUiState.Loaded)?.playing ?: return
+    PmRecordingPlayerSheet(
+        recording = recording,
+        missingText = stringResource(R.string.feature_orders_call_missing),
+        playLabel = stringResource(R.string.feature_orders_call_play),
+        pauseLabel = stringResource(R.string.feature_orders_call_pause),
+        onDismiss = actions.onStopCall,
+    )
 }
 
 @Composable

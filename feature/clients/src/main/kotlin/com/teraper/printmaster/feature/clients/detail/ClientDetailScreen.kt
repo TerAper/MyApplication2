@@ -19,6 +19,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SecondaryTabRow
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -37,11 +38,14 @@ import com.teraper.printmaster.core.designsystem.component.PmCard
 import com.teraper.printmaster.core.designsystem.component.PmConfirmDialog
 import com.teraper.printmaster.core.designsystem.component.PmEmptyState
 import com.teraper.printmaster.core.designsystem.component.PmMessageDialog
+import com.teraper.printmaster.core.designsystem.component.PmRecordingPlayerSheet
+import com.teraper.printmaster.core.designsystem.component.PmRecordingRow
 import com.teraper.printmaster.core.designsystem.component.PmTopBar
 import com.teraper.printmaster.core.designsystem.component.format
 import com.teraper.printmaster.core.designsystem.component.formatShort
 import com.teraper.printmaster.core.designsystem.icon.PmIcons
 import com.teraper.printmaster.core.designsystem.theme.PmTheme
+import com.teraper.printmaster.core.model.CallRecording
 import com.teraper.printmaster.core.model.ChargeSource
 import com.teraper.printmaster.core.model.Client
 import com.teraper.printmaster.core.model.ClientAddress
@@ -90,6 +94,7 @@ internal fun ClientDetailRoute(
         onCall = { context.dial(it) },
         onOpenMap = { context.openMap(it) },
         onTabSelected = viewModel::onTabSelected,
+        callActions = CallActions(viewModel::onPlayCall, viewModel::onStopCall, viewModel::onShowAllCalls),
         onRecordPayment = onRecordPayment,
         onAddCharge = onAddCharge,
         onEntryClick = viewModel::onEntryClick,
@@ -112,6 +117,7 @@ internal fun ClientDetailScreen(
     onCall: (String) -> Unit,
     onOpenMap: (String) -> Unit,
     onTabSelected: (ClientTab) -> Unit = {},
+    callActions: CallActions = CallActions(),
     onRecordPayment: (Long) -> Unit = {},
     onAddCharge: (Long) -> Unit = {},
     onEntryClick: (LedgerEntry) -> Unit = {},
@@ -152,6 +158,7 @@ internal fun ClientDetailScreen(
                 onCall = onCall,
                 onOpenMap = onOpenMap,
                 onTabSelected = onTabSelected,
+                callActions = callActions,
                 onRecordPayment = { onRecordPayment(state.summary.client.id) },
                 onAddCharge = { onAddCharge(state.summary.client.id) },
                 onEntryClick = onEntryClick,
@@ -194,8 +201,26 @@ internal fun ClientDetailScreen(
             }
             null -> Unit
         }
+        state.playing?.let { recording ->
+            PmRecordingPlayerSheet(
+                recording = recording,
+                missingText = stringResource(R.string.feature_clients_call_missing),
+                playLabel = stringResource(R.string.feature_clients_call_play),
+                pauseLabel = stringResource(R.string.feature_clients_call_pause),
+                onDismiss = callActions.onStop,
+            )
+        }
     }
 }
+
+/** Playing the client's recorded calls. */
+internal data class CallActions(
+    val onPlay: (CallRecording) -> Unit = {},
+    val onStop: () -> Unit = {},
+    val onShowAll: () -> Unit = {},
+)
+
+private const val CALLS_SHOWN = 3
 
 @Composable
 private fun ClientDetailContent(
@@ -203,6 +228,7 @@ private fun ClientDetailContent(
     onCall: (String) -> Unit,
     onOpenMap: (String) -> Unit,
     onTabSelected: (ClientTab) -> Unit,
+    callActions: CallActions,
     onRecordPayment: () -> Unit,
     onAddCharge: () -> Unit,
     onEntryClick: (LedgerEntry) -> Unit,
@@ -307,6 +333,22 @@ private fun ClientDetailContent(
                     icon = PmIcons.Call,
                     onClick = onCall,
                 )
+                if (state.calls.isNotEmpty()) {
+                    SectionTitle(stringResource(R.string.feature_clients_section_calls, state.calls.size))
+                    PmCard(Modifier.fillMaxWidth()) {
+                        val shown = if (state.showAllCalls) state.calls else state.calls.take(CALLS_SHOWN)
+                        shown.forEachIndexed { index, recording ->
+                            if (index > 0) HorizontalDivider(color = PmTheme.colors.surfaceMuted)
+                            PmRecordingRow(recording, onPlay = { callActions.onPlay(recording) })
+                        }
+                        if (shown.size < state.calls.size) {
+                            HorizontalDivider(color = PmTheme.colors.surfaceMuted)
+                            TextButton(onClick = callActions.onShowAll, modifier = Modifier.fillMaxWidth()) {
+                                Text(stringResource(R.string.feature_clients_calls_show_all, state.calls.size))
+                            }
+                        }
+                    }
+                }
                 SectionTitle(stringResource(R.string.feature_clients_section_addresses))
                 ContactCard(
                     rows = client.addresses.map { it.address to it.label },

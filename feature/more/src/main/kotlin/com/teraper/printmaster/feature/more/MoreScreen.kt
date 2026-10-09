@@ -60,6 +60,7 @@ data class MoreActions(
     val onOpenReports: () -> Unit = {},
     val onOpenDebtExport: () -> Unit = {},
     val onOpenSettings: () -> Unit = {},
+    val onOpenCalls: () -> Unit = {},
 )
 
 @Composable
@@ -96,6 +97,7 @@ internal fun MoreScreen(state: MoreUiState, actions: MoreActions, modifier: Modi
             listOf(
                 MoreItem(PmIcons.PriceList, R.string.feature_more_price_list, R.string.feature_more_price_list_sub, actions.onOpenPriceList),
                 MoreItem(PmIcons.Printer, R.string.feature_more_catalog, R.string.feature_more_catalog_sub, onOpenCatalog),
+                MoreItem(PmIcons.Recording, R.string.feature_more_calls, R.string.feature_more_calls_sub, actions.onOpenCalls),
             ),
         ),
         MoreSection(

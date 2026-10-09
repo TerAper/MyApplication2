@@ -12,6 +12,7 @@ dependencies {
     implementation(projects.core.database)
     implementation(libs.room.ktx)
     implementation(libs.kotlinx.coroutines.core)
+    implementation(libs.androidx.work.runtime)
 
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.test.runner)
