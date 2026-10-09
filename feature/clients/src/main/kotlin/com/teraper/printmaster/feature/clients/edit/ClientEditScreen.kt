@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.provider.ContactsContract
+import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContract
@@ -73,6 +74,7 @@ internal fun ClientEditRoute(
             when (event) {
                 is ClientEditEvent.Saved -> onSaved(event.clientId, event.wasNew)
                 ClientEditEvent.Close -> onClose()
+                is ClientEditEvent.OpenMap -> context.openMapToPick(event.query)
             }
         }
     }
@@ -98,6 +100,8 @@ internal fun ClientEditRoute(
                     // No contacts app on this phone.
                 }
             },
+            onPickOnMap = viewModel::onPickOnMap,
+            onClearMapPoint = viewModel::onClearMapPoint,
             onSave = viewModel::onSave,
             onDiscardConfirmed = viewModel::onDiscardConfirmed,
             onDiscardDismissed = viewModel::onDiscardDismissed,
@@ -118,6 +122,8 @@ internal data class ClientEditActions(
     val onRemoveContact: (ContactList, Int) -> Unit = { _, _ -> },
     /** Phone row index, or null for a new row. */
     val onPickContact: (Int?) -> Unit = {},
+    val onPickOnMap: (Int) -> Unit = {},
+    val onClearMapPoint: (Int) -> Unit = {},
     val onSave: () -> Unit = {},
     val onDiscardConfirmed: () -> Unit = {},
     val onDiscardDismissed: () -> Unit = {},
@@ -251,11 +257,30 @@ private fun ContactSection(
                         label = valueLabel,
                         keyboardType = keyboardType,
                     )
+                    if (row.mapLink != null) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(PmIcons.Map, contentDescription = null, tint = PmTheme.colors.paid, modifier = Modifier.padding(end = 6.dp))
+                            Text(
+                                stringResource(R.string.feature_clients_map_point_saved),
+                                Modifier.weight(1f),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = PmTheme.colors.paid,
+                            )
+                            TextButton(onClick = { actions.onClearMapPoint(index) }) {
+                                Text(stringResource(R.string.feature_clients_map_point_remove))
+                            }
+                        }
+                    }
                     PmTextField(
                         value = row.label,
                         onValueChange = { actions.onContactLabelChange(list, index, it) },
                         label = stringResource(R.string.feature_clients_field_contact_label),
                     )
+                }
+                if (list == ContactList.ADDRESSES) {
+                    IconButton(onClick = { actions.onPickOnMap(index) }, modifier = Modifier.padding(top = 8.dp)) {
+                        Icon(PmIcons.Map, contentDescription = stringResource(R.string.feature_clients_pick_on_map), tint = PmTheme.colors.primary)
+                    }
                 }
                 if (list == ContactList.PHONES) {
                     IconButton(onClick = { actions.onPickContact(index) }, modifier = Modifier.padding(top = 8.dp)) {
@@ -314,4 +339,25 @@ private fun Context.readPickedPhone(uri: Uri): Pair<String?, String>? = try {
     }
 } catch (_: SecurityException) {
     null
+}
+
+/**
+ * Opens Yandex Maps (or any map app) at what's typed so far. A map app can't hand a point back,
+ * so the user marks the place and shares it to this app; the hint says so.
+ */
+private fun Context.openMapToPick(query: String) {
+    val yandex = Intent(
+        Intent.ACTION_VIEW,
+        Uri.parse("yandexmaps://maps.yandex.ru/" + if (query.isBlank()) "" else "?text=" + Uri.encode(query)),
+    ).setPackage("ru.yandex.yandexmaps")
+    val anyMap = Intent(Intent.ACTION_VIEW, Uri.parse("geo:0,0" + if (query.isBlank()) "" else "?q=" + Uri.encode(query)))
+    val opened = listOf(yandex, anyMap).any { intent ->
+        try {
+            startActivity(intent)
+            true
+        } catch (_: ActivityNotFoundException) {
+            false
+        }
+    }
+    Toast.makeText(this, if (opened) R.string.feature_clients_map_hint else R.string.feature_clients_no_app, Toast.LENGTH_LONG).show()
 }

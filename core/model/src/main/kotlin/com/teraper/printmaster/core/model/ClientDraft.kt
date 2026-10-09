@@ -11,7 +11,7 @@ data class ClientDraft(
     val addresses: List<ContactDraft> = listOf(ContactDraft()),
 ) {
     /** One phone or address row. [id] 0 = not saved yet. */
-    data class ContactDraft(val id: Long = 0, val value: String = "", val label: String = "")
+    data class ContactDraft(val id: Long = 0, val value: String = "", val label: String = "", val mapLink: String? = null)
 
     val isNew: Boolean get() = id == 0L
 
@@ -51,7 +51,7 @@ data class ClientDraft(
             taxId = client.taxId.orEmpty(),
             note = client.note,
             phones = client.phones.map { ContactDraft(it.id, it.number, it.label) }.ifEmpty { listOf(ContactDraft()) },
-            addresses = client.addresses.map { ContactDraft(it.id, it.address, it.label) }.ifEmpty { listOf(ContactDraft()) },
+            addresses = client.addresses.map { ContactDraft(it.id, it.address, it.label, it.mapLink) }.ifEmpty { listOf(ContactDraft()) },
         )
     }
 }

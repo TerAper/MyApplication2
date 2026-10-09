@@ -15,6 +15,8 @@ data class Order(
     val status: OrderStatus = OrderStatus.NEW,
     val addressId: Long? = null,
     val address: String? = null,
+    /** Exact point of the address, when it was picked on a map. */
+    val addressLink: String? = null,
     val phoneId: Long? = null,
     val phone: String? = null,
     val masterId: Long? = null,

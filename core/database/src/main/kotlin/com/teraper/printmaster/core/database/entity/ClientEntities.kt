@@ -60,6 +60,8 @@ data class ClientAddressEntity(
     @ColumnInfo(name = "client_id") val clientId: Long,
     val address: String,
     val label: String = "",
+    /** The exact point ("geo:lat,lon…") or a map link, picked on a map; null = only the text. */
+    @ColumnInfo(name = "map_link") val mapLink: String? = null,
 )
 
 /**

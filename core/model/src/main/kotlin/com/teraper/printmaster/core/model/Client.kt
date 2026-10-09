@@ -10,6 +10,8 @@ data class ClientAddress(
     val id: Long,
     val address: String,
     val label: String,
+    /** Exact point or map link picked on a map; null = only the text. */
+    val mapLink: String? = null,
 )
 
 data class Client(

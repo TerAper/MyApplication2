@@ -76,7 +76,7 @@ class FakeClientsRepository(initial: List<ClientSummary> = emptyList()) : Client
         val client = Client(
             id, clean.name, clean.type, clean.taxId.ifEmpty { null }, clean.note,
             clean.phones.mapIndexed { i, p -> ClientPhone(i + 1L, p.value, p.label) },
-            clean.addresses.mapIndexed { i, a -> ClientAddress(i + 1L, a.value, a.label) },
+            clean.addresses.mapIndexed { i, a -> ClientAddress(i + 1L, a.value, a.label, a.mapLink) },
         )
         clients.value = clients.value.filterNot { it.client.id == id } + ClientSummary(client)
         return SaveClientResult.Saved(id)

@@ -7,4 +7,6 @@
     <string name="switch_company">Switch company</string>
     <string name="switch_company_title">Show data of which company?</string>
     <string name="manage_companies">Manage companies</string>
+    <string name="share_place_label">PrintMaster: client address</string>
+    <string name="share_place_not_waiting">To use a place, open a client\'s form in PrintMaster and tap “Pick on map” first.</string>
 </resources>

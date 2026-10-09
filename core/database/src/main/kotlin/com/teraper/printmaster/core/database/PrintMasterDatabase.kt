@@ -72,6 +72,8 @@ import com.teraper.printmaster.core.database.entity.RepairPartEntity
     autoMigrations = [
         // 3: call recordings.
         AutoMigration(from = 2, to = 3),
+        // 4: map point of an address.
+        AutoMigration(from = 3, to = 4),
     ],
 )
 abstract class PrintMasterDatabase : RoomDatabase() {
@@ -86,7 +88,7 @@ abstract class PrintMasterDatabase : RoomDatabase() {
     abstract fun callRecordingDao(): CallRecordingDao
 
     companion object {
-        const val VERSION = 3
+        const val VERSION = 4
 
         /** Oldest version a backup file may have; older ones only existed on development phones. */
         const val OLDEST_RESTORABLE_VERSION = 2

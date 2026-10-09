@@ -10,4 +10,6 @@
     <string name="switch_company">Փոխել ընկերությունը</string>
     <string name="switch_company_title">Ո՞ր ընկերության տվյալները ցույց տալ</string>
     <string name="manage_companies">Կառավարել ընկերությունները</string>
+    <string name="share_place_label">PrintMaster՝ հաճախորդի հասցե</string>
+    <string name="share_place_not_waiting">Վայրն օգտագործելու համար նախ բացեք հաճախորդի ձևը PrintMaster-ում և սեղմեք «Ընտրել քարտեզում»։</string>
 </resources>

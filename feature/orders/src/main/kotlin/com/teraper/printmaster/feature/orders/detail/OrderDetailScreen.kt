@@ -79,7 +79,10 @@ internal fun OrderDetailRoute(
             onEdit = onEdit,
             onOpenClient = onOpenClient,
             onCall = { context.open(Intent.ACTION_DIAL, "tel:$it") },
-            onOpenMap = { context.open(Intent.ACTION_VIEW, "geo:0,0?q=" + android.net.Uri.encode(it)) },
+            onOpenMap = { target ->
+                val isLink = target.startsWith("geo:") || target.startsWith("http")
+                context.open(Intent.ACTION_VIEW, if (isLink) target else "geo:0,0?q=" + android.net.Uri.encode(target))
+            },
             onStatusChange = viewModel::onStatusChange,
             onOpenRepair = onOpenRepair,
             onFinish = viewModel::onFinish,
@@ -210,7 +213,7 @@ private fun OrderContent(state: OrderDetailUiState.Loaded, actions: OrderDetailA
                 InfoRow(PmIcons.Clients, order.clientName, stringResource(R.string.feature_orders_open_client)) { actions.onOpenClient(order.clientId) }
                 order.address?.let { address ->
                     HorizontalDivider(color = PmTheme.colors.surfaceMuted)
-                    InfoRow(PmIcons.Map, address, stringResource(R.string.feature_orders_map)) { actions.onOpenMap(address) }
+                    InfoRow(PmIcons.Map, address, stringResource(R.string.feature_orders_map)) { actions.onOpenMap(order.addressLink ?: address) }
                 }
                 order.phone?.let { phone ->
                     HorizontalDivider(color = PmTheme.colors.surfaceMuted)

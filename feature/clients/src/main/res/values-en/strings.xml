@@ -122,4 +122,8 @@
     <string name="feature_clients_call_play">Play</string>
     <string name="feature_clients_call_pause">Pause</string>
     <string name="feature_clients_from_contacts">From contacts</string>
+    <string name="feature_clients_pick_on_map">Pick on map</string>
+    <string name="feature_clients_map_point_saved">Exact point on the map saved</string>
+    <string name="feature_clients_map_point_remove">Remove</string>
+    <string name="feature_clients_map_hint">Mark the place, tap Share and choose “PrintMaster: client address”.</string>
 </resources>

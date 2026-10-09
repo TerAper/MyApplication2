@@ -66,7 +66,7 @@ interface OrderDao {
 
     private companion object {
         const val SELECT_ROWS = """
-            SELECT o.*, c.name AS client_name, a.address AS address_text, p.number AS phone_number, m.name AS master_name
+            SELECT o.*, c.name AS client_name, a.address AS address_text, a.map_link AS address_link, p.number AS phone_number, m.name AS master_name
             FROM orders o
             JOIN clients c ON c.id = o.client_id
             LEFT JOIN client_addresses a ON a.id = o.address_id
@@ -80,6 +80,7 @@ data class OrderRow(
     @Embedded val order: OrderEntity,
     @ColumnInfo(name = "client_name") val clientName: String,
     @ColumnInfo(name = "address_text") val address: String?,
+    @ColumnInfo(name = "address_link") val addressLink: String?,
     @ColumnInfo(name = "phone_number") val phone: String?,
     @ColumnInfo(name = "master_name") val masterName: String?,
 )

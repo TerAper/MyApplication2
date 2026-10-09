@@ -1,6 +1,7 @@
 package com.teraper.printmaster.feature.clients
 
 import androidx.lifecycle.SavedStateHandle
+import com.teraper.printmaster.core.data.maps.PlaceInbox
 import com.teraper.printmaster.core.model.ClientDraftError
 import com.teraper.printmaster.core.model.ClientType
 import com.teraper.printmaster.feature.clients.edit.ClientEditEvent
@@ -21,8 +22,28 @@ class ClientEditViewModelTest {
 
     private val repo = FakeClientsRepository(listOf(summary(1, "Existing ՍՊԸ", taxId = "01234567", phone = "091 111111")))
 
-    private fun newVm() = ClientEditViewModel(SavedStateHandle(), repo)
-    private fun editVm(id: Long) = ClientEditViewModel(SavedStateHandle(mapOf("clientId" to id)), repo)
+    private val inbox = PlaceInbox()
+
+    private fun newVm() = ClientEditViewModel(SavedStateHandle(), repo, inbox)
+    private fun editVm(id: Long) = ClientEditViewModel(SavedStateHandle(mapOf("clientId" to id)), repo, inbox)
+
+    @Test
+    fun placeSharedFromTheMapFillsTheAddressRow() = runTest {
+        val vm = newVm()
+        vm.onContactValueChange(ContactList.ADDRESSES, 0, "Komitas")
+        vm.onPickOnMap(0)
+        assertEquals(ClientEditEvent.OpenMap("Komitas"), vm.events.first())
+
+        assertTrue(inbox.deliver("Дом печати\nулица Комитаса, 5, Ереван\nhttps://yandex.ru/maps/?ll=44.503490%2C40.177200&z=17"))
+        val row = vm.uiState.value.draft.addresses[0]
+        assertEquals("Дом печати, улица Комитаса, 5, Ереван", row.value)
+        assertEquals("geo:40.177200,44.503490?q=40.177200,44.503490", row.mapLink)
+
+        // A share that nothing asked for is refused.
+        assertFalse(inbox.deliver("Somewhere 1"))
+        vm.onClearMapPoint(0)
+        assertEquals(null, vm.uiState.value.draft.addresses[0].mapLink)
+    }
 
     @Test
     fun pickedContactFillsNameAndPhone() = runTest {

@@ -125,6 +125,7 @@ internal class OfflineOrdersRepository @Inject constructor(
         status = order.status,
         addressId = order.addressId,
         address = address,
+        addressLink = addressLink,
         phoneId = order.phoneId,
         phone = phone,
         masterId = order.masterId,

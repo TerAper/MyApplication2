@@ -352,6 +352,8 @@ private fun ClientDetailContent(
                 SectionTitle(stringResource(R.string.feature_clients_section_addresses))
                 ContactCard(
                     rows = client.addresses.map { it.address to it.label },
+                    // A point picked on the map opens exactly there.
+                    clickValues = client.addresses.map { it.mapLink ?: it.address },
                     emptyText = stringResource(R.string.feature_clients_no_addresses),
                     icon = PmIcons.Map,
                     onClick = onOpenMap,
@@ -426,6 +428,7 @@ private fun ContactCard(
     emptyText: String,
     icon: ImageVector,
     onClick: (String) -> Unit,
+    clickValues: List<String> = rows.map { it.first },
 ) {
     PmCard(Modifier.fillMaxWidth()) {
         if (rows.isEmpty()) {
@@ -436,7 +439,7 @@ private fun ContactCard(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clickable { onClick(value) }
+                    .clickable { onClick(clickValues[index]) }
                     .padding(horizontal = 14.dp, vertical = 12.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(12.dp),

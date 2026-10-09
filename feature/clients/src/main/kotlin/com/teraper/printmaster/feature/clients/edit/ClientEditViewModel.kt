@@ -3,6 +3,7 @@ package com.teraper.printmaster.feature.clients.edit
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.teraper.printmaster.core.data.maps.PlaceInbox
 import com.teraper.printmaster.core.data.repository.ClientsRepository
 import com.teraper.printmaster.core.data.repository.SaveClientResult
 import com.teraper.printmaster.core.model.ClientDraft
@@ -11,16 +12,17 @@ import com.teraper.printmaster.core.model.ClientDraftError
 import com.teraper.printmaster.core.model.ClientType
 import com.teraper.printmaster.feature.clients.navigation.CLIENT_ID_ARG
 import dagger.hilt.android.lifecycle.HiltViewModel
+import javax.inject.Inject
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import javax.inject.Inject
 
 data class ClientEditUiState(
     val isLoading: Boolean = false,
@@ -38,6 +40,9 @@ data class ClientEditUiState(
 sealed interface ClientEditEvent {
     data class Saved(val clientId: Long, val wasNew: Boolean) : ClientEditEvent
     data object Close : ClientEditEvent
+
+    /** Open a map app to pick the address; [query] is what's typed so far. */
+    data class OpenMap(val query: String) : ClientEditEvent
 }
 
 /** Which list a contact row belongs to. */
@@ -47,11 +52,15 @@ enum class ContactList { PHONES, ADDRESSES }
 class ClientEditViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val clientsRepository: ClientsRepository,
+    private val placeInbox: PlaceInbox,
 ) : ViewModel() {
 
     private val clientId: Long = savedStateHandle[CLIENT_ID_ARG] ?: 0L
     private var initialDraft = ClientDraft()
     private var triedToSave = false
+
+    /** Address row waiting for a place shared back from the map app. */
+    private var mapRow: Int? = null
 
     private val _uiState = MutableStateFlow(ClientEditUiState(isLoading = clientId != 0L))
     val uiState: StateFlow<ClientEditUiState> = _uiState.asStateFlow()
@@ -60,6 +69,18 @@ class ClientEditViewModel @Inject constructor(
     val events: Flow<ClientEditEvent> = _events.receiveAsFlow()
 
     init {
+        viewModelScope.launch {
+            placeInbox.place.filterNotNull().collect {
+                val row = mapRow ?: return@collect
+                val place = placeInbox.take() ?: return@collect
+                mapRow = null
+                editContacts(ContactList.ADDRESSES) { rows ->
+                    rows.mapIndexed { i, r ->
+                        if (i == row) r.copy(value = place.address.ifEmpty { r.value }, mapLink = place.mapLink) else r
+                    }
+                }
+            }
+        }
         if (clientId != 0L) {
             viewModelScope.launch {
                 val summary = clientsRepository.observeClientSummary(clientId).first()
@@ -113,6 +134,17 @@ class ClientEditViewModel @Inject constructor(
             draft.copy(name = if (takeName) name else draft.name, phones = phones)
         }
     }
+
+    /** Opens the map for address row [index]; the place comes back when the user shares it to the app. */
+    fun onPickOnMap(index: Int) {
+        mapRow = index
+        placeInbox.startPicking()
+        val query = _uiState.value.draft.addresses.getOrNull(index)?.value.orEmpty()
+        viewModelScope.launch { _events.send(ClientEditEvent.OpenMap(query)) }
+    }
+
+    fun onClearMapPoint(index: Int) =
+        editContacts(ContactList.ADDRESSES) { rows -> rows.mapIndexed { i, r -> if (i == index) r.copy(mapLink = null) else r } }
 
     fun onSave() {
         val state = _uiState.value

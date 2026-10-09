@@ -113,7 +113,7 @@ internal class OfflineClientsRepository @Inject constructor(
             clientDao.deletePhonesExcept(clientId, clean.phones.map { it.id }.filter { it != 0L })
             clientDao.upsertPhones(clean.phones.map { ClientPhoneEntity(it.id, clientId, it.value, it.label) })
             clientDao.deleteAddressesExcept(clientId, clean.addresses.map { it.id }.filter { it != 0L })
-            clientDao.upsertAddresses(clean.addresses.map { ClientAddressEntity(it.id, clientId, it.value, it.label) })
+            clientDao.upsertAddresses(clean.addresses.map { ClientAddressEntity(it.id, clientId, it.value, it.label, it.mapLink) })
 
             SaveClientResult.Saved(clientId)
         }
@@ -140,5 +140,5 @@ private fun ClientWithContacts.toModel() = Client(
     taxId = client.taxId,
     note = client.note,
     phones = phones.sortedBy { it.id }.map { ClientPhone(it.id, it.number, it.label) },
-    addresses = addresses.sortedBy { it.id }.map { ClientAddress(it.id, it.address, it.label) },
+    addresses = addresses.sortedBy { it.id }.map { ClientAddress(it.id, it.address, it.label, it.mapLink) },
 )

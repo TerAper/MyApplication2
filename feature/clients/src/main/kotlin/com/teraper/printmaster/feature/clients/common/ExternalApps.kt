@@ -11,9 +11,11 @@ import com.teraper.printmaster.feature.clients.R
 internal fun Context.dial(number: String) =
     launch(Intent(Intent.ACTION_DIAL, Uri.parse("tel:" + Uri.encode(number.trim()))))
 
-/** Opens a maps app searching for the address. */
-internal fun Context.openMap(address: String) =
-    launch(Intent(Intent.ACTION_VIEW, Uri.parse("geo:0,0?q=" + Uri.encode(address))))
+/** Opens a maps app at [target]: a point or map link opens exactly, plain text is searched. */
+internal fun Context.openMap(target: String) {
+    val uri = if (target.startsWith("geo:") || target.startsWith("http")) target else "geo:0,0?q=" + Uri.encode(target)
+    launch(Intent(Intent.ACTION_VIEW, Uri.parse(uri)))
+}
 
 private fun Context.launch(intent: Intent) {
     try {

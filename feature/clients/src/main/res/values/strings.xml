@@ -122,4 +122,8 @@
     <string name="feature_clients_call_play">Նվագարկել</string>
     <string name="feature_clients_call_pause">Դադար</string>
     <string name="feature_clients_from_contacts">Հեռախոսագրքից</string>
+    <string name="feature_clients_pick_on_map">Ընտրել քարտեզում</string>
+    <string name="feature_clients_map_point_saved">Քարտեզի ճշգրիտ կետը պահված է</string>
+    <string name="feature_clients_map_point_remove">Հեռացնել</string>
+    <string name="feature_clients_map_hint">Նշեք վայրը, սեղմեք «Կիսվել» և ընտրեք «PrintMaster՝ հաճախորդի հասցե»։</string>
 </resources>
