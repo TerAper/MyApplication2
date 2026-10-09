@@ -4,7 +4,10 @@ import com.teraper.printmaster.core.data.repository.BackupRepository
 import com.teraper.printmaster.core.data.repository.CatalogRepository
 import com.teraper.printmaster.core.data.repository.ClientsRepository
 import com.teraper.printmaster.core.data.repository.CompaniesRepository
+import com.teraper.printmaster.core.data.repository.ExportRepository
 import com.teraper.printmaster.core.data.repository.OfflineCompaniesRepository
+import com.teraper.printmaster.core.data.repository.OfflineExportRepository
+import com.teraper.printmaster.core.data.repository.OfflineReportsRepository
 import com.teraper.printmaster.core.data.repository.OfflineOrdersRepository
 import com.teraper.printmaster.core.data.repository.OrdersRepository
 import com.teraper.printmaster.core.data.repository.OfflineBackupRepository
@@ -18,6 +21,7 @@ import com.teraper.printmaster.core.data.repository.PaymentsRepository
 import com.teraper.printmaster.core.data.repository.PriceListRepository
 import com.teraper.printmaster.core.data.repository.PrintersRepository
 import com.teraper.printmaster.core.data.repository.RepairsRepository
+import com.teraper.printmaster.core.data.repository.ReportsRepository
 import dagger.Binds
 import dagger.Module
 import dagger.Provides
@@ -55,6 +59,12 @@ internal abstract class DataModule {
 
     @Binds
     abstract fun bindBackupRepository(impl: OfflineBackupRepository): BackupRepository
+
+    @Binds
+    abstract fun bindReportsRepository(impl: OfflineReportsRepository): ReportsRepository
+
+    @Binds
+    abstract fun bindExportRepository(impl: OfflineExportRepository): ExportRepository
 
     companion object {
         @Provides

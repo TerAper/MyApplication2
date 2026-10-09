@@ -12,6 +12,7 @@ import com.teraper.printmaster.core.database.dao.LedgerDao
 import com.teraper.printmaster.core.database.dao.OrderDao
 import com.teraper.printmaster.core.database.dao.PriceListDao
 import com.teraper.printmaster.core.database.dao.RepairDao
+import com.teraper.printmaster.core.database.dao.ReportDao
 import com.teraper.printmaster.core.database.entity.AppProfileEntity
 import com.teraper.printmaster.core.database.entity.BrandEntity
 import com.teraper.printmaster.core.database.entity.CartridgeChipCrossRef
@@ -71,6 +72,7 @@ abstract class PrintMasterDatabase : RoomDatabase() {
     abstract fun orderDao(): OrderDao
     abstract fun priceListDao(): PriceListDao
     abstract fun repairDao(): RepairDao
+    abstract fun reportDao(): ReportDao
 
     companion object {
         const val VERSION = 2

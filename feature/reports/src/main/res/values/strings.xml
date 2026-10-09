@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="feature_reports_title">Հաշվետվություններ</string>
+    <string name="feature_reports_back">Հետ</string>
+    <string name="feature_reports_ok">Լավ</string>
+    <string name="feature_reports_previous_month">Նախորդ ամիս</string>
+    <string name="feature_reports_next_month">Հաջորդ ամիս</string>
+
+    <string name="feature_reports_received">Ստացված</string>
+    <string name="feature_reports_cash">Կանխիկ</string>
+    <string name="feature_reports_bank">Անկանխիկ</string>
+    <string name="feature_reports_billed">Հաշվարկված հաճախորդներին</string>
+    <string name="feature_reports_billed_repairs">Այցեր և վերանորոգում</string>
+    <string name="feature_reports_billed_invoices">Հաշիվ-ապրանքագրեր (ներմուծված)</string>
+    <string name="feature_reports_billed_manual">Ձեռքով ավելացված</string>
+    <string name="feature_reports_profit">Շահույթ վերանորոգումից</string>
+    <string name="feature_reports_margin">գնի %1$d%%-ը</string>
+    <string name="feature_reports_work_revenue">Վաճառված աշխատանք և մասեր</string>
+    <string name="feature_reports_work_cost">Մասերի ինքնարժեք</string>
+    <string name="feature_reports_owed_now">Պարտքը հիմա</string>
+    <string name="feature_reports_export_debts">Պարտքերի հաշվետվություն</string>
+    <plurals name="feature_reports_orders_done">
+        <item quantity="one">%1$d ավարտված պատվեր</item>
+        <item quantity="other">%1$d ավարտված պատվեր</item>
+    </plurals>
+    <plurals name="feature_reports_debtors">
+        <item quantity="one">%1$d հաճախորդ պարտք ունի</item>
+        <item quantity="other">%1$d հաճախորդ պարտք ունի</item>
+    </plurals>
+
+    <string name="feature_reports_export_title">Պարտքերի հաշվետվություն</string>
+    <string name="feature_reports_export_explain">Excel ֆայլ՝ յուրաքանչյուր հաճախորդի հաշվարկներով, վճարումներով և մնացորդով այս ընկերության համար։ Ուղարկեք հաշվապահին կամ հաճախորդին։</string>
+    <string name="feature_reports_export_debtors">Պարտապաններ · %1$d</string>
+    <string name="feature_reports_export_all">Բոլորը · %1$d</string>
+    <string name="feature_reports_export_share">Ուղարկել…</string>
+    <string name="feature_reports_export_share_title">Ուղարկել պարտքերի հաշվետվությունը</string>
+    <string name="feature_reports_export_save">Պահել հեռախոսում կամ Drive-ում</string>
+    <string name="feature_reports_export_nothing">Հաշվետվության մեջ դնելու հաճախորդ չկա։</string>
+    <string name="feature_reports_export_saved_title">Հաշվետվությունը պահված է</string>
+    <string name="feature_reports_export_saved_message">Բացեք այն Excel-ով կամ Google Sheets-ով։</string>
+    <string name="feature_reports_export_failed_title">Հաշվետվությունը չպահվեց</string>
+    <string name="feature_reports_export_failed_message">Ֆայլը հնարավոր չեղավ գրել։ Փորձեք այլ տեղ, օրինակ՝ Downloads։</string>
+
+    <string name="feature_reports_xlsx_title">Պարտքեր</string>
+    <string name="feature_reports_xlsx_client">Հաճախորդ</string>
+    <string name="feature_reports_xlsx_tax_id">ՀՎՀՀ</string>
+    <string name="feature_reports_xlsx_phone">Հեռախոս</string>
+    <string name="feature_reports_xlsx_charged">Հաշվարկված, ֏</string>
+    <string name="feature_reports_xlsx_paid">Վճարված, ֏</string>
+    <string name="feature_reports_xlsx_balance">Պարտք, ֏</string>
+    <string name="feature_reports_xlsx_last_payment">Վերջին վճարում</string>
+    <string name="feature_reports_xlsx_total">Ընդամենը</string>
+</resources>

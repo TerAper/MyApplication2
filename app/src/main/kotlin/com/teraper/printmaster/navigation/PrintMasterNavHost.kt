@@ -33,6 +33,9 @@ import com.teraper.printmaster.feature.payments.navigation.paymentsGraph
 import com.teraper.printmaster.feature.pricelist.navigation.PriceItemEditDestination
 import com.teraper.printmaster.feature.pricelist.navigation.navigateToPriceList
 import com.teraper.printmaster.feature.pricelist.navigation.priceListScreens
+import com.teraper.printmaster.feature.reports.navigation.navigateToDebtExport
+import com.teraper.printmaster.feature.reports.navigation.navigateToReports
+import com.teraper.printmaster.feature.reports.navigation.reportsScreens
 import com.teraper.printmaster.feature.settings.navigation.navigateToBackup
 import com.teraper.printmaster.feature.settings.navigation.settingsScreens
 import com.teraper.printmaster.feature.today.TodayActions
@@ -79,12 +82,15 @@ fun PrintMasterNavHost(navController: NavHostController, modifier: Modifier = Mo
                 onOpenCompany = navController::navigateToCompany,
                 onOpenMasters = navController::navigateToMasters,
                 onOpenBackup = navController::navigateToBackup,
+                onOpenReports = navController::navigateToReports,
+                onOpenDebtExport = navController::navigateToDebtExport,
             ),
         ) {
             priceListScreens(navController)
             catalogScreens(navController, onOpenClient = navController::openClientFromOtherTab)
             accountScreens(navController)
             settingsScreens(navController)
+            reportsScreens(navController, onOpenClient = navController::openClientFromOtherTab)
         }
     }
 }

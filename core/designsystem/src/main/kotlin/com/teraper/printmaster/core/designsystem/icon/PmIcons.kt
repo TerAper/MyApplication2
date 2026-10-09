@@ -32,6 +32,7 @@ import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.rounded.Sell
 import androidx.compose.material.icons.rounded.Settings
 import androidx.compose.material.icons.rounded.SettingsBackupRestore
+import androidx.compose.material.icons.rounded.Share
 import androidx.compose.material.icons.rounded.Star
 import androidx.compose.material.icons.rounded.UploadFile
 import androidx.compose.material.icons.rounded.WarningAmber
@@ -75,4 +76,5 @@ object PmIcons {
     val Restore: ImageVector = Icons.Rounded.SettingsBackupRestore
     val Warning: ImageVector = Icons.Rounded.WarningAmber
     val Language: ImageVector = Icons.Rounded.Language
+    val Share: ImageVector = Icons.Rounded.Share
 }

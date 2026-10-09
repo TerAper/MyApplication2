@@ -37,6 +37,7 @@ dependencies {
     implementation(projects.feature.account)
     implementation(projects.feature.pricelist)
     implementation(projects.feature.settings)
+    implementation(projects.feature.reports)
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.activity.compose)

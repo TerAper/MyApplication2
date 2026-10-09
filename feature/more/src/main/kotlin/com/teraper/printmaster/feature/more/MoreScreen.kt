@@ -57,6 +57,8 @@ data class MoreActions(
     val onOpenCompany: (Long) -> Unit = {},
     val onOpenMasters: () -> Unit = {},
     val onOpenBackup: () -> Unit = {},
+    val onOpenReports: () -> Unit = {},
+    val onOpenDebtExport: () -> Unit = {},
 )
 
 @Composable
@@ -98,8 +100,8 @@ internal fun MoreScreen(state: MoreUiState, actions: MoreActions, modifier: Modi
         MoreSection(
             R.string.feature_more_section_money,
             listOf(
-                MoreItem(PmIcons.Reports, R.string.feature_more_reports, R.string.feature_more_reports_sub, null),
-                MoreItem(PmIcons.Export, R.string.feature_more_export, R.string.feature_more_export_sub, null),
+                MoreItem(PmIcons.Reports, R.string.feature_more_reports, R.string.feature_more_reports_sub, actions.onOpenReports),
+                MoreItem(PmIcons.Export, R.string.feature_more_export, R.string.feature_more_export_sub, actions.onOpenDebtExport),
                 MoreItem(PmIcons.History, R.string.feature_more_imports, R.string.feature_more_imports_sub, null),
             ),
         ),

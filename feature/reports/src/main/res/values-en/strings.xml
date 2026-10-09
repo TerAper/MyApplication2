@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="feature_reports_title">Reports</string>
+    <string name="feature_reports_back">Back</string>
+    <string name="feature_reports_ok">OK</string>
+    <string name="feature_reports_previous_month">Previous month</string>
+    <string name="feature_reports_next_month">Next month</string>
+
+    <string name="feature_reports_received">Received</string>
+    <string name="feature_reports_cash">Cash</string>
+    <string name="feature_reports_bank">Bank</string>
+    <string name="feature_reports_billed">Billed to clients</string>
+    <string name="feature_reports_billed_repairs">Visits and repairs</string>
+    <string name="feature_reports_billed_invoices">Invoices (imported)</string>
+    <string name="feature_reports_billed_manual">Added by hand</string>
+    <string name="feature_reports_profit">Profit from repairs</string>
+    <string name="feature_reports_margin">%1$d%% of the price</string>
+    <string name="feature_reports_work_revenue">Work and parts sold</string>
+    <string name="feature_reports_work_cost">Cost of parts</string>
+    <string name="feature_reports_owed_now">Owed now</string>
+    <string name="feature_reports_export_debts">Export debt report</string>
+    <plurals name="feature_reports_orders_done">
+        <item quantity="one">%1$d finished order</item>
+        <item quantity="other">%1$d finished orders</item>
+    </plurals>
+    <plurals name="feature_reports_debtors">
+        <item quantity="one">%1$d client owes</item>
+        <item quantity="other">%1$d clients owe</item>
+    </plurals>
+
+    <string name="feature_reports_export_title">Debt report</string>
+    <string name="feature_reports_export_explain">An Excel file with each client\'s charges, payments and balance for this company. Send it to the accountant or a client.</string>
+    <string name="feature_reports_export_debtors">Debtors · %1$d</string>
+    <string name="feature_reports_export_all">All clients · %1$d</string>
+    <string name="feature_reports_export_share">Send…</string>
+    <string name="feature_reports_export_share_title">Send the debt report</string>
+    <string name="feature_reports_export_save">Save to phone or Drive</string>
+    <string name="feature_reports_export_nothing">No clients to put in the report.</string>
+    <string name="feature_reports_export_saved_title">Report saved</string>
+    <string name="feature_reports_export_saved_message">Open it with Excel or Google Sheets.</string>
+    <string name="feature_reports_export_failed_title">Report not saved</string>
+    <string name="feature_reports_export_failed_message">The file could not be written. Try another place, for example Downloads.</string>
+
+    <string name="feature_reports_xlsx_title">Debts</string>
+    <string name="feature_reports_xlsx_client">Client</string>
+    <string name="feature_reports_xlsx_tax_id">Tax ID</string>
+    <string name="feature_reports_xlsx_phone">Phone</string>
+    <string name="feature_reports_xlsx_charged">Charged, AMD</string>
+    <string name="feature_reports_xlsx_paid">Paid, AMD</string>
+    <string name="feature_reports_xlsx_balance">Owes, AMD</string>
+    <string name="feature_reports_xlsx_last_payment">Last payment</string>
+    <string name="feature_reports_xlsx_total">Total</string>
+</resources>
