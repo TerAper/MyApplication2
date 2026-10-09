@@ -86,3 +86,44 @@ data class PendingPayment(
     val suggestedClientId: Long?,
     val suggestedClientName: String?,
 )
+
+/** Every kind of row in a client's money history. */
+enum class EntryKind { INVOICE, BANK_PAYMENT, CASH_PAYMENT, MANUAL_CHARGE, REPAIR_CHARGE }
+
+/** Everything known about one charge or payment, for its detail page. */
+data class ImportedEntryDetail(
+    val kind: EntryKind,
+    val id: Long,
+    val date: LocalDate,
+    val amount: Money,
+    val clientId: Long?,
+    val clientName: String?,
+    /** Invoice number, or the bank's document number. */
+    val documentNumber: String?,
+    val payerName: String? = null,
+    val payerAccount: String? = null,
+    val purpose: String? = null,
+    val matchState: PaymentMatchState? = null,
+    val matchReason: MatchReason? = null,
+    val suggestedClientName: String? = null,
+    val fileName: String?,
+    val importedAt: LocalDateTime?,
+    /** Every column of the original Excel row, in file order. Empty for rows imported before this was kept. */
+    val fields: List<Pair<String, String>>,
+    /** Payments naming this invoice, or invoices this payment names. */
+    val related: List<RelatedEntry> = emptyList(),
+    /** Full note: what was typed, the repair's work, or the bank purpose. */
+    val note: String = "",
+    /** When the row was entered or imported. */
+    val createdAt: LocalDateTime? = null,
+    /** The order a repair charge or a cash payment belongs to. */
+    val orderId: Long? = null,
+) {
+    /** Came from an Excel file: can be moved to another client. */
+    val isImported: Boolean get() = kind == EntryKind.INVOICE || kind == EntryKind.BANK_PAYMENT
+
+    /** Typed on the phone: can be deleted. */
+    val canDelete: Boolean get() = kind == EntryKind.CASH_PAYMENT || kind == EntryKind.MANUAL_CHARGE
+}
+
+data class RelatedEntry(val id: Long, val kind: EntryKind, val date: LocalDate, val amount: Money, val title: String)

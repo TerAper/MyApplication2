@@ -43,6 +43,10 @@ class ImportFilesTest {
         assertTrue(file.invoices[1].confirmedByBuyer)
         assertEquals(Money(400_050), file.invoices[1].amount)
         assertEquals("inv:B7031824772", first.fingerprint)
+        // All columns are kept for the detail page, dates readable.
+        assertEquals("01.08.2025 16:14", first.fields.toMap()["Դուրս գրման ա/թ"])
+        assertEquals("«ԱՈՒԿՑԻՈՆ ՄԱՍԹԵՐՍ» (ՍՊԸ)", first.fields.toMap()["Ստացողի անվանում"])
+        assertEquals(null, first.fields.toMap()["Ստացողի ստորագրման ա/թ"])
     }
 
     @Test
@@ -55,6 +59,7 @@ class ImportFilesTest {
         assertEquals(LocalDate.of(2025, 1, 17), payment.date)
         assertEquals(Money.ofDram(4000), payment.amount)
         assertEquals("220001154248000", payment.payerAccount)
+        assertEquals("Հ/Վ  B5203593428 առ 08.01.2025", payment.fields.toMap()["Նպատակ"])
         assertEquals(payment.fingerprint, payment.copy(purpose = "Հ/Վ B5203593428   առ 08.01.2025").fingerprint)
         assertNotEquals(payment.fingerprint, payment.copy(amount = Money.ofDram(4001)).fingerprint)
     }

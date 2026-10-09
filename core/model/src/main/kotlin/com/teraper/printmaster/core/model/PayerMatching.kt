@@ -152,6 +152,8 @@ data class MatchMemory(
     val invoiceClients: Map<String, Long> = emptyMap(),
     /** Client → amounts of their invoices. */
     val invoiceAmounts: Map<Long, Set<Money>> = emptyMap(),
+    /** Payer name key → clients the user said this payer is NOT. Never matched to them again. */
+    val rejected: Map<String, Set<Long>> = emptyMap(),
 )
 
 class PaymentMatcher(clients: Map<Long, String>, private val memory: MatchMemory) {
@@ -159,17 +161,21 @@ class PaymentMatcher(clients: Map<Long, String>, private val memory: MatchMemory
     private val index = PayerNameIndex(clients)
 
     fun match(payment: ImportedPayment): PaymentMatch {
-        payment.payerAccount?.let { account -> memory.accounts[account]?.let { return PaymentMatch.Auto(it, MatchReason.ACCOUNT) } }
-        memory.aliases[PayerNames.normalize(payment.payerName).key]?.let { return PaymentMatch.Auto(it, MatchReason.ALIAS) }
+        val nameKey = PayerNames.normalize(payment.payerName).key
+        val rejected = memory.rejected[nameKey].orEmpty()
+        payment.payerAccount?.let { account ->
+            memory.accounts[account]?.takeIf { it !in rejected }?.let { return PaymentMatch.Auto(it, MatchReason.ACCOUNT) }
+        }
+        memory.aliases[nameKey]?.takeIf { it !in rejected }?.let { return PaymentMatch.Auto(it, MatchReason.ALIAS) }
 
-        val ranked = index.rank(payment.payerName)
+        val ranked = index.rank(payment.payerName).filter { it.first !in rejected }
         val (bestId, bestScore) = ranked.firstOrNull()?.let { (id, score) -> id to score + amountBonus(id, payment.amount) } ?: (null to 0.0)
         val secondScore = ranked.getOrNull(1)?.second ?: 0.0
 
         // Clients often mistype the invoice number, so it only counts when the name agrees too.
         val invoiceClient = INVOICE_NUMBER.findAll(payment.purpose)
             .mapNotNull { memory.invoiceClients[it.value.replace(" ", "").uppercase()] }
-            .firstOrNull()
+            .firstOrNull { it !in rejected }
         if (invoiceClient != null && index.score(payment.payerName, invoiceClient) >= 0.45) {
             return PaymentMatch.Auto(invoiceClient, MatchReason.INVOICE)
         }

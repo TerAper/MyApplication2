@@ -151,4 +151,46 @@ class OfflineImportRepositoryTest {
         assertEquals(Money.ofDram(8_000), balance("«ՋԻ ՓԻ» ՓԲԸ"))
         assertNull(imports.importPreviewed(false))
     }
+
+    @Test
+    fun correctionsStayCorrectInLaterImports() = runTest {
+        companyWith(accounts = "1150018363093024")
+        preview(invoices)
+        imports.importPreviewed(false)
+        val clients = repos.clients.observeClientSummaries().first().associate { it.client.name to it.client.id }
+        val crystal = clients.getValue("«ԿՐԻՍՏԱԼ 7» ՍՊԸ")
+        val gp = clients.getValue("«ՋԻ ՓԻ» ՓԲԸ")
+
+        // The bank row matched Crystal by name, but it was really GP's money.
+        val payer = "ԿՐԻՍՏԱԼ 7 ՍՊԸ մԱյԴի ԲանկՄ ՓԲԸ մԿենտրոնՄ մ/ճ"
+        preview(bank(pay("11", "11817081606001", "քարթրիջ", "6,000.00", payer)))
+        imports.importPreviewed(false)
+        val paymentId = repos.db.openHelper.readableDatabase.query("SELECT id FROM payments").use { it.moveToFirst(); it.getLong(0) }
+        val detail = imports.observePaymentDetail(paymentId).first()!!
+        assertEquals(crystal, detail.clientId)
+        assertEquals("քարթրիջ", detail.fields.toMap()["Նպատակ"])
+        assertEquals(com.teraper.printmaster.core.model.MatchReason.NAME, detail.matchReason)
+
+        // Detached: back to "to check", never suggested as Crystal.
+        imports.detachPayment(paymentId)
+        val pending = imports.observePending().first().single()
+        assertTrue(pending.suggestedClientId != crystal)
+        imports.assign(paymentId, gp)
+
+        // Next statement: same payer and account, new payment → GP, not Crystal.
+        preview(bank(pay("12", "11817081606001", "քարթրիջ", "3,000.00", payer)))
+        val next = imports.importPreviewed(false)!!
+        assertEquals(0, next.pending)
+        val paidBy = repos.clients.observeClientSummaries().first().associate { it.client.id to it.paid }
+        assertEquals(Money.ofDram(9_000), paidBy[gp])
+        assertEquals(Money.ZERO, paidBy[crystal])
+
+        // An invoice moved to another client keeps it when the file is imported again.
+        val invoiceId = repos.db.openHelper.readableDatabase.query("SELECT id FROM charges WHERE document_number = 'B0000000002'").use { it.moveToFirst(); it.getLong(0) }
+        assertEquals(1, imports.observeChargeDetail(invoiceId).first()!!.fields.count { it.first == "Սերիա և համար" })
+        imports.moveInvoice(invoiceId, gp)
+        preview(invoices)
+        imports.importPreviewed(false)
+        assertEquals(gp, imports.observeChargeDetail(invoiceId).first()!!.clientId)
+    }
 }

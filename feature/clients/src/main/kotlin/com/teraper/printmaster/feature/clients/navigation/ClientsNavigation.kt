@@ -7,6 +7,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.navigation
 import com.teraper.printmaster.feature.clients.detail.ClientDetailRoute
 import com.teraper.printmaster.feature.clients.edit.ClientEditRoute
+import com.teraper.printmaster.feature.clients.entry.EntryDetailRoute
 import com.teraper.printmaster.feature.clients.list.ClientListRoute
 import com.teraper.printmaster.feature.clients.printer.PrinterEditRoute
 import kotlinx.serialization.Serializable
@@ -29,7 +30,13 @@ data class ClientEditDestination(val clientId: Long = 0)
 @Serializable
 data class PrinterEditDestination(val clientId: Long, val printerId: Long = 0)
 
+/** One row of a client's money history: a charge ([isCharge]) or a payment, with all its data. */
+@Serializable
+data class EntryDetailDestination(val isCharge: Boolean, val id: Long)
+
 internal const val CLIENT_ID_ARG = "clientId"
+internal const val ENTRY_ID_ARG = "id"
+internal const val IS_CHARGE_ARG = "isCharge"
 internal const val PRINTER_ID_ARG = "printerId"
 
 fun NavController.navigateToClients(navOptions: NavOptions? = null) = navigate(ClientsGraph, navOptions)
@@ -66,6 +73,14 @@ fun NavGraphBuilder.clientsGraph(
                 onPrinterClick = { clientId, printerId -> navController.navigate(PrinterEditDestination(clientId, printerId)) },
                 onNewOrder = onNewOrder,
                 onOrderClick = onOpenOrder,
+                onOpenEntry = { isCharge, id -> navController.navigate(EntryDetailDestination(isCharge, id)) },
+            )
+        }
+        composable<EntryDetailDestination> {
+            EntryDetailRoute(
+                onBack = navController::popBackStack,
+                onOpenEntry = { isCharge, id -> navController.navigate(EntryDetailDestination(isCharge, id)) },
+                onOpenOrder = onOpenOrder,
             )
         }
         composable<PrinterEditDestination> {

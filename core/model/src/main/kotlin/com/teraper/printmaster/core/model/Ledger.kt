@@ -42,6 +42,10 @@ sealed interface LedgerEntry {
     }
 }
 
+/** Came from an Excel file: has a detail page with the original row. */
+val LedgerEntry.isImported: Boolean
+    get() = (this is LedgerEntry.Charge && source == ChargeSource.INVOICE_IMPORT) || (this is LedgerEntry.Payment && method == PaymentMethod.BANK)
+
 /** Newest first; same day → newest typed first. */
 fun List<LedgerEntry>.sortedNewestFirst(): List<LedgerEntry> =
     sortedWith(compareByDescending<LedgerEntry> { it.date }.thenByDescending { it.createdAt })

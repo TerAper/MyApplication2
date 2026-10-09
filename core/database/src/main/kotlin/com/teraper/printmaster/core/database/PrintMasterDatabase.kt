@@ -35,6 +35,7 @@ import com.teraper.printmaster.core.database.entity.ImportBatchEntity
 import com.teraper.printmaster.core.database.entity.MasterEntity
 import com.teraper.printmaster.core.database.entity.ModelCartridgeCrossRef
 import com.teraper.printmaster.core.database.entity.OrderEntity
+import com.teraper.printmaster.core.database.entity.MatchRejectionEntity
 import com.teraper.printmaster.core.database.entity.PayerAccountEntity
 import com.teraper.printmaster.core.database.entity.PaymentEntity
 import com.teraper.printmaster.core.database.entity.PrinterModelEntity
@@ -69,6 +70,7 @@ import com.teraper.printmaster.core.database.entity.RepairPartEntity
         CallRecordingEntity::class,
         CallRecordingClientEntity::class,
         PayerAccountEntity::class,
+        MatchRejectionEntity::class,
     ],
     version = PrintMasterDatabase.VERSION,
     exportSchema = true,
@@ -79,6 +81,8 @@ import com.teraper.printmaster.core.database.entity.RepairPartEntity
         AutoMigration(from = 3, to = 4),
         // 5: import fingerprints, payment matching, payer accounts.
         AutoMigration(from = 4, to = 5),
+        // 6: original row data, match reason, rejected matches.
+        AutoMigration(from = 5, to = 6),
     ],
 )
 abstract class PrintMasterDatabase : RoomDatabase() {
@@ -94,7 +98,7 @@ abstract class PrintMasterDatabase : RoomDatabase() {
     abstract fun importDao(): ImportDao
 
     companion object {
-        const val VERSION = 5
+        const val VERSION = 6
 
         /** Oldest version a backup file may have; older ones only existed on development phones. */
         const val OLDEST_RESTORABLE_VERSION = 2

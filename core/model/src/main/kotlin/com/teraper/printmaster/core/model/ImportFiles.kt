@@ -13,6 +13,8 @@ data class ImportedInvoice(
     val amount: Money,
     val confirmedByBuyer: Boolean,
     val cancelled: Boolean,
+    /** Every filled column of the row, as titled in the file, for the detail page. */
+    val fields: List<Pair<String, String>> = emptyList(),
 ) {
     /** The invoice number is unique in the tax system, so it alone says "same invoice". */
     val fingerprint: String get() = "inv:" + serial.uppercase()
@@ -26,6 +28,8 @@ data class ImportedPayment(
     val purpose: String,
     val amount: Money,
     val payerName: String,
+    /** Every filled column of the row, as titled in the file, for the detail page. */
+    val fields: List<Pair<String, String>> = emptyList(),
 ) {
     /**
      * Hidden key of the row: the bank reuses document numbers (fees share them), so date,
@@ -87,6 +91,7 @@ object ImportFiles {
                 amount = parseAmount(row.at(amount)) ?: return@mapNotNull null,
                 confirmedByBuyer = "Հաստատված" in statusText,
                 cancelled = "Չեղարկ" in statusText || "Անվավեր" in statusText,
+                fields = fields(rows[headerIndex], row),
             )
         }
         val first = rows.drop(headerIndex + 1).firstOrNull { it.at(serial) != null }
@@ -132,6 +137,7 @@ object ImportFiles {
                 purpose = row.at(purpose)?.trim().orEmpty(),
                 amount = amount,
                 payerName = payerName,
+                fields = fields(rows[headerIndex], row),
             )
         }
         val accountRow = field("Հաշիվ N")
@@ -142,6 +148,25 @@ object ImportFiles {
             payments = payments,
             skipped = skipped,
         )
+    }
+
+    private val DATE_TIME_OUT: DateTimeFormatter = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm")
+    private val DATE_OUT: DateTimeFormatter = DateTimeFormatter.ofPattern("dd.MM.yyyy")
+
+    /** Title → value of every filled cell; Excel day numbers in date columns become dates. */
+    private fun fields(header: List<String?>, row: List<String?>): List<Pair<String, String>> =
+        header.mapIndexedNotNull { index, rawTitle ->
+            val title = rawTitle.cell().ifEmpty { return@mapIndexedNotNull null }
+            val value = row.at(index)?.trim() ?: return@mapIndexedNotNull null
+            val isDateColumn = "ա/թ" in title || "Ամսաթիվ" in title
+            val shown: String = (if (isDateColumn) excelDateText(value) else null) ?: value
+            title to shown
+        }
+
+    private fun excelDateText(value: String): String? {
+        val serial = value.toDoubleOrNull()?.takeIf { it > 1 } ?: return null
+        val dateTime = java.time.LocalDateTime.of(1899, 12, 30, 0, 0).plusSeconds((serial * 86_400).toLong())
+        return if (dateTime.toLocalTime() == java.time.LocalTime.MIDNIGHT) dateTime.format(DATE_OUT) else dateTime.format(DATE_TIME_OUT)
     }
 
     private val DATE_FORMATS = listOf("dd/MM/yyyy", "dd.MM.yyyy", "yyyy-MM-dd", "dd-MM-yyyy").map(DateTimeFormatter::ofPattern)

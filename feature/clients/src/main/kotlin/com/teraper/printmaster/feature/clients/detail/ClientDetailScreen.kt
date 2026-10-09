@@ -35,7 +35,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.teraper.printmaster.core.designsystem.component.AmountText
 import com.teraper.printmaster.core.designsystem.component.AmountTone
 import com.teraper.printmaster.core.designsystem.component.PmCard
-import com.teraper.printmaster.core.designsystem.component.PmClientPickerSheet
 import com.teraper.printmaster.core.designsystem.component.PmConfirmDialog
 import com.teraper.printmaster.core.designsystem.component.PmEmptyState
 import com.teraper.printmaster.core.designsystem.component.PmMessageDialog
@@ -72,6 +71,7 @@ internal fun ClientDetailRoute(
     onPrinterClick: (clientId: Long, printerId: Long) -> Unit,
     onNewOrder: (clientId: Long) -> Unit,
     onOrderClick: (orderId: Long) -> Unit,
+    onOpenEntry: (isCharge: Boolean, id: Long) -> Unit,
     viewModel: ClientDetailViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -98,10 +98,8 @@ internal fun ClientDetailRoute(
         callActions = CallActions(viewModel::onPlayCall, viewModel::onStopCall, viewModel::onShowAllCalls),
         onRecordPayment = onRecordPayment,
         onAddCharge = onAddCharge,
-        onEntryClick = viewModel::onEntryClick,
-        onConfirmDeleteEntry = viewModel::onConfirmDeleteEntry,
-        onMoveQueryChange = viewModel::onMoveQueryChange,
-        onMovePayment = viewModel::onMovePayment,
+        // Every row opens its own page: full note, file data, move or delete there.
+        onEntryClick = { entry -> onOpenEntry(entry is LedgerEntry.Charge, entry.id) },
         onAddPrinter = onAddPrinter,
         onPrinterClick = onPrinterClick,
         onNewOrder = onNewOrder,
@@ -124,9 +122,6 @@ internal fun ClientDetailScreen(
     onRecordPayment: (Long) -> Unit = {},
     onAddCharge: (Long) -> Unit = {},
     onEntryClick: (LedgerEntry) -> Unit = {},
-    onConfirmDeleteEntry: (LedgerEntry) -> Unit = {},
-    onMoveQueryChange: (String) -> Unit = {},
-    onMovePayment: (Long) -> Unit = {},
     onAddPrinter: (Long) -> Unit = {},
     onPrinterClick: (Long, Long) -> Unit = { _, _ -> },
     onNewOrder: (Long) -> Unit = {},
@@ -190,28 +185,6 @@ internal fun ClientDetailScreen(
                 title = stringResource(R.string.feature_clients_delete_blocked_title),
                 message = stringResource(R.string.feature_clients_delete_blocked_message),
                 okText = stringResource(R.string.feature_clients_ok),
-                onDismiss = onDismissDialog,
-            )
-            is ClientDetailDialog.ConfirmDeleteEntry -> {
-                val (tag, _) = dialog.entry.tag()
-                PmConfirmDialog(
-                    title = stringResource(R.string.feature_clients_delete_entry_title),
-                    message = "$tag · ${dialog.entry.date.formatShort()} · ${dialog.entry.amount.format()}",
-                    confirmText = stringResource(R.string.feature_clients_delete),
-                    dismissText = stringResource(R.string.feature_clients_cancel),
-                    onConfirm = { onConfirmDeleteEntry(dialog.entry) },
-                    onDismiss = onDismissDialog,
-                    destructive = true,
-                )
-            }
-            is ClientDetailDialog.MovePayment -> PmClientPickerSheet(
-                title = stringResource(R.string.feature_clients_move_payment_title, dialog.entry.amount.format()),
-                searchHint = stringResource(R.string.feature_clients_search_hint),
-                clearLabel = stringResource(R.string.feature_clients_clear_search),
-                query = dialog.query,
-                clients = state.moveTargets,
-                onQueryChange = onMoveQueryChange,
-                onPick = onMovePayment,
                 onDismiss = onDismissDialog,
             )
             null -> Unit

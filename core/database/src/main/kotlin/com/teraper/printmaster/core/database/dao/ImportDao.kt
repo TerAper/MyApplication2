@@ -1,6 +1,7 @@
 package com.teraper.printmaster.core.database.dao
 
 import androidx.room.ColumnInfo
+import androidx.room.Embedded
 import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
@@ -9,8 +10,10 @@ import com.teraper.printmaster.core.database.entity.ChargeEntity
 import com.teraper.printmaster.core.database.entity.ClientAliasEntity
 import com.teraper.printmaster.core.database.entity.ClientEntity
 import com.teraper.printmaster.core.database.entity.ImportBatchEntity
+import com.teraper.printmaster.core.database.entity.MatchRejectionEntity
 import com.teraper.printmaster.core.database.entity.PayerAccountEntity
 import com.teraper.printmaster.core.database.entity.PaymentEntity
+import com.teraper.printmaster.core.model.MatchReason
 import com.teraper.printmaster.core.model.PaymentMatchState
 import kotlinx.coroutines.flow.Flow
 
@@ -98,8 +101,63 @@ interface ImportDao {
     )
     fun observePending(companyId: Long): Flow<List<PendingRow>>
 
-    @Query("UPDATE payments SET client_id = :clientId, match_state = :state, suggested_client_id = :suggestedId WHERE id = :id")
-    suspend fun setPaymentClient(id: Long, clientId: Long?, state: PaymentMatchState, suggestedId: Long?)
+    @Query(
+        "UPDATE payments SET client_id = :clientId, match_state = :state, suggested_client_id = :suggestedId, match_reason = :reason WHERE id = :id",
+    )
+    suspend fun setPaymentClient(id: Long, clientId: Long?, state: PaymentMatchState, suggestedId: Long?, reason: MatchReason? = null)
+
+    // Corrections
+
+    @Query("SELECT * FROM match_rejections")
+    suspend fun getRejections(): List<MatchRejectionEntity>
+
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insertRejection(rejection: MatchRejectionEntity)
+
+    /** An alias pointing at a client the payer was moved away from. */
+    @Query("DELETE FROM client_aliases WHERE normalized_name = :nameKey AND client_id = :clientId")
+    suspend fun deleteAlias(nameKey: String, clientId: Long)
+
+    @Query("UPDATE payer_accounts SET client_id = NULL WHERE account = :account AND client_id = :clientId")
+    suspend fun forgetAccount(account: String, clientId: Long)
+
+    @Query("SELECT * FROM charges WHERE id = :id")
+    suspend fun getCharge(id: Long): ChargeEntity?
+
+    @Query("UPDATE charges SET client_id = :clientId WHERE id = :id")
+    suspend fun setChargeClient(id: Long, clientId: Long)
+
+    // Detail pages
+
+    @Query(
+        """
+        SELECT ch.*, c.name AS client_name, b.file_name, b.imported_at, r.order_id FROM charges ch
+        LEFT JOIN clients c ON c.id = ch.client_id
+        LEFT JOIN import_batches b ON b.id = ch.import_batch_id
+        LEFT JOIN repairs r ON r.id = ch.repair_id
+        WHERE ch.id = :id
+        """,
+    )
+    fun observeChargeDetail(id: Long): Flow<ChargeDetailRow?>
+
+    @Query(
+        """
+        SELECT p.*, c.name AS client_name, s.name AS suggested_name, b.file_name, b.imported_at FROM payments p
+        LEFT JOIN clients c ON c.id = p.client_id
+        LEFT JOIN clients s ON s.id = p.suggested_client_id
+        LEFT JOIN import_batches b ON b.id = p.import_batch_id
+        WHERE p.id = :id
+        """,
+    )
+    fun observePaymentDetail(id: Long): Flow<PaymentDetailRow?>
+
+    /** Imported invoices with these numbers (the ones a bank payment names). */
+    @Query("SELECT * FROM charges WHERE company_id = :companyId AND source = 'INVOICE_IMPORT' AND document_number IN (:numbers)")
+    suspend fun getInvoicesByNumber(companyId: Long, numbers: List<String>): List<ChargeEntity>
+
+    /** Bank payments whose purpose names this invoice number. */
+    @Query("SELECT * FROM payments WHERE company_id = :companyId AND method = 'BANK' AND note LIKE '%' || :number || '%'")
+    suspend fun getPaymentsNaming(companyId: Long, number: String): List<PaymentEntity>
 }
 
 data class ChargeKey(
@@ -125,4 +183,20 @@ data class PendingRow(
     val note: String,
     @ColumnInfo(name = "suggested_client_id") val suggestedClientId: Long?,
     @ColumnInfo(name = "suggested_name") val suggestedName: String?,
+)
+
+data class ChargeDetailRow(
+    @Embedded val charge: ChargeEntity,
+    @ColumnInfo(name = "client_name") val clientName: String?,
+    @ColumnInfo(name = "file_name") val fileName: String?,
+    @ColumnInfo(name = "imported_at") val importedAt: Long?,
+    @ColumnInfo(name = "order_id") val orderId: Long?,
+)
+
+data class PaymentDetailRow(
+    @Embedded val payment: PaymentEntity,
+    @ColumnInfo(name = "client_name") val clientName: String?,
+    @ColumnInfo(name = "suggested_name") val suggestedName: String?,
+    @ColumnInfo(name = "file_name") val fileName: String?,
+    @ColumnInfo(name = "imported_at") val importedAt: Long?,
 )

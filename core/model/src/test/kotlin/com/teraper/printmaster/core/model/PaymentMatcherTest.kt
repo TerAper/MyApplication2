@@ -78,4 +78,18 @@ class PaymentMatcherTest {
         // An account seen with different clients isn't trusted.
         assertEquals(PaymentMatch.Auto(8, MatchReason.NAME), matcher(account).match(payment("ՄԲՄ ՍՊԸ", account = "777")))
     }
+
+    @Test
+    fun aClientTheUserRejectedIsNeverMatchedAgain() {
+        val name = "ԿՐԻՍՏԱԼ 7 ՍՊԸ մԱյԴի ԲանկՄ ՓԲԸ"
+        val key = PayerNames.normalize(name).key
+        val memory = MatchMemory(
+            accounts = mapOf("555" to 2L),
+            invoiceClients = mapOf("B5203593428" to 2L),
+            rejected = mapOf(key to setOf(2L)),
+        )
+        val result = matcher(memory).match(payment(name, "B5203593428", account = "555"))
+        assertTrue(result !is PaymentMatch.Auto || result.clientId != 2L)
+        assertTrue(result !is PaymentMatch.Suggested || result.clientId != 2L)
+    }
 }

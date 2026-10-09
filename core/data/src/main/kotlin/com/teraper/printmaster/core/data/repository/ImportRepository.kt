@@ -1,6 +1,7 @@
 package com.teraper.printmaster.core.data.repository
 
 import com.teraper.printmaster.core.model.ImportBatch
+import com.teraper.printmaster.core.model.ImportedEntryDetail
 import com.teraper.printmaster.core.model.ImportPreviewResult
 import com.teraper.printmaster.core.model.ImportResult
 import com.teraper.printmaster.core.model.PendingPayment
@@ -35,4 +36,19 @@ interface ImportRepository {
 
     /** Not a client payment (e.g. a private top-up): stays out of all balances. */
     suspend fun ignore(paymentId: Long)
+
+    /** Any charge: imported invoice, repair or typed debt. */
+    fun observeChargeDetail(chargeId: Long): Flow<ImportedEntryDetail?>
+
+    /** Any payment: bank or cash. */
+    fun observePaymentDetail(paymentId: Long): Flow<ImportedEntryDetail?>
+
+    /** The invoice is another client's. Re-importing it later keeps this client. */
+    suspend fun moveInvoice(chargeId: Long, clientId: Long)
+
+    /**
+     * The payment is NOT its current client's: it goes back to "to check", and this payer is
+     * never matched to that client again (name and account).
+     */
+    suspend fun detachPayment(paymentId: Long)
 }

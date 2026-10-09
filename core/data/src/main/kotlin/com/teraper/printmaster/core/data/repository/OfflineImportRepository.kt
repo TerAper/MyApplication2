@@ -11,13 +11,16 @@ import com.teraper.printmaster.core.database.entity.ChargeEntity
 import com.teraper.printmaster.core.database.entity.ClientAliasEntity
 import com.teraper.printmaster.core.database.entity.ClientEntity
 import com.teraper.printmaster.core.database.entity.ImportBatchEntity
+import com.teraper.printmaster.core.database.entity.MatchRejectionEntity
 import com.teraper.printmaster.core.database.entity.PayerAccountEntity
 import com.teraper.printmaster.core.database.entity.PaymentEntity
 import com.teraper.printmaster.core.model.ChargeSource
 import com.teraper.printmaster.core.model.ClientType
 import com.teraper.printmaster.core.model.Company
 import com.teraper.printmaster.core.model.CompanyCheck
+import com.teraper.printmaster.core.model.EntryKind
 import com.teraper.printmaster.core.model.ImportBatch
+import com.teraper.printmaster.core.model.ImportedEntryDetail
 import com.teraper.printmaster.core.model.ImportFile
 import com.teraper.printmaster.core.model.ImportFiles
 import com.teraper.printmaster.core.model.ImportKind
@@ -27,6 +30,7 @@ import com.teraper.printmaster.core.model.ImportResult
 import com.teraper.printmaster.core.model.ImportedInvoice
 import com.teraper.printmaster.core.model.ImportedPayment
 import com.teraper.printmaster.core.model.MatchMemory
+import com.teraper.printmaster.core.model.MatchReason
 import com.teraper.printmaster.core.model.Money
 import com.teraper.printmaster.core.model.PayerNames
 import com.teraper.printmaster.core.model.PaymentMatch
@@ -34,6 +38,7 @@ import com.teraper.printmaster.core.model.PaymentMatchState
 import com.teraper.printmaster.core.model.PaymentMatcher
 import com.teraper.printmaster.core.model.PaymentMethod
 import com.teraper.printmaster.core.model.PendingPayment
+import com.teraper.printmaster.core.model.RelatedEntry
 import com.teraper.printmaster.core.model.sum
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CancellationException
@@ -213,6 +218,7 @@ internal class OfflineImportRepository @Inject constructor(
                     importBatchId = batchId,
                     createdAt = clock.millis(),
                     fingerprint = invoice.fingerprint,
+                    rawData = RawFields.encode(invoice.fields),
                 ),
             )
             added++
@@ -296,6 +302,8 @@ internal class OfflineImportRepository @Inject constructor(
         payerAccount = payerAccount,
         matchState = if (match is PaymentMatch.Auto) PaymentMatchState.AUTO else PaymentMatchState.PENDING,
         suggestedClientId = (match as? PaymentMatch.Suggested)?.clientId,
+        matchReason = (match as? PaymentMatch.Auto)?.reason,
+        rawData = RawFields.encode(fields),
     )
 
     private suspend fun matcher(companyId: Long): PaymentMatcher {
@@ -306,6 +314,7 @@ internal class OfflineImportRepository @Inject constructor(
             accounts = dao.getPayerAccounts().associate { it.account to it.clientId },
             invoiceClients = invoices.associate { it.documentNumber.uppercase() to it.clientId },
             invoiceAmounts = invoices.groupBy({ it.clientId }, { Money(it.amountMinor) }).mapValues { it.value.toSet() },
+            rejected = dao.getRejections().groupBy({ it.nameKey }, { it.clientId }).mapValues { it.value.toSet() },
         )
         return PaymentMatcher(clients, memory)
     }
@@ -330,11 +339,11 @@ internal class OfflineImportRepository @Inject constructor(
             )
             when (val match = matcher.match(payment)) {
                 is PaymentMatch.Auto -> {
-                    dao.setPaymentClient(row.id, match.clientId, PaymentMatchState.AUTO, null)
+                    dao.setPaymentClient(row.id, match.clientId, PaymentMatchState.AUTO, null, match.reason)
                     rememberAccount(row.payerAccount, match.clientId)
                 }
                 is PaymentMatch.Suggested -> dao.setPaymentClient(row.id, null, PaymentMatchState.PENDING, match.clientId)
-                PaymentMatch.None -> Unit
+                PaymentMatch.None -> dao.setPaymentClient(row.id, null, PaymentMatchState.PENDING, null)
             }
         }
     }
@@ -368,7 +377,9 @@ internal class OfflineImportRepository @Inject constructor(
     override suspend fun assign(paymentId: Long, clientId: Long) {
         db.withTransaction {
             val payment = dao.getPayment(paymentId) ?: return@withTransaction
-            dao.setPaymentClient(paymentId, clientId, PaymentMatchState.CONFIRMED, null)
+            // Moved away from a wrong client: never match this payer to that client again.
+            payment.clientId?.takeIf { it != clientId }?.let { rejectFor(payment, it) }
+            dao.setPaymentClient(paymentId, clientId, PaymentMatchState.CONFIRMED, null, MatchReason.MANUAL)
             payment.rawPayerName?.takeIf { it.isNotBlank() }?.let { name ->
                 val key = PayerNames.normalize(name).key
                 if (key.isNotEmpty()) dao.upsertAlias(ClientAliasEntity(clientId = clientId, normalizedName = key, rawName = name))
@@ -380,6 +391,101 @@ internal class OfflineImportRepository @Inject constructor(
     }
 
     override suspend fun ignore(paymentId: Long) {
-        dao.setPaymentClient(paymentId, null, PaymentMatchState.IGNORED, null)
+        db.withTransaction {
+            val payment = dao.getPayment(paymentId) ?: return@withTransaction
+            payment.clientId?.let { rejectFor(payment, it) }
+            dao.setPaymentClient(paymentId, null, PaymentMatchState.IGNORED, null, MatchReason.MANUAL)
+        }
+    }
+
+    override suspend fun detachPayment(paymentId: Long) {
+        db.withTransaction {
+            val payment = dao.getPayment(paymentId) ?: return@withTransaction
+            val wrongClient = payment.clientId ?: return@withTransaction
+            rejectFor(payment, wrongClient)
+            dao.setPaymentClient(paymentId, null, PaymentMatchState.PENDING, null)
+            // Maybe the name now points at someone else; never back at the rejected client.
+            rematchPending(payment.companyId)
+        }
+    }
+
+    /** Remembers that this payment's payer is not [clientId]: by name, alias and account. */
+    private suspend fun rejectFor(payment: PaymentEntity, clientId: Long) {
+        payment.rawPayerName?.takeIf { it.isNotBlank() }?.let { name ->
+            val key = PayerNames.normalize(name).key
+            if (key.isNotEmpty()) {
+                dao.insertRejection(MatchRejectionEntity(key, clientId))
+                dao.deleteAlias(key, clientId)
+            }
+        }
+        payment.payerAccount?.let { dao.forgetAccount(it, clientId) }
+    }
+
+    override suspend fun moveInvoice(chargeId: Long, clientId: Long) {
+        val charge = dao.getCharge(chargeId) ?: return
+        if (charge.source == ChargeSource.INVOICE_IMPORT) dao.setChargeClient(chargeId, clientId)
+    }
+
+    override fun observeChargeDetail(chargeId: Long): Flow<ImportedEntryDetail?> = dao.observeChargeDetail(chargeId).map { row ->
+        row ?: return@map null
+        val charge = row.charge
+        val payments = charge.documentNumber?.let { dao.getPaymentsNaming(charge.companyId, it) }.orEmpty()
+        ImportedEntryDetail(
+            kind = when (charge.source) {
+                ChargeSource.INVOICE_IMPORT -> EntryKind.INVOICE
+                ChargeSource.REPAIR -> EntryKind.REPAIR_CHARGE
+                ChargeSource.MANUAL -> EntryKind.MANUAL_CHARGE
+            },
+            id = charge.id,
+            date = LocalDate.ofEpochDay(charge.dateEpochDay),
+            amount = Money(charge.amountMinor),
+            clientId = charge.clientId,
+            clientName = row.clientName,
+            documentNumber = charge.documentNumber,
+            fileName = row.fileName,
+            importedAt = row.importedAt?.let { Instant.ofEpochMilli(it).atZone(clock.zone).toLocalDateTime() },
+            fields = RawFields.decode(charge.rawData).ifEmpty { listOfNotNull(charge.rawName?.let { "Name" to it }, charge.rawTaxId?.let { "ՀՎՀՀ" to it }) },
+            note = charge.note,
+            createdAt = Instant.ofEpochMilli(charge.createdAt).atZone(clock.zone).toLocalDateTime(),
+            orderId = row.orderId,
+            related = payments.map {
+                RelatedEntry(it.id, EntryKind.BANK_PAYMENT, LocalDate.ofEpochDay(it.dateEpochDay), Money(it.amountMinor), it.rawPayerName.orEmpty())
+            },
+        )
+    }
+
+    override fun observePaymentDetail(paymentId: Long): Flow<ImportedEntryDetail?> = dao.observePaymentDetail(paymentId).map { row ->
+        row ?: return@map null
+        val payment = row.payment
+        val numbers = INVOICE_NUMBER.findAll(payment.note).map { it.value.replace(" ", "").uppercase() }.distinct().toList()
+        val invoices = if (numbers.isEmpty()) emptyList() else dao.getInvoicesByNumber(payment.companyId, numbers)
+        ImportedEntryDetail(
+            kind = if (payment.method == PaymentMethod.BANK) EntryKind.BANK_PAYMENT else EntryKind.CASH_PAYMENT,
+            id = payment.id,
+            date = LocalDate.ofEpochDay(payment.dateEpochDay),
+            amount = Money(payment.amountMinor),
+            clientId = payment.clientId,
+            clientName = row.clientName,
+            documentNumber = payment.reference,
+            payerName = payment.rawPayerName,
+            payerAccount = payment.payerAccount,
+            purpose = payment.note,
+            matchState = payment.matchState,
+            matchReason = payment.matchReason,
+            suggestedClientName = row.suggestedName,
+            fileName = row.fileName,
+            importedAt = row.importedAt?.let { Instant.ofEpochMilli(it).atZone(clock.zone).toLocalDateTime() },
+            fields = RawFields.decode(payment.rawData),
+            note = payment.note,
+            createdAt = Instant.ofEpochMilli(payment.createdAt).atZone(clock.zone).toLocalDateTime(),
+            orderId = payment.orderId,
+            related = invoices.map {
+                RelatedEntry(it.id, EntryKind.INVOICE, LocalDate.ofEpochDay(it.dateEpochDay), Money(it.amountMinor), it.documentNumber.orEmpty())
+            },
+        )
+    }
+
+    private companion object {
+        val INVOICE_NUMBER = Regex("""[A-Za-z]\s?\d{10}""")
     }
 }

@@ -7,6 +7,7 @@ import androidx.room.Index
 import androidx.room.PrimaryKey
 import com.teraper.printmaster.core.model.ChargeSource
 import com.teraper.printmaster.core.model.ImportKind
+import com.teraper.printmaster.core.model.MatchReason
 import com.teraper.printmaster.core.model.PaymentMatchState
 import com.teraper.printmaster.core.model.PaymentMethod
 
@@ -95,6 +96,8 @@ data class ChargeEntity(
     @ColumnInfo(name = "created_at") val createdAt: Long,
     /** Hidden key of an imported row (see ImportedInvoice.fingerprint); null for charges typed on the phone. */
     val fingerprint: String? = null,
+    /** All columns of the imported row as JSON [[title, value], …], shown on the detail page. */
+    @ColumnInfo(name = "raw_data") val rawData: String? = null,
 )
 
 /**
@@ -170,6 +173,29 @@ data class PaymentEntity(
     @ColumnInfo(name = "match_state") val matchState: PaymentMatchState? = null,
     /** Probable client while [matchState] is PENDING; [clientId] stays null until confirmed. */
     @ColumnInfo(name = "suggested_client_id") val suggestedClientId: Long? = null,
+    /** How the client was found (account, remembered name, invoice number, name, by hand). */
+    @ColumnInfo(name = "match_reason") val matchReason: MatchReason? = null,
+    /** All columns of the imported row as JSON [[title, value], …], shown on the detail page. */
+    @ColumnInfo(name = "raw_data") val rawData: String? = null,
+)
+
+/** "Payer [nameKey] is NOT client [clientId]": the user moved a payment away; never matched back. */
+@Entity(
+    tableName = "match_rejections",
+    primaryKeys = ["name_key", "client_id"],
+    foreignKeys = [
+        ForeignKey(
+            entity = ClientEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["client_id"],
+            onDelete = ForeignKey.CASCADE,
+        ),
+    ],
+    indices = [Index(value = ["client_id"])],
+)
+data class MatchRejectionEntity(
+    @ColumnInfo(name = "name_key") val nameKey: String,
+    @ColumnInfo(name = "client_id") val clientId: Long,
 )
 
 /**

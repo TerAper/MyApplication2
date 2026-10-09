@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -84,8 +85,8 @@ internal fun FinanceSection(
                 LedgerRow(entry, onClick = { onEntryClick(entry) })
             }
         }
-        if (ledger.any { it.canDelete }) {
-            Text(stringResource(R.string.feature_clients_entry_delete_hint), style = MaterialTheme.typography.bodySmall, color = PmTheme.colors.inkMuted)
+        if (ledger.isNotEmpty()) {
+            Text(stringResource(R.string.feature_clients_entry_open_hint), style = MaterialTheme.typography.bodySmall, color = PmTheme.colors.inkMuted)
         }
     }
 }
@@ -111,7 +112,7 @@ private fun LedgerRow(entry: LedgerEntry, onClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(enabled = entry.canDelete, onClick = onClick)
+            .clickable(onClick = onClick)
             .padding(horizontal = 14.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(10.dp),
@@ -129,6 +130,7 @@ private fun LedgerRow(entry: LedgerEntry, onClick: () -> Unit) {
             is LedgerEntry.Charge -> AmountText(entry.amount, tone = AmountTone.Neutral, style = MaterialTheme.typography.titleSmall, withSign = true, withCurrency = false)
             is LedgerEntry.Payment -> AmountText(-entry.amount, tone = AmountTone.Paid, style = MaterialTheme.typography.titleSmall, withCurrency = false)
         }
+        Icon(PmIcons.Chevron, contentDescription = null, tint = PmTheme.colors.outlineStrong)
     }
 }
 
