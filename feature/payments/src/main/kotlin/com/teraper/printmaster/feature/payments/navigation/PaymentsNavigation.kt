@@ -27,19 +27,26 @@ internal const val IS_CHARGE_ARG = "isCharge"
 fun NavController.navigateToMoneyEntry(clientId: Long, kind: MoneyEntryKind) =
     navigate(MoneyEntryDestination(clientId, isCharge = kind == MoneyEntryKind.MANUAL_CHARGE))
 
+/** [nestedGraphs] adds other features' screens (Excel import) inside this tab. */
 fun NavGraphBuilder.paymentsGraph(
     navController: NavController,
     onOpenClient: (Long) -> Unit,
+    onImport: () -> Unit,
+    onReviewPayments: () -> Unit,
+    nestedGraphs: NavGraphBuilder.() -> Unit = {},
 ) {
     navigation<PaymentsGraph>(startDestination = PaymentsOverviewDestination) {
         composable<PaymentsOverviewDestination> {
             PaymentsOverviewRoute(
                 onOpenClient = onOpenClient,
                 onCashPayment = { navController.navigate(MoneyEntryDestination()) },
+                onImport = onImport,
+                onReviewPayments = onReviewPayments,
             )
         }
         composable<MoneyEntryDestination> {
             MoneyEntryRoute(onClose = navController::popBackStack)
         }
+        nestedGraphs()
     }
 }

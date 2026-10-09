@@ -6,14 +6,17 @@ import androidx.lifecycle.viewModelScope
 import com.teraper.printmaster.core.data.repository.CallRecordingsRepository
 import com.teraper.printmaster.core.data.repository.ClientsRepository
 import com.teraper.printmaster.core.data.repository.DeleteClientResult
+import com.teraper.printmaster.core.data.repository.ImportRepository
 import com.teraper.printmaster.core.data.repository.PaymentsRepository
 import com.teraper.printmaster.core.data.repository.OrdersRepository
 import com.teraper.printmaster.core.data.repository.PrintersRepository
 import com.teraper.printmaster.core.model.CallRecording
 import com.teraper.printmaster.core.model.ClientPrinter
+import com.teraper.printmaster.core.model.ClientSearch
 import com.teraper.printmaster.core.model.ClientSummary
 import com.teraper.printmaster.core.model.LedgerEntry
 import com.teraper.printmaster.core.model.Order
+import com.teraper.printmaster.core.model.PaymentMethod
 import com.teraper.printmaster.feature.clients.navigation.CLIENT_ID_ARG
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
@@ -47,6 +50,8 @@ sealed interface ClientDetailUiState {
         val calls: List<CallRecording> = emptyList(),
         val showAllCalls: Boolean = false,
         val playing: CallRecording? = null,
+        /** Clients to move a payment to, while [dialog] is MovePayment. */
+        val moveTargets: List<ClientSummary> = emptyList(),
     ) : ClientDetailUiState
 }
 
@@ -54,6 +59,9 @@ sealed interface ClientDetailDialog {
     data object ConfirmDelete : ClientDetailDialog
     data object DeleteBlocked : ClientDetailDialog
     data class ConfirmDeleteEntry(val entry: LedgerEntry) : ClientDetailDialog
+
+    /** A bank payment that went to the wrong client: pick the right one. */
+    data class MovePayment(val entry: LedgerEntry.Payment, val query: String = "") : ClientDetailDialog
 }
 
 sealed interface ClientDetailEvent {
@@ -68,6 +76,7 @@ class ClientDetailViewModel @Inject constructor(
     printersRepository: PrintersRepository,
     ordersRepository: OrdersRepository,
     callRecordingsRepository: CallRecordingsRepository,
+    private val importRepository: ImportRepository,
     clock: Clock,
 ) : ViewModel() {
 
@@ -102,18 +111,26 @@ class ClientDetailViewModel @Inject constructor(
 
     private val callsView = combine(showAllCalls, playing) { all, playing -> all to playing }
 
+    private val dialogView = combine(dialog, clientsRepository.observeClientSummaries()) { dialog, clients ->
+        dialog to if (dialog is ClientDetailDialog.MovePayment) {
+            clients.filter { it.client.id != clientId && ClientSearch.matches(it.client, dialog.query) }
+        } else {
+            emptyList()
+        }
+    }
+
     val uiState: StateFlow<ClientDetailUiState> = combine(
         records,
         tab,
-        dialog,
+        dialogView,
         deleting,
         callsView,
-    ) { records, tab, dialog, deleting, (showAll, playing) ->
+    ) { records, tab, (dialog, moveTargets), deleting, (showAll, playing) ->
         val summary = records.summary
         when {
             summary != null -> ClientDetailUiState.Loaded(
                 summary, records.ledger, records.printers, records.orders, today, tab, dialog,
-                calls = records.calls, showAllCalls = showAll, playing = playing,
+                calls = records.calls, showAllCalls = showAll, playing = playing, moveTargets = moveTargets,
             )
             // Just deleted: keep showing Loading for the moment before the screen closes.
             deleting -> ClientDetailUiState.Loading
@@ -132,7 +149,10 @@ class ClientDetailViewModel @Inject constructor(
     fun onDeleteClick() = dialog.update { ClientDetailDialog.ConfirmDelete }
 
     fun onEntryClick(entry: LedgerEntry) {
-        if (entry.canDelete) dialog.value = ClientDetailDialog.ConfirmDeleteEntry(entry)
+        when {
+            entry.canDelete -> dialog.value = ClientDetailDialog.ConfirmDeleteEntry(entry)
+            entry is LedgerEntry.Payment && entry.method == PaymentMethod.BANK -> dialog.value = ClientDetailDialog.MovePayment(entry)
+        }
     }
 
     fun onDismissDialog() = dialog.update { null }
@@ -149,6 +169,15 @@ class ClientDetailViewModel @Inject constructor(
                 }
             }
         }
+    }
+
+    fun onMoveQueryChange(query: String) = dialog.update { (it as? ClientDetailDialog.MovePayment)?.copy(query = query) ?: it }
+
+    /** The payment goes to [targetClientId]; its payer is remembered for the next import. */
+    fun onMovePayment(targetClientId: Long) {
+        val move = dialog.value as? ClientDetailDialog.MovePayment ?: return
+        dialog.value = null
+        viewModelScope.launch { importRepository.assign(move.entry.id, targetClientId) }
     }
 
     fun onConfirmDeleteEntry(entry: LedgerEntry) {

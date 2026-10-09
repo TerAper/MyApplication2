@@ -16,6 +16,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -23,6 +24,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -36,6 +38,7 @@ import com.teraper.printmaster.core.designsystem.component.PmEmptyState
 import com.teraper.printmaster.core.designsystem.component.PmFilterChip
 import com.teraper.printmaster.core.designsystem.component.PmPrimaryButton
 import com.teraper.printmaster.core.designsystem.component.PmScreenTitle
+import com.teraper.printmaster.core.designsystem.component.PmSecondaryButton
 import com.teraper.printmaster.core.designsystem.component.format
 import com.teraper.printmaster.core.designsystem.component.formatShort
 import com.teraper.printmaster.core.designsystem.icon.PmIcons
@@ -52,6 +55,8 @@ import java.time.LocalDate
 internal fun PaymentsOverviewRoute(
     onOpenClient: (Long) -> Unit,
     onCashPayment: () -> Unit,
+    onImport: () -> Unit,
+    onReviewPayments: () -> Unit,
     viewModel: PaymentsOverviewViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -60,6 +65,8 @@ internal fun PaymentsOverviewRoute(
         onFilterChange = viewModel::onFilterChange,
         onOpenClient = onOpenClient,
         onCashPayment = onCashPayment,
+        onImport = onImport,
+        onReviewPayments = onReviewPayments,
     )
 }
 
@@ -69,6 +76,8 @@ internal fun PaymentsOverviewScreen(
     onFilterChange: (BalanceFilter) -> Unit,
     onOpenClient: (Long) -> Unit,
     onCashPayment: () -> Unit,
+    onImport: () -> Unit = {},
+    onReviewPayments: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     LazyColumn(
@@ -81,13 +90,22 @@ internal fun PaymentsOverviewScreen(
         item {
             Column(Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 SummaryCard(state)
-                PmPrimaryButton(
-                    text = stringResource(R.string.feature_payments_cash_payment),
-                    onClick = onCashPayment,
-                    icon = PmIcons.Add,
-                    enabled = state.hasClients,
-                    modifier = Modifier.fillMaxWidth(),
-                )
+                if (state.pendingPayments > 0) PendingBanner(state.pendingPayments, onReviewPayments)
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    PmPrimaryButton(
+                        text = stringResource(R.string.feature_payments_cash_payment),
+                        onClick = onCashPayment,
+                        icon = PmIcons.Add,
+                        enabled = state.hasClients,
+                        modifier = Modifier.weight(1f),
+                    )
+                    PmSecondaryButton(
+                        text = stringResource(R.string.feature_payments_import),
+                        onClick = onImport,
+                        icon = PmIcons.ImportExcel,
+                        modifier = Modifier.weight(1f),
+                    )
+                }
                 Row(
                     modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -140,6 +158,25 @@ private fun BalanceFilter.label(debtorCount: Int): String = when (this) {
     BalanceFilter.PAID -> stringResource(R.string.feature_payments_filter_paid)
     BalanceFilter.OVERPAID -> stringResource(R.string.feature_payments_filter_overpaid)
     BalanceFilter.ALL -> stringResource(R.string.feature_payments_filter_all)
+}
+
+/** Imported bank payments the app wasn't sure about. */
+@Composable
+private fun PendingBanner(count: Int, onClick: () -> Unit) {
+    Row(
+        Modifier.fillMaxWidth().clip(PmTheme.shapes.button).background(PmTheme.colors.warningContainer).clickable(onClick = onClick).padding(14.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        Icon(PmIcons.Warning, contentDescription = null, tint = PmTheme.colors.warning)
+        Text(
+            pluralStringResource(R.plurals.feature_payments_pending, count, count),
+            Modifier.weight(1f),
+            style = MaterialTheme.typography.titleSmall,
+            color = PmTheme.colors.warning,
+        )
+        Icon(PmIcons.Chevron, contentDescription = null, tint = PmTheme.colors.warning)
+    }
 }
 
 @Composable

@@ -47,4 +47,9 @@
     <string name="feature_payments_clear_search">Clear search</string>
     <string name="feature_payments_ok">OK</string>
     <string name="feature_payments_cancel">Cancel</string>
+    <string name="feature_payments_import">Import Excel</string>
+    <plurals name="feature_payments_pending">
+        <item quantity="one">%1$d bank payment to check</item>
+        <item quantity="other">%1$d bank payments to check</item>
+    </plurals>
 </resources>

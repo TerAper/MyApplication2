@@ -21,6 +21,10 @@ import com.teraper.printmaster.feature.clients.navigation.ClientEditDestination
 import com.teraper.printmaster.feature.clients.navigation.PrinterEditDestination
 import com.teraper.printmaster.feature.clients.navigation.clientsGraph
 import com.teraper.printmaster.feature.clients.navigation.navigateToClientDetail
+import com.teraper.printmaster.feature.imports.navigation.importScreens
+import com.teraper.printmaster.feature.imports.navigation.navigateToImport
+import com.teraper.printmaster.feature.imports.navigation.navigateToImportHistory
+import com.teraper.printmaster.feature.imports.navigation.navigateToReviewPayments
 import com.teraper.printmaster.feature.more.MoreActions
 import com.teraper.printmaster.feature.more.navigation.moreGraph
 import com.teraper.printmaster.feature.orders.navigation.OrderEditDestination
@@ -76,7 +80,11 @@ fun PrintMasterNavHost(navController: NavHostController, modifier: Modifier = Mo
         paymentsGraph(
             navController = navController,
             onOpenClient = navController::openClientFromOtherTab,
-        )
+            onImport = navController::navigateToImport,
+            onReviewPayments = navController::navigateToReviewPayments,
+        ) {
+            importScreens(navController)
+        }
         moreGraph(
             actions = MoreActions(
                 onOpenPriceList = navController::navigateToPriceList,
@@ -89,6 +97,10 @@ fun PrintMasterNavHost(navController: NavHostController, modifier: Modifier = Mo
                 onOpenDebtExport = navController::navigateToDebtExport,
                 onOpenSettings = navController::navigateToSettings,
                 onOpenCalls = navController::navigateToCalls,
+                onOpenImportHistory = {
+                    navController.navigateToTab(TopLevelDestination.PAYMENTS)
+                    navController.navigateToImportHistory()
+                },
             ),
         ) {
             priceListScreens(navController)

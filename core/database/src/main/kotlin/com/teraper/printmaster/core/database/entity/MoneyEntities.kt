@@ -7,6 +7,7 @@ import androidx.room.Index
 import androidx.room.PrimaryKey
 import com.teraper.printmaster.core.model.ChargeSource
 import com.teraper.printmaster.core.model.ImportKind
+import com.teraper.printmaster.core.model.PaymentMatchState
 import com.teraper.printmaster.core.model.PaymentMethod
 
 /** One Excel file import, always for one company. Deleting it undoes the import (its rows cascade). */
@@ -73,6 +74,8 @@ data class ImportBatchEntity(
         // Re-importing the same invoice file adds nothing twice.
         Index(value = ["company_id"]),
         Index(value = ["company_id", "source", "document_number", "date_epoch_day", "amount_minor"], unique = true),
+        // The same invoice in two overlapping files is imported once.
+        Index(value = ["company_id", "fingerprint"], unique = true),
     ],
 )
 data class ChargeEntity(
@@ -90,6 +93,8 @@ data class ChargeEntity(
     @ColumnInfo(name = "import_batch_id") val importBatchId: Long?,
     val note: String = "",
     @ColumnInfo(name = "created_at") val createdAt: Long,
+    /** Hidden key of an imported row (see ImportedInvoice.fingerprint); null for charges typed on the phone. */
+    val fingerprint: String? = null,
 )
 
 /**
@@ -118,6 +123,12 @@ data class ChargeEntity(
             onDelete = ForeignKey.SET_NULL,
         ),
         ForeignKey(
+            entity = ClientEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["suggested_client_id"],
+            onDelete = ForeignKey.SET_NULL,
+        ),
+        ForeignKey(
             entity = ImportBatchEntity::class,
             parentColumns = ["id"],
             childColumns = ["import_batch_id"],
@@ -131,7 +142,9 @@ data class ChargeEntity(
         Index(value = ["date_epoch_day"]),
         // Re-importing the same bank statement adds nothing twice.
         Index(value = ["company_id"]),
-        Index(value = ["company_id", "method", "reference", "date_epoch_day", "amount_minor"], unique = true),
+        // The bank reuses document numbers, so the hidden fingerprint is what makes a row unique.
+        Index(value = ["company_id", "fingerprint"], unique = true),
+        Index(value = ["suggested_client_id"]),
     ],
 )
 data class PaymentEntity(
@@ -149,4 +162,33 @@ data class PaymentEntity(
     @ColumnInfo(name = "import_batch_id") val importBatchId: Long?,
     val note: String = "",
     @ColumnInfo(name = "created_at") val createdAt: Long,
+    /** Hidden key of an imported bank row (see ImportedPayment.fingerprint); null for cash. */
+    val fingerprint: String? = null,
+    /** The payer's bank account, as in the statement. */
+    @ColumnInfo(name = "payer_account") val payerAccount: String? = null,
+    /** How the client was found, or that the user still has to say. Null for cash. */
+    @ColumnInfo(name = "match_state") val matchState: PaymentMatchState? = null,
+    /** Probable client while [matchState] is PENDING; [clientId] stays null until confirmed. */
+    @ColumnInfo(name = "suggested_client_id") val suggestedClientId: Long? = null,
+)
+
+/**
+ * A payer bank account seen on payments. [clientId] null = it paid for different clients,
+ * so it isn't used to match any more.
+ */
+@Entity(
+    tableName = "payer_accounts",
+    foreignKeys = [
+        ForeignKey(
+            entity = ClientEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["client_id"],
+            onDelete = ForeignKey.CASCADE,
+        ),
+    ],
+    indices = [Index(value = ["client_id"])],
+)
+data class PayerAccountEntity(
+    @PrimaryKey val account: String,
+    @ColumnInfo(name = "client_id") val clientId: Long?,
 )

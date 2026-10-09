@@ -7,8 +7,10 @@ import com.teraper.printmaster.core.data.repository.CatalogRepository
 import com.teraper.printmaster.core.data.repository.ClientsRepository
 import com.teraper.printmaster.core.data.repository.CompaniesRepository
 import com.teraper.printmaster.core.data.repository.ExportRepository
+import com.teraper.printmaster.core.data.repository.ImportRepository
 import com.teraper.printmaster.core.data.repository.OfflineCompaniesRepository
 import com.teraper.printmaster.core.data.repository.OfflineExportRepository
+import com.teraper.printmaster.core.data.repository.OfflineImportRepository
 import com.teraper.printmaster.core.data.repository.OfflineReportsRepository
 import com.teraper.printmaster.core.data.repository.OfflineOrdersRepository
 import com.teraper.printmaster.core.data.repository.OrdersRepository
@@ -75,6 +77,9 @@ internal abstract class DataModule {
 
     @Binds
     abstract fun bindCallRecordingsRepository(impl: OfflineCallRecordingsRepository): CallRecordingsRepository
+
+    @Binds
+    abstract fun bindImportRepository(impl: OfflineImportRepository): ImportRepository
 
     companion object {
         @Provides

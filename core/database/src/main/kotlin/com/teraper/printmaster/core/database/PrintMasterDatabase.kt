@@ -10,6 +10,7 @@ import com.teraper.printmaster.core.database.dao.CallRecordingDao
 import com.teraper.printmaster.core.database.dao.CatalogDao
 import com.teraper.printmaster.core.database.dao.ClientDao
 import com.teraper.printmaster.core.database.dao.CompanyDao
+import com.teraper.printmaster.core.database.dao.ImportDao
 import com.teraper.printmaster.core.database.dao.LedgerDao
 import com.teraper.printmaster.core.database.dao.OrderDao
 import com.teraper.printmaster.core.database.dao.PriceListDao
@@ -34,6 +35,7 @@ import com.teraper.printmaster.core.database.entity.ImportBatchEntity
 import com.teraper.printmaster.core.database.entity.MasterEntity
 import com.teraper.printmaster.core.database.entity.ModelCartridgeCrossRef
 import com.teraper.printmaster.core.database.entity.OrderEntity
+import com.teraper.printmaster.core.database.entity.PayerAccountEntity
 import com.teraper.printmaster.core.database.entity.PaymentEntity
 import com.teraper.printmaster.core.database.entity.PrinterModelEntity
 import com.teraper.printmaster.core.database.entity.RepairEntity
@@ -66,6 +68,7 @@ import com.teraper.printmaster.core.database.entity.RepairPartEntity
         PaymentEntity::class,
         CallRecordingEntity::class,
         CallRecordingClientEntity::class,
+        PayerAccountEntity::class,
     ],
     version = PrintMasterDatabase.VERSION,
     exportSchema = true,
@@ -74,6 +77,8 @@ import com.teraper.printmaster.core.database.entity.RepairPartEntity
         AutoMigration(from = 2, to = 3),
         // 4: map point of an address.
         AutoMigration(from = 3, to = 4),
+        // 5: import fingerprints, payment matching, payer accounts.
+        AutoMigration(from = 4, to = 5),
     ],
 )
 abstract class PrintMasterDatabase : RoomDatabase() {
@@ -86,9 +91,10 @@ abstract class PrintMasterDatabase : RoomDatabase() {
     abstract fun repairDao(): RepairDao
     abstract fun reportDao(): ReportDao
     abstract fun callRecordingDao(): CallRecordingDao
+    abstract fun importDao(): ImportDao
 
     companion object {
-        const val VERSION = 4
+        const val VERSION = 5
 
         /** Oldest version a backup file may have; older ones only existed on development phones. */
         const val OLDEST_RESTORABLE_VERSION = 2

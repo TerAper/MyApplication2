@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="feature_imports_title">Excel ներմուծում</string>
+    <string name="feature_imports_back">Հետ</string>
+    <string name="feature_imports_cancel">Չեղարկել</string>
+    <string name="feature_imports_history">Պատմություն</string>
+    <string name="feature_imports_intro">Ներմուծեք հաշիվ-ապրանքագրերն ու բանկային վճարումները Excel ֆայլերից։ Հավելվածն ինքը կճանաչի, թե որ ֆայլն է։</string>
+    <string name="feature_imports_kind_invoices">Հաշիվ-ապրանքագրեր</string>
+    <string name="feature_imports_kind_invoices_hint">Դուրս գրված հաշիվներ հարկային համակարգից՝ ինչ են պարտք հաճախորդները։ Նոր հաճախորդները կստեղծվեն ըստ ՀՎՀՀ-ի։</string>
+    <string name="feature_imports_kind_bank">Բանկային քաղվածք</string>
+    <string name="feature_imports_kind_bank_hint">Հաշվի քաղվածք բանկից՝ ինչ են վճարել հաճախորդները։ Վճարողները կհամընկնեն հաճախորդների հետ։</string>
+    <string name="feature_imports_pick">Ընտրել Excel ֆայլ</string>
+    <string name="feature_imports_pick_other">Ընտրել այլ ֆայլ</string>
+    <string name="feature_imports_safe_note">Ոչինչ չի պահպանվում, մինչև չստուգեք և չհաստատեք։ Արդեն ներմուծված տողերով ֆայլերը խնդիր չեն՝ այդ տողերը բաց կթողնվեն։</string>
+    <string name="feature_imports_reading">Ֆայլը կարդացվում է…</string>
+    <string name="feature_imports_importing">Ներմուծվում է…</string>
+    <string name="feature_imports_period">%1$s – %2$s</string>
+    <string name="feature_imports_check_ok">Ֆայլը պատկանում է %1$s-ին</string>
+    <string name="feature_imports_check_different">Այս ֆայլը %1$s-ինը ՉԷ</string>
+    <string name="feature_imports_check_company_none">%1$s-ի ՀՎՀՀ-ն կամ հաշիվը պահված չէ, ֆայլը հնարավոր չէ ստուգել</string>
+    <string name="feature_imports_check_file_none">Ֆայլում նշված չէ, թե ումն է․ ստուգեք, որ %1$s-ինն է</string>
+    <string name="feature_imports_file_tax_id">ՀՎՀՀ ֆայլում՝ %1$s</string>
+    <string name="feature_imports_file_account">հաշիվ՝ %1$s</string>
+    <string name="feature_imports_belongs_to">Կարծես %1$s-ի ֆայլն է։ Նախ անցեք այդ ընկերությանը։</string>
+    <string name="feature_imports_save_identity">Պահել այս ՀՎՀՀ-ն և հաշիվը %1$s-ի վրա, որ հաջորդ ֆայլերը ստուգվեն</string>
+    <string name="feature_imports_rows">Տողեր ֆայլում</string>
+    <string name="feature_imports_new">Նոր</string>
+    <string name="feature_imports_already">Արդեն ներմուծված (բաց կթողնվեն)</string>
+    <string name="feature_imports_changed">Փոխված վերջին ներմուծումից հետո (կթարմացվեն)</string>
+    <string name="feature_imports_new_clients">Նոր հաճախորդներ կստեղծվեն</string>
+    <string name="feature_imports_auto">Կցված հաճախորդներին</string>
+    <string name="feature_imports_to_confirm">Ձեր ստուգման համար</string>
+    <string name="feature_imports_skipped">Հաճախորդի վճարում չեն (ելք, միջնորդավճար)</string>
+    <string name="feature_imports_new_debt">Նոր պարտք</string>
+    <string name="feature_imports_new_paid">Նոր վճարումներ</string>
+    <string name="feature_imports_import_into">Ներմուծել %1$s</string>
+    <string name="feature_imports_nothing_new">Այս ֆայլի ամեն ինչ արդեն ներմուծված է։</string>
+    <string name="feature_imports_wrong_company_title">Ներմուծե՞լ այլ ընկերության մեջ</string>
+    <string name="feature_imports_wrong_company_message">Ֆայլի ՀՎՀՀ-ն կամ հաշիվը %1$s-ինը չէ։ Ներմուծեք միայն, եթե վստահ եք, որ ճիշտ ֆայլն է։</string>
+    <string name="feature_imports_import_anyway">Միևնույն է ներմուծել</string>
+    <string name="feature_imports_failed_title">Այս ֆայլը հնարավոր չէ ներմուծել</string>
+    <string name="feature_imports_error_not_excel">Սա Excel (.xlsx) ֆայլ չէ կամ վնասված է։</string>
+    <string name="feature_imports_error_layout">Սա հավելվածին ծանոթ հաշիվ-ապրանքագրերի ցուցակ կամ բանկային քաղվածք չէ։</string>
+    <string name="feature_imports_error_company">Նախ գրանցեք ընկերություն։</string>
+    <string name="feature_imports_error_nothing">Ընտրեք ֆայլը նորից։</string>
+    <string name="feature_imports_done_title">Ներմուծված է</string>
+    <string name="feature_imports_another">Ներմուծել այլ ֆայլ</string>
+    <plurals name="feature_imports_done_added">
+        <item quantity="one">Ավելացվեց %1$d տող</item>
+        <item quantity="other">Ավելացվեց %1$d տող</item>
+    </plurals>
+    <plurals name="feature_imports_done_updated">
+        <item quantity="one">Թարմացվեց %1$d հաշիվ</item>
+        <item quantity="other">Թարմացվեց %1$d հաշիվ</item>
+    </plurals>
+    <plurals name="feature_imports_done_clients">
+        <item quantity="one">%1$d նոր հաճախորդ</item>
+        <item quantity="other">%1$d նոր հաճախորդ</item>
+    </plurals>
+    <plurals name="feature_imports_review">
+        <item quantity="one">Ստուգել %1$d վճարում</item>
+        <item quantity="other">Ստուգել %1$d վճարում</item>
+    </plurals>
+
+    <string name="feature_imports_review_title">Ստուգելու վճարումներ</string>
+    <string name="feature_imports_review_intro">Հավելվածը վստահ չէր, թե ումն են սրանք։ Ձեր ընտրությունը կհիշվի՝ հաջորդ անգամ նույն վճարողն ինքնաբերաբար կկցվի։</string>
+    <string name="feature_imports_review_empty">Ստուգելու բան չկա</string>
+    <string name="feature_imports_review_empty_message">Բոլոր բանկային վճարումները կցված են իրենց հաճախորդներին։</string>
+    <string name="feature_imports_suggested">Հավանաբար՝ %1$s</string>
+    <string name="feature_imports_confirm">Այո, այս հաճախորդը</string>
+    <string name="feature_imports_choose_client">Ընտրել հաճախորդ</string>
+    <string name="feature_imports_other_client">Այլ հաճախորդ</string>
+    <string name="feature_imports_not_client">Հաճախորդի վճարում չէ</string>
+    <string name="feature_imports_whose_payment">Ով է վճարել՝ %1$s</string>
+    <string name="feature_imports_search_hint">Անուն, ՀՎՀՀ կամ հեռախոս</string>
+    <string name="feature_imports_clear">Մաքրել</string>
+
+    <string name="feature_imports_history_title">Ներմուծումների պատմություն</string>
+    <string name="feature_imports_history_empty">Ներմուծումներ դեռ չկան</string>
+    <string name="feature_imports_history_empty_message">Ներմուծված ֆայլերն այստեղ կհայտնվեն և կարելի է չեղարկել։</string>
+    <string name="feature_imports_history_counts">%1$d ավելացված, %2$d բաց թողնված</string>
+    <string name="feature_imports_undo">Չեղարկել</string>
+    <string name="feature_imports_undo_title">Չեղարկե՞լ այս ներմուծումը</string>
+    <string name="feature_imports_undo_message">%1$s-ից ավելացվածը (%2$d տող) կհեռացվի։ Ստեղծված հաճախորդները կմնան։</string>
+</resources>

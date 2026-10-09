@@ -3,6 +3,7 @@ package com.teraper.printmaster.feature.payments.overview
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.teraper.printmaster.core.data.repository.ClientsRepository
+import com.teraper.printmaster.core.data.repository.ImportRepository
 import com.teraper.printmaster.core.data.repository.PaymentsRepository
 import com.teraper.printmaster.core.model.ClientSummary
 import com.teraper.printmaster.core.model.IncomeTotals
@@ -39,12 +40,15 @@ data class PaymentsOverviewUiState(
     val filter: BalanceFilter = BalanceFilter.IN_DEBT,
     val rows: List<ClientSummary> = emptyList(),
     val hasClients: Boolean = false,
+    /** Imported bank payments waiting for the user to say whose they are. */
+    val pendingPayments: Int = 0,
 )
 
 @HiltViewModel
 class PaymentsOverviewViewModel @Inject constructor(
     clientsRepository: ClientsRepository,
     paymentsRepository: PaymentsRepository,
+    importRepository: ImportRepository,
     clock: Clock,
 ) : ViewModel() {
 
@@ -55,7 +59,8 @@ class PaymentsOverviewViewModel @Inject constructor(
         clientsRepository.observeClientSummaries(),
         paymentsRepository.observeIncome(today.withDayOfMonth(1), today),
         filter,
-    ) { clients, income, filter ->
+        importRepository.observePending(),
+    ) { clients, income, filter, pending ->
         val debtors = clients.filter { it.balance.isPositive }
         PaymentsOverviewUiState(
             isLoading = false,
@@ -68,6 +73,7 @@ class PaymentsOverviewViewModel @Inject constructor(
                 if (filter == BalanceFilter.IN_DEBT) rows.sortedByDescending { it.balance } else rows
             },
             hasClients = clients.isNotEmpty(),
+            pendingPayments = pending.size,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), PaymentsOverviewUiState())
 

@@ -126,4 +126,5 @@
     <string name="feature_clients_map_point_saved">Քարտեզի ճշգրիտ կետը պահված է</string>
     <string name="feature_clients_map_point_remove">Հեռացնել</string>
     <string name="feature_clients_map_hint">Նշեք վայրը, սեղմեք «Կիսվել» և ընտրեք «PrintMaster՝ հաճախորդի հասցե»։</string>
+    <string name="feature_clients_move_payment_title">Ո՞ւմ վճարումն է %1$s-ը</string>
 </resources>

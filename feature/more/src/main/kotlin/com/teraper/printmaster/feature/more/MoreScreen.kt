@@ -61,6 +61,7 @@ data class MoreActions(
     val onOpenDebtExport: () -> Unit = {},
     val onOpenSettings: () -> Unit = {},
     val onOpenCalls: () -> Unit = {},
+    val onOpenImportHistory: () -> Unit = {},
 )
 
 @Composable
@@ -105,7 +106,7 @@ internal fun MoreScreen(state: MoreUiState, actions: MoreActions, modifier: Modi
             listOf(
                 MoreItem(PmIcons.Reports, R.string.feature_more_reports, R.string.feature_more_reports_sub, actions.onOpenReports),
                 MoreItem(PmIcons.Export, R.string.feature_more_export, R.string.feature_more_export_sub, actions.onOpenDebtExport),
-                MoreItem(PmIcons.History, R.string.feature_more_imports, R.string.feature_more_imports_sub, null),
+                MoreItem(PmIcons.History, R.string.feature_more_imports, R.string.feature_more_imports_sub, actions.onOpenImportHistory),
             ),
         ),
         MoreSection(

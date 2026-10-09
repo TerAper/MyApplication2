@@ -47,4 +47,9 @@
     <string name="feature_payments_clear_search">Մաքրել որոնումը</string>
     <string name="feature_payments_ok">Լավ</string>
     <string name="feature_payments_cancel">Չեղարկել</string>
+    <string name="feature_payments_import">Ներմուծել Excel</string>
+    <plurals name="feature_payments_pending">
+        <item quantity="one">%1$d բանկային վճարում ստուգելու</item>
+        <item quantity="other">%1$d բանկային վճարում ստուգելու</item>
+    </plurals>
 </resources>

@@ -126,4 +126,5 @@
     <string name="feature_clients_map_point_saved">Exact point on the map saved</string>
     <string name="feature_clients_map_point_remove">Remove</string>
     <string name="feature_clients_map_hint">Mark the place, tap Share and choose “PrintMaster: client address”.</string>
+    <string name="feature_clients_move_payment_title">Whose payment is %1$s?</string>
 </resources>

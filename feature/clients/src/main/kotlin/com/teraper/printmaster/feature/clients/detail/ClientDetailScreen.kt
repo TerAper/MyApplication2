@@ -35,6 +35,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.teraper.printmaster.core.designsystem.component.AmountText
 import com.teraper.printmaster.core.designsystem.component.AmountTone
 import com.teraper.printmaster.core.designsystem.component.PmCard
+import com.teraper.printmaster.core.designsystem.component.PmClientPickerSheet
 import com.teraper.printmaster.core.designsystem.component.PmConfirmDialog
 import com.teraper.printmaster.core.designsystem.component.PmEmptyState
 import com.teraper.printmaster.core.designsystem.component.PmMessageDialog
@@ -99,6 +100,8 @@ internal fun ClientDetailRoute(
         onAddCharge = onAddCharge,
         onEntryClick = viewModel::onEntryClick,
         onConfirmDeleteEntry = viewModel::onConfirmDeleteEntry,
+        onMoveQueryChange = viewModel::onMoveQueryChange,
+        onMovePayment = viewModel::onMovePayment,
         onAddPrinter = onAddPrinter,
         onPrinterClick = onPrinterClick,
         onNewOrder = onNewOrder,
@@ -122,6 +125,8 @@ internal fun ClientDetailScreen(
     onAddCharge: (Long) -> Unit = {},
     onEntryClick: (LedgerEntry) -> Unit = {},
     onConfirmDeleteEntry: (LedgerEntry) -> Unit = {},
+    onMoveQueryChange: (String) -> Unit = {},
+    onMovePayment: (Long) -> Unit = {},
     onAddPrinter: (Long) -> Unit = {},
     onPrinterClick: (Long, Long) -> Unit = { _, _ -> },
     onNewOrder: (Long) -> Unit = {},
@@ -199,6 +204,16 @@ internal fun ClientDetailScreen(
                     destructive = true,
                 )
             }
+            is ClientDetailDialog.MovePayment -> PmClientPickerSheet(
+                title = stringResource(R.string.feature_clients_move_payment_title, dialog.entry.amount.format()),
+                searchHint = stringResource(R.string.feature_clients_search_hint),
+                clearLabel = stringResource(R.string.feature_clients_clear_search),
+                query = dialog.query,
+                clients = state.moveTargets,
+                onQueryChange = onMoveQueryChange,
+                onPick = onMovePayment,
+                onDismiss = onDismissDialog,
+            )
             null -> Unit
         }
         state.playing?.let { recording ->

@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="feature_imports_title">Import Excel</string>
+    <string name="feature_imports_back">Back</string>
+    <string name="feature_imports_cancel">Cancel</string>
+    <string name="feature_imports_history">History</string>
+    <string name="feature_imports_intro">Bring in invoices and bank payments from Excel files. The app recognises which file it is.</string>
+    <string name="feature_imports_kind_invoices">Invoices</string>
+    <string name="feature_imports_kind_invoices_hint">Issued invoices from the tax system: what clients owe. New clients are created by ՀՎՀՀ.</string>
+    <string name="feature_imports_kind_bank">Bank statement</string>
+    <string name="feature_imports_kind_bank_hint">Account statement from the bank: what clients paid. Payers are matched to clients.</string>
+    <string name="feature_imports_pick">Choose Excel file</string>
+    <string name="feature_imports_pick_other">Choose another file</string>
+    <string name="feature_imports_safe_note">Nothing is saved before you check and confirm. Files with rows already imported are fine: those rows are skipped.</string>
+    <string name="feature_imports_reading">Reading the file…</string>
+    <string name="feature_imports_importing">Importing…</string>
+    <string name="feature_imports_period">%1$s – %2$s</string>
+    <string name="feature_imports_check_ok">The file belongs to %1$s</string>
+    <string name="feature_imports_check_different">This file is NOT %1$s\'s</string>
+    <string name="feature_imports_check_company_none">%1$s has no ՀՎՀՀ or account saved, so the file can\'t be checked</string>
+    <string name="feature_imports_check_file_none">The file doesn\'t say whose it is: check it is %1$s\'s</string>
+    <string name="feature_imports_file_tax_id">ՀՎՀՀ in file: %1$s</string>
+    <string name="feature_imports_file_account">account: %1$s</string>
+    <string name="feature_imports_belongs_to">It looks like %1$s\'s file. Switch to that company first.</string>
+    <string name="feature_imports_save_identity">Save this ՀՎՀՀ and account on %1$s, so next files are checked</string>
+    <string name="feature_imports_rows">Rows in the file</string>
+    <string name="feature_imports_new">New</string>
+    <string name="feature_imports_already">Already imported (skipped)</string>
+    <string name="feature_imports_changed">Changed since last import (updated)</string>
+    <string name="feature_imports_new_clients">New clients to create</string>
+    <string name="feature_imports_auto">Matched to clients</string>
+    <string name="feature_imports_to_confirm">For you to check</string>
+    <string name="feature_imports_skipped">Not client payments (outgoing, fees)</string>
+    <string name="feature_imports_new_debt">New debt</string>
+    <string name="feature_imports_new_paid">New payments</string>
+    <string name="feature_imports_import_into">Import into %1$s</string>
+    <string name="feature_imports_nothing_new">Everything in this file is already imported.</string>
+    <string name="feature_imports_wrong_company_title">Import into another company?</string>
+    <string name="feature_imports_wrong_company_message">The file\'s ՀՎՀՀ or account isn\'t %1$s\'s. Import only if you are sure it\'s the right file.</string>
+    <string name="feature_imports_import_anyway">Import anyway</string>
+    <string name="feature_imports_failed_title">Can\'t import this file</string>
+    <string name="feature_imports_error_not_excel">It isn\'t an Excel (.xlsx) file, or it is damaged.</string>
+    <string name="feature_imports_error_layout">It\'s not an invoice export or a bank statement the app knows.</string>
+    <string name="feature_imports_error_company">Register a company first.</string>
+    <string name="feature_imports_error_nothing">Choose the file again.</string>
+    <string name="feature_imports_done_title">Imported</string>
+    <string name="feature_imports_another">Import another file</string>
+    <plurals name="feature_imports_done_added">
+        <item quantity="one">%1$d row added</item>
+        <item quantity="other">%1$d rows added</item>
+    </plurals>
+    <plurals name="feature_imports_done_updated">
+        <item quantity="one">%1$d invoice updated</item>
+        <item quantity="other">%1$d invoices updated</item>
+    </plurals>
+    <plurals name="feature_imports_done_clients">
+        <item quantity="one">%1$d new client</item>
+        <item quantity="other">%1$d new clients</item>
+    </plurals>
+    <plurals name="feature_imports_review">
+        <item quantity="one">Check %1$d payment</item>
+        <item quantity="other">Check %1$d payments</item>
+    </plurals>
+
+    <string name="feature_imports_review_title">Payments to check</string>
+    <string name="feature_imports_review_intro">The app wasn\'t sure whose these are. What you choose is remembered: next time the same payer is matched by itself.</string>
+    <string name="feature_imports_review_empty">Nothing to check</string>
+    <string name="feature_imports_review_empty_message">All bank payments are with their clients.</string>
+    <string name="feature_imports_suggested">Probably: %1$s</string>
+    <string name="feature_imports_confirm">Yes, this client</string>
+    <string name="feature_imports_choose_client">Choose client</string>
+    <string name="feature_imports_other_client">Another client</string>
+    <string name="feature_imports_not_client">Not a client payment</string>
+    <string name="feature_imports_whose_payment">Who paid: %1$s</string>
+    <string name="feature_imports_search_hint">Name, ՀՎՀՀ or phone</string>
+    <string name="feature_imports_clear">Clear</string>
+
+    <string name="feature_imports_history_title">Import history</string>
+    <string name="feature_imports_history_empty">No imports yet</string>
+    <string name="feature_imports_history_empty_message">Imported files appear here and can be undone.</string>
+    <string name="feature_imports_history_counts">%1$d added, %2$d skipped</string>
+    <string name="feature_imports_undo">Undo</string>
+    <string name="feature_imports_undo_title">Undo this import?</string>
+    <string name="feature_imports_undo_message">Everything added from %1$s (%2$d rows) is removed. Clients it created stay.</string>
+</resources>

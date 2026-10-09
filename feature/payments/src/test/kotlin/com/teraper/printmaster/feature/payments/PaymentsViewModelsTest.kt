@@ -18,6 +18,7 @@ import com.teraper.printmaster.core.model.MoneyEntryDraft
 import com.teraper.printmaster.core.model.MoneyEntryError
 import com.teraper.printmaster.core.model.MoneyEntryKind
 import com.teraper.printmaster.core.testing.FakeCompaniesRepository
+import com.teraper.printmaster.core.testing.FakeImportRepository
 import com.teraper.printmaster.feature.payments.entry.MoneyEntryEvent
 import com.teraper.printmaster.feature.payments.entry.MoneyEntryViewModel
 import com.teraper.printmaster.feature.payments.overview.BalanceFilter
@@ -98,7 +99,7 @@ class PaymentsViewModelsTest {
 
     @Test
     fun overviewTotalsAndFilters() = runTest {
-        val vm = PaymentsOverviewViewModel(clients, payments, clock)
+        val vm = PaymentsOverviewViewModel(clients, payments, FakeImportRepository(), clock)
         collect(vm.uiState)
         val state = vm.uiState.value
 

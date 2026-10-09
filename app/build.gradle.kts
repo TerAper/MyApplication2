@@ -39,6 +39,7 @@ dependencies {
     implementation(projects.feature.settings)
     implementation(projects.feature.reports)
     implementation(projects.feature.calls)
+    implementation(projects.feature.imports)
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.activity.compose)

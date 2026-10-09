@@ -19,10 +19,12 @@ import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
 import org.junit.Rule
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import com.teraper.printmaster.core.model.CallRecording
 import com.teraper.printmaster.core.model.RecordingClient
 import com.teraper.printmaster.core.testing.FakeCallRecordingsRepository
+import com.teraper.printmaster.core.testing.FakeImportRepository
 import java.time.LocalDateTime
 import com.teraper.printmaster.core.testing.FakeOrdersRepository
 import com.teraper.printmaster.core.testing.FakePrintersRepository
@@ -42,7 +44,7 @@ class ClientDetailViewModelTest {
     private val invoice = LedgerEntry.Charge(12, day, Money.ofDram(20_000), "", 3, ChargeSource.INVOICE_IMPORT, "0451")
 
     private fun TestScope.vm(id: Long) = ClientDetailViewModel(
-        SavedStateHandle(mapOf("clientId" to id)), repo, payments, FakePrintersRepository(), FakeOrdersRepository(), calls, Clock.systemUTC(),
+        SavedStateHandle(mapOf("clientId" to id)), repo, payments, FakePrintersRepository(), FakeOrdersRepository(), calls, imports, Clock.systemUTC(),
     ).also { vm ->
         backgroundScope.launch(UnconfinedTestDispatcher()) { vm.uiState.collect {} }
     }
@@ -54,7 +56,20 @@ class ClientDetailViewModelTest {
         ),
     )
 
+    private val imports = FakeImportRepository()
+
     private val ClientDetailViewModel.loaded get() = uiState.value as ClientDetailUiState.Loaded
+
+    @Test
+    fun bankPaymentCanMoveToAnotherClient() = runTest {
+        val vm = vm(2)
+        vm.onEntryClick(bank)
+        assertTrue(vm.loaded.dialog is ClientDetailDialog.MovePayment)
+        assertTrue(vm.loaded.moveTargets.none { it.client.id == 2L })
+        vm.onMovePayment(1)
+        assertEquals(listOf(11L to 1L), imports.assigned)
+        assertEquals(null, vm.loaded.dialog)
+    }
 
     @Test
     fun showsTheClientsCallsAndPlaysOne() = runTest {
@@ -100,7 +115,7 @@ class ClientDetailViewModelTest {
         assertEquals(ClientTab.FINANCE, vm.loaded.tab)
         assertEquals(3, vm.loaded.ledger.size)
 
-        vm.onEntryClick(bank)
+        // An imported invoice can't be deleted here (only by undoing its import).
         vm.onEntryClick(invoice)
         assertNull(vm.loaded.dialog)
 
