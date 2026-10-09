@@ -89,7 +89,8 @@ internal fun MoreScreen(state: MoreUiState, actions: MoreActions, modifier: Modi
             ),
             MoreItem(PmIcons.Master, R.string.feature_more_masters, R.string.feature_more_masters_sub, actions.onOpenMasters),
         )
-        null -> emptyList()
+        // A joined master's company is managed by the company itself.
+        AccountMode.JOINED, null -> emptyList()
     }
     val sections = listOfNotNull(
         account.takeIf { it.isNotEmpty() }?.let { MoreSection(R.string.feature_more_section_account, it) },

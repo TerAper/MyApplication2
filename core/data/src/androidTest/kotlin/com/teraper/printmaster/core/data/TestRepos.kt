@@ -14,6 +14,8 @@ import com.teraper.printmaster.core.data.repository.OfflinePriceListRepository
 import com.teraper.printmaster.core.data.repository.OfflinePrintersRepository
 import com.teraper.printmaster.core.data.repository.OfflineRepairsRepository
 import com.teraper.printmaster.core.data.repository.SaveCompanyResult
+import com.teraper.printmaster.core.data.sync.SyncBackend
+import com.teraper.printmaster.core.data.sync.SyncEngine
 import com.teraper.printmaster.core.database.PrintMasterDatabase
 import com.teraper.printmaster.core.model.AccountMode
 import com.teraper.printmaster.core.model.CompanyDraft
@@ -35,6 +37,13 @@ internal class TestRepos(clock: Clock = Clock.fixed(Instant.parse("2026-10-07T10
     val calls = OfflineCallRecordingsRepository(ApplicationProvider.getApplicationContext(), db, db.callRecordingDao(), clock)
     val imports = OfflineImportRepository(ApplicationProvider.getApplicationContext(), db, db.importDao(), db.companyDao(), companies, clock)
     val backup = OfflineBackupRepository(ApplicationProvider.getApplicationContext(), db, clock)
+
+    private val testClock = clock
+
+    fun syncEngine(backend: SyncBackend) = SyncEngine(
+        db, db.syncDao(), db.clientDao(), db.orderDao(), db.repairDao(), db.catalogDao(), CatalogWriter(db.catalogDao()),
+        db.companyDao(), repairs, backend, testClock,
+    )
 
     /** Registers as a master with one company and returns its id. */
     suspend fun register(companyName: String = "Main"): Long =

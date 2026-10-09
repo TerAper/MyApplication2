@@ -44,7 +44,7 @@ class FakeRepairsRepository(initial: List<Repair> = emptyList()) : RepairsReposi
         return true
     }
 
-    override suspend fun finishOrder(orderId: Long, paidInCash: Boolean): FinishOrderResult {
+    override suspend fun finishOrder(orderId: Long, paidInCash: Boolean, finishedAt: java.time.Instant?): FinishOrderResult {
         val work = repairs.value.filter { it.orderId == orderId }
         if (work.none { it.total.isPositive }) return FinishOrderResult.NO_WORK
         finished += orderId to paidInCash

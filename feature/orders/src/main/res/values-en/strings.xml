@@ -96,4 +96,5 @@
     <string name="feature_orders_call_missing">The recording file is not on this phone any more.</string>
     <string name="feature_orders_call_play">Play</string>
     <string name="feature_orders_call_pause">Pause</string>
+    <string name="feature_orders_done_at">Done %1$s at %2$s</string>
 </resources>

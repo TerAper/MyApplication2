@@ -16,6 +16,7 @@ import com.teraper.printmaster.core.database.dao.OrderDao
 import com.teraper.printmaster.core.database.dao.PriceListDao
 import com.teraper.printmaster.core.database.dao.RepairDao
 import com.teraper.printmaster.core.database.dao.ReportDao
+import com.teraper.printmaster.core.database.dao.SyncDao
 import com.teraper.printmaster.core.database.entity.AppProfileEntity
 import com.teraper.printmaster.core.database.entity.BrandEntity
 import com.teraper.printmaster.core.database.entity.CallRecordingClientEntity
@@ -42,6 +43,8 @@ import com.teraper.printmaster.core.database.entity.PrinterModelEntity
 import com.teraper.printmaster.core.database.entity.RepairEntity
 import com.teraper.printmaster.core.database.entity.RepairItemEntity
 import com.teraper.printmaster.core.database.entity.RepairPartEntity
+import com.teraper.printmaster.core.database.entity.SyncOutboxEntity
+import com.teraper.printmaster.core.database.entity.SyncStateEntity
 
 @Database(
     entities = [
@@ -71,6 +74,8 @@ import com.teraper.printmaster.core.database.entity.RepairPartEntity
         CallRecordingClientEntity::class,
         PayerAccountEntity::class,
         MatchRejectionEntity::class,
+        SyncOutboxEntity::class,
+        SyncStateEntity::class,
     ],
     version = PrintMasterDatabase.VERSION,
     exportSchema = true,
@@ -83,6 +88,8 @@ import com.teraper.printmaster.core.database.entity.RepairPartEntity
         AutoMigration(from = 4, to = 5),
         // 6: original row data, match reason, rejected matches.
         AutoMigration(from = 5, to = 6),
+        // 7: sharing with masters (sync ids, outbox, done time).
+        AutoMigration(from = 6, to = 7),
     ],
 )
 abstract class PrintMasterDatabase : RoomDatabase() {
@@ -96,9 +103,10 @@ abstract class PrintMasterDatabase : RoomDatabase() {
     abstract fun reportDao(): ReportDao
     abstract fun callRecordingDao(): CallRecordingDao
     abstract fun importDao(): ImportDao
+    abstract fun syncDao(): SyncDao
 
     companion object {
-        const val VERSION = 6
+        const val VERSION = 7
 
         /** Oldest version a backup file may have; older ones only existed on development phones. */
         const val OLDEST_RESTORABLE_VERSION = 2
@@ -128,5 +136,6 @@ abstract class PrintMasterDatabase : RoomDatabase() {
 private object ForeignKeysOn : RoomDatabase.Callback() {
     override fun onOpen(db: SupportSQLiteDatabase) {
         db.execSQL("PRAGMA foreign_keys = ON")
+        SyncTriggers.create(db)
     }
 }

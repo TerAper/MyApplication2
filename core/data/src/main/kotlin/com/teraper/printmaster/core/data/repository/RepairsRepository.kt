@@ -22,7 +22,8 @@ interface RepairsRepository {
      * Marks the order done and charges the client for each repair, under the order's company.
      * With [paidInCash] the whole amount is also recorded as a cash payment.
      */
-    suspend fun finishOrder(orderId: Long, paidInCash: Boolean): FinishOrderResult
+    /** [finishedAt]: when it was finished, e.g. on the master's phone; null = now. */
+    suspend fun finishOrder(orderId: Long, paidInCash: Boolean, finishedAt: java.time.Instant? = null): FinishOrderResult
 
     /** Undoes [finishOrder]: removes its charges and cash, and the order is in progress again. */
     suspend fun reopenOrder(orderId: Long)

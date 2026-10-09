@@ -207,6 +207,13 @@ private fun OrderContent(state: OrderDetailUiState.Loaded, actions: OrderDetailA
                 )
                 PmTag(order.status.label(), order.status.tagTone())
             }
+            order.doneAt?.let { doneAt ->
+                Text(
+                    stringResource(R.string.feature_orders_done_at, doneAt.toLocalDate().relativeLabel(today), doneAt.toLocalTime().formatTime()),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = PmTheme.colors.paid,
+                )
+            }
             Text(order.description, style = MaterialTheme.typography.bodyLarge, color = PmTheme.colors.ink)
 
             PmCard(Modifier.fillMaxWidth()) {

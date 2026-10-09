@@ -12,6 +12,7 @@ import com.teraper.printmaster.core.model.ClientType
     indices = [
         Index(value = ["tax_id"], unique = true),
         Index(value = ["name"]),
+        Index(value = ["sync_id"], unique = true),
     ],
 )
 data class ClientEntity(
@@ -22,6 +23,10 @@ data class ClientEntity(
     @ColumnInfo(name = "tax_id") val taxId: String?,
     val note: String = "",
     @ColumnInfo(name = "created_at") val createdAt: Long,
+    /** Same client on every phone of the company (see sync). Null until first shared. */
+    @ColumnInfo(name = "sync_id") val syncId: String? = null,
+    /** Added by a master in the field: the company should check it. */
+    @ColumnInfo(name = "needs_review", defaultValue = "0") val needsReview: Boolean = false,
 )
 
 @Entity(

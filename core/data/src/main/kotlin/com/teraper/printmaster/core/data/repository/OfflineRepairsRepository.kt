@@ -31,6 +31,7 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import java.time.Clock
+import java.time.Instant
 import java.time.LocalDate
 import javax.inject.Inject
 
@@ -111,21 +112,21 @@ internal class OfflineRepairsRepository @Inject constructor(
         repairDao.deleteRepair(id) > 0
     }
 
-    override suspend fun finishOrder(orderId: Long, paidInCash: Boolean): FinishOrderResult {
+    override suspend fun finishOrder(orderId: Long, paidInCash: Boolean, finishedAt: Instant?): FinishOrderResult {
         // Device names for the charge notes, read before the transaction (it only reads them).
         val clientId = orderDao.getOrder(orderId)?.clientId ?: return FinishOrderResult.NOT_FOUND
         val clientPrinters = printers.observeClientPrinters(clientId).first()
-        return db.withTransaction { finish(orderId, paidInCash, clientPrinters) }
+        return db.withTransaction { finish(orderId, paidInCash, clientPrinters, finishedAt ?: clock.instant()) }
     }
 
-    private suspend fun finish(orderId: Long, paidInCash: Boolean, clientPrinters: List<ClientPrinter>): FinishOrderResult {
+    private suspend fun finish(orderId: Long, paidInCash: Boolean, clientPrinters: List<ClientPrinter>, finishedAt: Instant): FinishOrderResult {
         val order = orderDao.getOrder(orderId) ?: return FinishOrderResult.NOT_FOUND
         if (!order.isOpen()) return FinishOrderResult.NOT_OPEN
         val repairs = repairDao.getRepairs(orderId).map { it.toModel(clientPrinters) }.filter { it.total.isPositive }
         if (repairs.isEmpty()) return FinishOrderResult.NO_WORK
 
-        val today = LocalDate.now(clock).toEpochDay()
-        val now = clock.millis()
+        val today = finishedAt.atZone(clock.zone).toLocalDate().toEpochDay()
+        val now = finishedAt.toEpochMilli()
         repairs.forEach { repair ->
             ledgerDao.insertCharge(
                 ChargeEntity(
@@ -162,7 +163,7 @@ internal class OfflineRepairsRepository @Inject constructor(
                 ),
             )
         }
-        orderDao.setStatus(orderId, OrderStatus.DONE)
+        orderDao.setStatus(orderId, OrderStatus.DONE, doneAt = now)
         return FinishOrderResult.FINISHED
     }
 

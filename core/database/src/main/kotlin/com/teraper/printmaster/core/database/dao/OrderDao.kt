@@ -46,8 +46,9 @@ interface OrderDao {
     @Update
     suspend fun updateOrder(order: OrderEntity)
 
-    @Query("UPDATE orders SET status = :status WHERE id = :id")
-    suspend fun setStatus(id: Long, status: OrderStatus): Int
+    /** [doneAt]: when it was finished (epoch millis) for DONE, null otherwise. */
+    @Query("UPDATE orders SET status = :status, done_at = :doneAt WHERE id = :id")
+    suspend fun setStatus(id: Long, status: OrderStatus, doneAt: Long? = null): Int
 
     /**
      * Money tied to the order: charges for its repairs and payments. Deleting would lose them.

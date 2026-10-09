@@ -101,7 +101,7 @@ internal class OfflineOrdersRepository @Inject constructor(
     }
 
     override suspend fun setStatus(id: Long, status: OrderStatus) {
-        orderDao.setStatus(id, status)
+        orderDao.setStatus(id, status, doneAt = if (status == OrderStatus.DONE) clock.millis() else null)
     }
 
     override suspend fun deleteOrder(id: Long): DeleteOrderResult = when {
@@ -130,5 +130,6 @@ internal class OfflineOrdersRepository @Inject constructor(
         phone = phone,
         masterId = order.masterId,
         masterName = masterName,
+        doneAt = order.doneAt?.let { LocalDateTime.ofInstant(Instant.ofEpochMilli(it), zone) },
     )
 }

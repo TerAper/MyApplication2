@@ -9,6 +9,9 @@ enum class AccountMode {
 
     /** One company with one or more masters. */
     COMPANY,
+
+    /** A master who joined a company's shared space: sees and finishes the orders it sends. */
+    JOINED,
 }
 
 /** Who uses the app; null in the repository until registration is done. */

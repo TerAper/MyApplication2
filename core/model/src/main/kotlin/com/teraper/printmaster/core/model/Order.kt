@@ -21,6 +21,8 @@ data class Order(
     val phone: String? = null,
     val masterId: Long? = null,
     val masterName: String? = null,
+    /** When it was finished; null while open. */
+    val doneAt: LocalDateTime? = null,
 ) {
     val date: LocalDate get() = scheduledAt.toLocalDate()
 

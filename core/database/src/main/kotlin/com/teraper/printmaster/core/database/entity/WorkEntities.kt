@@ -66,6 +66,10 @@ data class OrderEntity(
     val description: String,
     val status: OrderStatus = OrderStatus.NEW,
     @ColumnInfo(name = "created_at") val createdAt: Long,
+    /** Epoch millis when the order was finished (on whichever phone); null while open. */
+    @ColumnInfo(name = "done_at") val doneAt: Long? = null,
+    /** Same order on every phone of the company (see sync). Null until first shared. */
+    @ColumnInfo(name = "sync_id") val syncId: String? = null,
 )
 
 /** One line of the price list. */
@@ -79,6 +83,8 @@ data class RepairPartEntity(
     @ColumnInfo(name = "cost_minor") val costMinor: Long,
     /** Hidden from the price list but kept so old repairs still make sense. */
     val archived: Boolean = false,
+    /** Same item on every phone of the company (see sync). */
+    @ColumnInfo(name = "sync_id") val syncId: String? = null,
 )
 
 /** The work done during a visit on one device. */
@@ -117,6 +123,8 @@ data class RepairEntity(
     @ColumnInfo(name = "client_printer_cartridge_id") val clientPrinterCartridgeId: Long?,
     val note: String = "",
     @ColumnInfo(name = "created_at") val createdAt: Long,
+    /** Same repair on every phone of the company (see sync). */
+    @ColumnInfo(name = "sync_id") val syncId: String? = null,
 )
 
 /**

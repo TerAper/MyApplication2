@@ -43,8 +43,9 @@ internal class OfflinePriceListRepository @Inject constructor(
             if (draft.isNew) {
                 SavePriceItemResult.Saved(dao.insert(entity))
             } else {
-                if (dao.getPart(draft.id) == null) return@withTransaction SavePriceItemResult.Invalid(emptySet())
-                dao.update(entity)
+                val existing = dao.getPart(draft.id) ?: return@withTransaction SavePriceItemResult.Invalid(emptySet())
+                // Keep what the form doesn't edit (the shared id).
+                dao.update(entity.copy(syncId = existing.syncId, archived = existing.archived))
                 SavePriceItemResult.Saved(draft.id)
             }
         }

@@ -25,6 +25,10 @@ data class MasterEntity(
     val name: String,
     val phone: String = "",
     @ColumnInfo(name = "created_at") val createdAt: Long,
+    /** Google account (email) the master joined the company with; null = not joined. */
+    @ColumnInfo(name = "member_email") val memberEmail: String? = null,
+    /** The master's account id in the shared space; orders sent to this master carry it. */
+    @ColumnInfo(name = "member_uid") val memberUid: String? = null,
 )
 
 /** Registration result; a single row with [id] = [SINGLE_ID]. No row = not registered yet. */
