@@ -8,8 +8,11 @@ import androidx.compose.material.icons.automirrored.rounded.ReceiptLong
 import androidx.compose.material.icons.rounded.AccountBalanceWallet
 import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.BarChart
+import androidx.compose.material.icons.rounded.Build
+import androidx.compose.material.icons.rounded.Business
 import androidx.compose.material.icons.rounded.CalendarMonth
 import androidx.compose.material.icons.rounded.Call
+import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.Close
 import androidx.compose.material.icons.rounded.CloudUpload
 import androidx.compose.material.icons.rounded.Delete
@@ -17,21 +20,21 @@ import androidx.compose.material.icons.rounded.Download
 import androidx.compose.material.icons.rounded.Edit
 import androidx.compose.material.icons.rounded.Engineering
 import androidx.compose.material.icons.rounded.ExpandMore
-import androidx.compose.material.icons.rounded.Business
-import androidx.compose.material.icons.rounded.Check
-import androidx.compose.material.icons.rounded.Star
 import androidx.compose.material.icons.rounded.GridView
 import androidx.compose.material.icons.rounded.Group
 import androidx.compose.material.icons.rounded.History
 import androidx.compose.material.icons.rounded.Home
+import androidx.compose.material.icons.rounded.Language
 import androidx.compose.material.icons.rounded.Place
 import androidx.compose.material.icons.rounded.Print
 import androidx.compose.material.icons.rounded.Remove
-import androidx.compose.material.icons.rounded.Build
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.rounded.Sell
 import androidx.compose.material.icons.rounded.Settings
+import androidx.compose.material.icons.rounded.SettingsBackupRestore
+import androidx.compose.material.icons.rounded.Star
 import androidx.compose.material.icons.rounded.UploadFile
+import androidx.compose.material.icons.rounded.WarningAmber
 import androidx.compose.ui.graphics.vector.ImageVector
 
 /** All icons in one place, so changing the icon style is a one-file change. */
@@ -69,4 +72,7 @@ object PmIcons {
     val Default: ImageVector = Icons.Rounded.Star
     val Remove: ImageVector = Icons.Rounded.Remove
     val Repair: ImageVector = Icons.Rounded.Build
+    val Restore: ImageVector = Icons.Rounded.SettingsBackupRestore
+    val Warning: ImageVector = Icons.Rounded.WarningAmber
+    val Language: ImageVector = Icons.Rounded.Language
 }

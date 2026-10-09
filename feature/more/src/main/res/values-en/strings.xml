@@ -17,6 +17,8 @@
     <string name="feature_more_imports_sub">See or undo past Excel imports</string>
     <string name="feature_more_backup">Backup &amp; restore</string>
     <string name="feature_more_backup_sub">Save and restore your data</string>
+    <string name="feature_more_backup_last">Last backup: %1$s</string>
+    <string name="feature_more_backup_never">No backup yet</string>
     <string name="feature_more_settings">Settings</string>
     <string name="feature_more_settings_sub">Language, Excel columns</string>
     <string name="feature_more_section_account">ACCOUNT</string>

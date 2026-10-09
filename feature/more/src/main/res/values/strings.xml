@@ -17,6 +17,8 @@
     <string name="feature_more_imports_sub">Excel ներմուծումներ և չեղարկում</string>
     <string name="feature_more_backup">Պահուստավորում</string>
     <string name="feature_more_backup_sub">Պահպանել և վերականգնել տվյալները</string>
+    <string name="feature_more_backup_last">Վերջին պահուստը՝ %1$s</string>
+    <string name="feature_more_backup_never">Պահուստ դեռ չկա</string>
     <string name="feature_more_settings">Կարգավորումներ</string>
     <string name="feature_more_settings_sub">Լեզու, Excel սյունակներ</string>
     <string name="feature_more_section_account">ՀԱՇԻՎ</string>

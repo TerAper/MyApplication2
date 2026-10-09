@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="feature_settings_back">Back</string>
+    <string name="feature_settings_ok">OK</string>
+    <string name="feature_settings_cancel">Cancel</string>
+
+    <string name="feature_settings_backup_title">Backup &amp; restore</string>
+    <string name="feature_settings_backup_last">Last backup</string>
+    <string name="feature_settings_backup_never">Never</string>
+    <string name="feature_settings_backup_needed">Back up</string>
+    <string name="feature_settings_backup_explain">Your data is kept only on this phone. If the phone is lost or broken, a backup file is the only way to get it back. Save one at least once a week.</string>
+    <string name="feature_settings_backup_save">Save backup</string>
+    <string name="feature_settings_backup_save_hint">Choose Google Drive, or save to Downloads and send it to yourself in Telegram or by email. Keep a copy off this phone.</string>
+    <string name="feature_settings_backup_saving">Saving the backup…</string>
+    <string name="feature_settings_backup_saved_title">Backup saved</string>
+    <string name="feature_settings_backup_saved_message">All companies, clients, orders, payments and the price list are in the file.</string>
+    <string name="feature_settings_backup_failed_title">Backup not saved</string>
+    <string name="feature_settings_backup_failed_message">The file could not be written. Try another place, for example Downloads.</string>
+
+    <string name="feature_settings_restore_title">Restore</string>
+    <string name="feature_settings_restore_explain">Replaces all data on this phone with a backup file. Use it on a new phone, or to undo a mistake.</string>
+    <string name="feature_settings_restore_pick">Restore from file</string>
+    <string name="feature_settings_restore_checking">Checking the file…</string>
+    <string name="feature_settings_restore_restoring">Restoring…</string>
+    <string name="feature_settings_restore_not_backup_title">Not a backup</string>
+    <string name="feature_settings_restore_not_backup_message">This file is not a PrintMaster backup, or it is damaged. Nothing was changed.</string>
+    <string name="feature_settings_restore_newer_title">Update the app</string>
+    <string name="feature_settings_restore_newer_message">This backup was made by a newer version of PrintMaster. Update the app, then restore it. Nothing was changed.</string>
+    <string name="feature_settings_restore_confirm_title">Replace all data?</string>
+    <string name="feature_settings_restore_confirm_message">Everything on this phone will be replaced by the backup. The app will restart.</string>
+    <string name="feature_settings_restore_file">Backup</string>
+    <string name="feature_settings_restore_phone">Phone now</string>
+    <string name="feature_settings_restore_companies">Companies</string>
+    <string name="feature_settings_restore_clients">Clients</string>
+    <string name="feature_settings_restore_orders">Orders</string>
+    <string name="feature_settings_restore_money">Charges, payments</string>
+    <string name="feature_settings_restore_last_change">Last entry</string>
+    <string name="feature_settings_restore_confirm">Replace</string>
+</resources>

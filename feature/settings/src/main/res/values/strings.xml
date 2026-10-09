@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="feature_settings_back">Հետ</string>
+    <string name="feature_settings_ok">Լավ</string>
+    <string name="feature_settings_cancel">Չեղարկել</string>
+
+    <string name="feature_settings_backup_title">Պահուստավորում</string>
+    <string name="feature_settings_backup_last">Վերջին պահուստը</string>
+    <string name="feature_settings_backup_never">Դեռ չկա</string>
+    <string name="feature_settings_backup_needed">Պահպանեք</string>
+    <string name="feature_settings_backup_explain">Ձեր տվյալները պահվում են միայն այս հեռախոսում։ Եթե հեռախոսը կորչի կամ փչանա, դրանք վերականգնելու միակ ձևը պահուստային ֆայլն է։ Պահպանեք այն առնվազն շաբաթը մեկ անգամ։</string>
+    <string name="feature_settings_backup_save">Պահպանել պահուստը</string>
+    <string name="feature_settings_backup_save_hint">Ընտրեք Google Drive, կամ պահեք Downloads-ում և ուղարկեք ինքներդ ձեզ Telegram-ով կամ էլ. փոստով։ Պատճենը պահեք այս հեռախոսից դուրս։</string>
+    <string name="feature_settings_backup_saving">Պահուստը պահպանվում է…</string>
+    <string name="feature_settings_backup_saved_title">Պահուստը պահպանված է</string>
+    <string name="feature_settings_backup_saved_message">Ֆայլում են բոլոր ընկերությունները, հաճախորդները, պատվերները, վճարումները և գնացուցակը։</string>
+    <string name="feature_settings_backup_failed_title">Պահուստը չպահպանվեց</string>
+    <string name="feature_settings_backup_failed_message">Ֆայլը հնարավոր չեղավ գրել։ Փորձեք այլ տեղ, օրինակ՝ Downloads։</string>
+
+    <string name="feature_settings_restore_title">Վերականգնում</string>
+    <string name="feature_settings_restore_explain">Այս հեռախոսի բոլոր տվյալները փոխարինում է պահուստային ֆայլով։ Օգտագործեք նոր հեռախոսում կամ սխալը չեղարկելու համար։</string>
+    <string name="feature_settings_restore_pick">Վերականգնել ֆայլից</string>
+    <string name="feature_settings_restore_checking">Ֆայլը ստուգվում է…</string>
+    <string name="feature_settings_restore_restoring">Վերականգնվում է…</string>
+    <string name="feature_settings_restore_not_backup_title">Պահուստ չէ</string>
+    <string name="feature_settings_restore_not_backup_message">Այս ֆայլը PrintMaster-ի պահուստ չէ կամ վնասված է։ Ոչինչ չի փոխվել։</string>
+    <string name="feature_settings_restore_newer_title">Թարմացրեք հավելվածը</string>
+    <string name="feature_settings_restore_newer_message">Այս պահուստը ստեղծվել է PrintMaster-ի ավելի նոր տարբերակով։ Թարմացրեք հավելվածը, հետո վերականգնեք։ Ոչինչ չի փոխվել։</string>
+    <string name="feature_settings_restore_confirm_title">Փոխարինե՞լ բոլոր տվյալները</string>
+    <string name="feature_settings_restore_confirm_message">Այս հեռախոսի ամեն ինչ կփոխարինվի պահուստով։ Հավելվածը կվերագործարկվի։</string>
+    <string name="feature_settings_restore_file">Պահուստ</string>
+    <string name="feature_settings_restore_phone">Հիմա</string>
+    <string name="feature_settings_restore_companies">Ընկերություններ</string>
+    <string name="feature_settings_restore_clients">Հաճախորդներ</string>
+    <string name="feature_settings_restore_orders">Պատվերներ</string>
+    <string name="feature_settings_restore_money">Պարտքեր, վճարումներ</string>
+    <string name="feature_settings_restore_last_change">Վերջին գրառում</string>
+    <string name="feature_settings_restore_confirm">Փոխարինել</string>
+</resources>

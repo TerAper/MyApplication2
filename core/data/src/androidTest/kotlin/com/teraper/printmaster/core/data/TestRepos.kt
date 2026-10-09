@@ -2,6 +2,7 @@ package com.teraper.printmaster.core.data
 
 import androidx.test.core.app.ApplicationProvider
 import com.teraper.printmaster.core.data.repository.CatalogWriter
+import com.teraper.printmaster.core.data.repository.OfflineBackupRepository
 import com.teraper.printmaster.core.data.repository.OfflineClientsRepository
 import com.teraper.printmaster.core.data.repository.OfflineCompaniesRepository
 import com.teraper.printmaster.core.data.repository.OfflinePaymentsRepository
@@ -27,6 +28,7 @@ internal class TestRepos(clock: Clock = Clock.fixed(Instant.parse("2026-10-07T10
     val printers = OfflinePrintersRepository(db, db.catalogDao(), CatalogWriter(db.catalogDao()))
     val orders = OfflineOrdersRepository(db.orderDao(), db.clientDao(), companies, clock)
     val repairs = OfflineRepairsRepository(db, db.repairDao(), db.orderDao(), db.ledgerDao(), printers, clock)
+    val backup = OfflineBackupRepository(ApplicationProvider.getApplicationContext(), db, clock)
 
     /** Registers as a master with one company and returns its id. */
     suspend fun register(companyName: String = "Main"): Long =

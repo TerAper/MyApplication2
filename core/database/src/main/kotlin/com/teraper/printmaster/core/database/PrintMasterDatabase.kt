@@ -60,7 +60,7 @@ import com.teraper.printmaster.core.database.entity.RepairPartEntity
         ChargeEntity::class,
         PaymentEntity::class,
     ],
-    version = 2,
+    version = PrintMasterDatabase.VERSION,
     exportSchema = true,
 )
 abstract class PrintMasterDatabase : RoomDatabase() {
@@ -73,7 +73,12 @@ abstract class PrintMasterDatabase : RoomDatabase() {
     abstract fun repairDao(): RepairDao
 
     companion object {
-        private const val DATABASE_NAME = "printmaster.db"
+        const val VERSION = 2
+
+        /** Oldest version a backup file may have; older ones only existed on development phones. */
+        const val OLDEST_RESTORABLE_VERSION = 2
+
+        const val DATABASE_NAME = "printmaster.db"
 
         /** The only way to build the database, so tests get the same setup as the app. */
         fun create(context: Context, inMemory: Boolean = false): PrintMasterDatabase {

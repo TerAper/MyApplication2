@@ -32,6 +32,7 @@ import com.teraper.printmaster.core.designsystem.component.PmCard
 import com.teraper.printmaster.core.designsystem.component.PmScreenTitle
 import com.teraper.printmaster.core.designsystem.component.PmTag
 import com.teraper.printmaster.core.designsystem.component.TagTone
+import com.teraper.printmaster.core.designsystem.component.formatShort
 import com.teraper.printmaster.core.designsystem.icon.PmIcons
 import com.teraper.printmaster.core.designsystem.theme.PmTheme
 import com.teraper.printmaster.core.model.AccountMode
@@ -55,6 +56,7 @@ data class MoreActions(
     val onOpenCompanies: () -> Unit = {},
     val onOpenCompany: (Long) -> Unit = {},
     val onOpenMasters: () -> Unit = {},
+    val onOpenBackup: () -> Unit = {},
 )
 
 @Composable
@@ -104,7 +106,11 @@ internal fun MoreScreen(state: MoreUiState, actions: MoreActions, modifier: Modi
         MoreSection(
             R.string.feature_more_section_data,
             listOf(
-                MoreItem(PmIcons.Backup, R.string.feature_more_backup, R.string.feature_more_backup_sub, null),
+                MoreItem(
+                    PmIcons.Backup, R.string.feature_more_backup, R.string.feature_more_backup_sub, actions.onOpenBackup,
+                    subtitleText = state.lastBackup?.let { stringResource(R.string.feature_more_backup_last, it.formatShort()) }
+                        ?: stringResource(R.string.feature_more_backup_never),
+                ),
                 MoreItem(PmIcons.Settings, R.string.feature_more_settings, R.string.feature_more_settings_sub, null),
             ),
         ),

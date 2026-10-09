@@ -33,6 +33,8 @@ import com.teraper.printmaster.feature.payments.navigation.paymentsGraph
 import com.teraper.printmaster.feature.pricelist.navigation.PriceItemEditDestination
 import com.teraper.printmaster.feature.pricelist.navigation.navigateToPriceList
 import com.teraper.printmaster.feature.pricelist.navigation.priceListScreens
+import com.teraper.printmaster.feature.settings.navigation.navigateToBackup
+import com.teraper.printmaster.feature.settings.navigation.settingsScreens
 import com.teraper.printmaster.feature.today.TodayActions
 import com.teraper.printmaster.feature.today.navigation.TodayDestination
 import com.teraper.printmaster.feature.today.navigation.todayScreen
@@ -76,11 +78,13 @@ fun PrintMasterNavHost(navController: NavHostController, modifier: Modifier = Mo
                 onOpenCompanies = navController::navigateToCompanies,
                 onOpenCompany = navController::navigateToCompany,
                 onOpenMasters = navController::navigateToMasters,
+                onOpenBackup = navController::navigateToBackup,
             ),
         ) {
             priceListScreens(navController)
             catalogScreens(navController, onOpenClient = navController::openClientFromOtherTab)
             accountScreens(navController)
+            settingsScreens(navController)
         }
     }
 }
