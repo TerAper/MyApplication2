@@ -37,6 +37,7 @@ import com.teraper.printmaster.feature.reports.navigation.navigateToDebtExport
 import com.teraper.printmaster.feature.reports.navigation.navigateToReports
 import com.teraper.printmaster.feature.reports.navigation.reportsScreens
 import com.teraper.printmaster.feature.settings.navigation.navigateToBackup
+import com.teraper.printmaster.feature.settings.navigation.navigateToSettings
 import com.teraper.printmaster.feature.settings.navigation.settingsScreens
 import com.teraper.printmaster.feature.today.TodayActions
 import com.teraper.printmaster.feature.today.navigation.TodayDestination
@@ -84,6 +85,7 @@ fun PrintMasterNavHost(navController: NavHostController, modifier: Modifier = Mo
                 onOpenBackup = navController::navigateToBackup,
                 onOpenReports = navController::navigateToReports,
                 onOpenDebtExport = navController::navigateToDebtExport,
+                onOpenSettings = navController::navigateToSettings,
             ),
         ) {
             priceListScreens(navController)

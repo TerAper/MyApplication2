@@ -3,6 +3,17 @@
     <string name="feature_settings_back">Back</string>
     <string name="feature_settings_ok">OK</string>
     <string name="feature_settings_cancel">Cancel</string>
+    <string name="feature_settings_soon">Soon</string>
+
+    <string name="feature_settings_title">Settings</string>
+    <string name="feature_settings_section_language">LANGUAGE</string>
+    <string name="feature_settings_language_system">Same as the phone</string>
+    <string name="feature_settings_section_import">EXCEL IMPORT</string>
+    <string name="feature_settings_excel_columns">Excel columns</string>
+    <string name="feature_settings_excel_columns_sub">Which columns of the invoice and bank files to read</string>
+    <string name="feature_settings_section_about">ABOUT</string>
+    <string name="feature_settings_version">PrintMaster %1$s</string>
+    <string name="feature_settings_about_sub">Works without internet. All data stays on this phone.</string>
 
     <string name="feature_settings_backup_title">Backup &amp; restore</string>
     <string name="feature_settings_backup_last">Last backup</string>

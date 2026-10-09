@@ -59,6 +59,7 @@ data class MoreActions(
     val onOpenBackup: () -> Unit = {},
     val onOpenReports: () -> Unit = {},
     val onOpenDebtExport: () -> Unit = {},
+    val onOpenSettings: () -> Unit = {},
 )
 
 @Composable
@@ -113,7 +114,7 @@ internal fun MoreScreen(state: MoreUiState, actions: MoreActions, modifier: Modi
                     subtitleText = state.lastBackup?.let { stringResource(R.string.feature_more_backup_last, it.formatShort()) }
                         ?: stringResource(R.string.feature_more_backup_never),
                 ),
-                MoreItem(PmIcons.Settings, R.string.feature_more_settings, R.string.feature_more_settings_sub, null),
+                MoreItem(PmIcons.Settings, R.string.feature_more_settings, R.string.feature_more_settings_sub, actions.onOpenSettings),
             ),
         ),
     )

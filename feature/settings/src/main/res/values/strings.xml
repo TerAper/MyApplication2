@@ -3,6 +3,17 @@
     <string name="feature_settings_back">Հետ</string>
     <string name="feature_settings_ok">Լավ</string>
     <string name="feature_settings_cancel">Չեղարկել</string>
+    <string name="feature_settings_soon">Շուտով</string>
+
+    <string name="feature_settings_title">Կարգավորումներ</string>
+    <string name="feature_settings_section_language">ԼԵԶՈՒ</string>
+    <string name="feature_settings_language_system">Ինչպես հեռախոսում</string>
+    <string name="feature_settings_section_import">EXCEL ՆԵՐՄՈՒԾՈՒՄ</string>
+    <string name="feature_settings_excel_columns">Excel սյունակներ</string>
+    <string name="feature_settings_excel_columns_sub">Հաշիվ-ապրանքագրերի և բանկի ֆայլերի որ սյունակները կարդալ</string>
+    <string name="feature_settings_section_about">ՀԱՎԵԼՎԱԾԻ ՄԱՍԻՆ</string>
+    <string name="feature_settings_version">PrintMaster %1$s</string>
+    <string name="feature_settings_about_sub">Աշխատում է առանց ինտերնետի։ Բոլոր տվյալները մնում են այս հեռախոսում։</string>
 
     <string name="feature_settings_backup_title">Պահուստավորում</string>
     <string name="feature_settings_backup_last">Վերջին պահուստը</string>
