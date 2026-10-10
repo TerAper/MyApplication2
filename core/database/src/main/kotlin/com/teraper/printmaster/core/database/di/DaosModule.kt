@@ -5,6 +5,7 @@ import com.teraper.printmaster.core.database.dao.CallRecordingDao
 import com.teraper.printmaster.core.database.dao.CatalogDao
 import com.teraper.printmaster.core.database.dao.ClientDao
 import com.teraper.printmaster.core.database.dao.CompanyDao
+import com.teraper.printmaster.core.database.dao.ExpenseDao
 import com.teraper.printmaster.core.database.dao.ImportDao
 import com.teraper.printmaster.core.database.dao.LedgerDao
 import com.teraper.printmaster.core.database.dao.OrderDao
@@ -56,4 +57,7 @@ internal object DaosModule {
 
     @Provides
     fun providePhotoDao(database: PrintMasterDatabase): PhotoDao = database.photoDao()
+
+    @Provides
+    fun provideExpenseDao(database: PrintMasterDatabase): ExpenseDao = database.expenseDao()
 }

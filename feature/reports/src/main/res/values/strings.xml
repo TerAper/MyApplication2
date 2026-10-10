@@ -50,4 +50,9 @@
     <string name="feature_reports_xlsx_balance">Պարտք, ֏</string>
     <string name="feature_reports_xlsx_last_payment">Վերջին վճարում</string>
     <string name="feature_reports_xlsx_total">Ընդամենը</string>
+    <string name="feature_reports_expenses">Ծախսեր</string>
+    <string name="feature_reports_expenses_open">Ավելացնել կամ տեսնել ծախսերը</string>
+    <string name="feature_reports_result">Վաստակած այս ամիս</string>
+    <string name="feature_reports_result_hint">Հաշվարկվածը՝ հանած մասերի ինքնարժեքը և ծախսերը։</string>
+    <string name="feature_reports_cash_left">Մնացած գումար (ստացված − ծախսեր)</string>
 </resources>

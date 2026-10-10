@@ -14,4 +14,11 @@
     <string name="core_designsystem_today">Այսօր</string>
     <string name="core_designsystem_tomorrow">Վաղը</string>
     <string name="core_designsystem_yesterday">Երեկ</string>
+    <string name="core_designsystem_expense_parts">Պահեստամասեր և քարտրիջներ</string>
+    <string name="core_designsystem_expense_toner">Տոներ և թանաք</string>
+    <string name="core_designsystem_expense_transport">Տրանսպորտ և վառելիք</string>
+    <string name="core_designsystem_expense_rent">Վարձ</string>
+    <string name="core_designsystem_expense_salary">Աշխատավարձ</string>
+    <string name="core_designsystem_expense_taxes">Հարկեր և վճարներ</string>
+    <string name="core_designsystem_expense_other">Այլ</string>
 </resources>

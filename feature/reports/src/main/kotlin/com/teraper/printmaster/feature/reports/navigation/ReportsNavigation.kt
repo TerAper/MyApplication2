@@ -18,12 +18,13 @@ fun NavController.navigateToReports() = navigate(ReportsDestination)
 fun NavController.navigateToDebtExport() = navigate(DebtExportDestination)
 
 /** Reports and the debt export; the app puts them inside the More tab. */
-fun NavGraphBuilder.reportsScreens(navController: NavController, onOpenClient: (Long) -> Unit) {
+fun NavGraphBuilder.reportsScreens(navController: NavController, onOpenClient: (Long) -> Unit, onOpenExpenses: () -> Unit = {}) {
     composable<ReportsDestination> {
         ReportsRoute(
             onBack = navController::popBackStack,
             onOpenClient = onOpenClient,
             onExportDebts = navController::navigateToDebtExport,
+            onOpenExpenses = onOpenExpenses,
         )
     }
     composable<DebtExportDestination> {

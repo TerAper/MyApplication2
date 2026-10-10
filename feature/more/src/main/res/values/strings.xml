@@ -37,4 +37,6 @@
     </plurals>
     <string name="feature_more_team">Վարպետներ և համօգտագործում</string>
     <string name="feature_more_team_sub">Պատվերներ վարպետների հեռախոսներին</string>
+    <string name="feature_more_expenses">Ծախսեր</string>
+    <string name="feature_more_expenses_sub">Պահեստամասեր, տոներ, վառելիք, վարձ… ըստ օրերի</string>
 </resources>

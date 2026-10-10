@@ -14,4 +14,11 @@
     <string name="core_designsystem_today">Today</string>
     <string name="core_designsystem_tomorrow">Tomorrow</string>
     <string name="core_designsystem_yesterday">Yesterday</string>
+    <string name="core_designsystem_expense_parts">Parts &amp; cartridges</string>
+    <string name="core_designsystem_expense_toner">Toner &amp; ink</string>
+    <string name="core_designsystem_expense_transport">Transport &amp; fuel</string>
+    <string name="core_designsystem_expense_rent">Rent</string>
+    <string name="core_designsystem_expense_salary">Salaries</string>
+    <string name="core_designsystem_expense_taxes">Taxes &amp; fees</string>
+    <string name="core_designsystem_expense_other">Other</string>
 </resources>

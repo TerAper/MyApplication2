@@ -51,6 +51,7 @@ interface CompanyDao {
              + (SELECT COUNT(*) FROM payments WHERE company_id = :id)
              + (SELECT COUNT(*) FROM import_batches WHERE company_id = :id)
              + (SELECT COUNT(*) FROM orders WHERE company_id = :id)
+             + (SELECT COUNT(*) FROM expenses WHERE company_id = :id)
         """,
     )
     suspend fun countCompanyRecords(id: Long): Int

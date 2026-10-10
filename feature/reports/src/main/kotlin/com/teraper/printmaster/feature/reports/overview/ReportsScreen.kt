@@ -34,9 +34,11 @@ import com.teraper.printmaster.core.designsystem.component.CompanyBadge
 import com.teraper.printmaster.core.designsystem.component.PmCard
 import com.teraper.printmaster.core.designsystem.component.PmSecondaryButton
 import com.teraper.printmaster.core.designsystem.component.PmTopBar
+import com.teraper.printmaster.core.designsystem.component.label
 import com.teraper.printmaster.core.designsystem.icon.PmIcons
 import com.teraper.printmaster.core.designsystem.theme.PmTheme
 import com.teraper.printmaster.core.model.BilledTotals
+import com.teraper.printmaster.core.model.ExpenseCategory
 import com.teraper.printmaster.core.model.Client
 import com.teraper.printmaster.core.model.ClientSummary
 import com.teraper.printmaster.core.model.ClientType
@@ -54,6 +56,7 @@ internal fun ReportsRoute(
     onBack: () -> Unit,
     onOpenClient: (Long) -> Unit,
     onExportDebts: () -> Unit,
+    onOpenExpenses: () -> Unit,
     viewModel: ReportsViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -65,6 +68,7 @@ internal fun ReportsRoute(
         onMonthClick = viewModel::onMonthClick,
         onOpenClient = onOpenClient,
         onExportDebts = onExportDebts,
+        onOpenExpenses = onOpenExpenses,
     )
 }
 
@@ -77,6 +81,7 @@ internal fun ReportsScreen(
     onMonthClick: (YearMonth) -> Unit,
     onOpenClient: (Long) -> Unit,
     onExportDebts: () -> Unit,
+    onOpenExpenses: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     Column(modifier.fillMaxSize().background(PmTheme.colors.background)) {
@@ -97,6 +102,8 @@ internal fun ReportsScreen(
             ReceivedCard(state, onMonthClick)
             BilledCard(state.report.billed)
             WorkCard(state.report.work)
+            ExpensesCard(state.report, onOpenExpenses)
+            ResultCard(state.report)
             DebtCard(state, onOpenClient, onExportDebts)
         }
     }
@@ -183,6 +190,34 @@ private fun DebtCard(state: ReportsUiState, onOpenClient: (Long) -> Unit, onExpo
             modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
             icon = PmIcons.Export,
         )
+    }
+}
+
+@Composable
+private fun ExpensesCard(report: MonthReport, onOpenExpenses: () -> Unit) {
+    ReportCard(stringResource(R.string.feature_reports_expenses), report.expenses.total, tone = AmountTone.Debt) {
+        ExpenseCategory.entries.forEach { category ->
+            report.expenses.byCategory[category]?.let { AmountRow(category.label(), it) }
+        }
+        PmSecondaryButton(
+            text = stringResource(R.string.feature_reports_expenses_open),
+            onClick = onOpenExpenses,
+            modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+            icon = PmIcons.Add,
+        )
+    }
+}
+
+/** What's left after spending: cash in hand, and earned (works even when prices have no costs). */
+@Composable
+private fun ResultCard(report: MonthReport) {
+    ReportCard(stringResource(R.string.feature_reports_result), report.earned, tone = if (report.earned.isNegative) AmountTone.Debt else AmountTone.Paid) {
+        Text(stringResource(R.string.feature_reports_result_hint), style = MaterialTheme.typography.bodySmall, color = PmTheme.colors.inkMuted)
+        AmountRow(stringResource(R.string.feature_reports_billed), report.billed.total)
+        if (!report.work.cost.isZero) AmountRow(stringResource(R.string.feature_reports_work_cost), -report.work.cost)
+        AmountRow(stringResource(R.string.feature_reports_expenses), -report.expenses.total)
+        HorizontalDivider(Modifier.padding(vertical = 4.dp), color = PmTheme.colors.surfaceMuted)
+        AmountRow(stringResource(R.string.feature_reports_cash_left), report.cashLeft)
     }
 }
 

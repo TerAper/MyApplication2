@@ -29,7 +29,15 @@ data class MonthReport(
     val income: IncomeTotals = IncomeTotals(),
     val billed: BilledTotals = BilledTotals(),
     val work: WorkTotals = WorkTotals(),
-)
+    /** Spending typed by hand. */
+    val expenses: ExpenseTotals = ExpenseTotals(),
+) {
+    /** Money actually left: what came in minus what went out. */
+    val cashLeft: Money get() = income.total - expenses.total
+
+    /** What was earned: billed, minus parts cost from the price list, minus expenses. */
+    val earned: Money get() = billed.total - work.cost - expenses.total
+}
 
 /** Money received in one month, for the bar chart. */
 data class MonthIncome(val month: YearMonth, val income: IncomeTotals)

@@ -50,4 +50,9 @@
     <string name="feature_reports_xlsx_balance">Owes, AMD</string>
     <string name="feature_reports_xlsx_last_payment">Last payment</string>
     <string name="feature_reports_xlsx_total">Total</string>
+    <string name="feature_reports_expenses">Expenses</string>
+    <string name="feature_reports_expenses_open">Add or see expenses</string>
+    <string name="feature_reports_result">Earned this month</string>
+    <string name="feature_reports_result_hint">Billed minus parts cost and expenses.</string>
+    <string name="feature_reports_cash_left">Cash left (received − expenses)</string>
 </resources>

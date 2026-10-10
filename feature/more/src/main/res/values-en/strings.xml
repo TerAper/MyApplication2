@@ -37,4 +37,6 @@
     </plurals>
     <string name="feature_more_team">Masters &amp; sharing</string>
     <string name="feature_more_team_sub">Send orders to masters\' phones</string>
+    <string name="feature_more_expenses">Expenses</string>
+    <string name="feature_more_expenses_sub">Parts, toner, fuel, rent… by day</string>
 </resources>

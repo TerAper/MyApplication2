@@ -21,6 +21,9 @@ import com.teraper.printmaster.feature.clients.navigation.ClientEditDestination
 import com.teraper.printmaster.feature.clients.navigation.PrinterEditDestination
 import com.teraper.printmaster.feature.clients.navigation.clientsGraph
 import com.teraper.printmaster.feature.clients.navigation.navigateToClientDetail
+import com.teraper.printmaster.feature.expenses.navigation.ExpenseEditDestination
+import com.teraper.printmaster.feature.expenses.navigation.expensesScreens
+import com.teraper.printmaster.feature.expenses.navigation.navigateToExpenses
 import com.teraper.printmaster.feature.imports.navigation.importScreens
 import com.teraper.printmaster.feature.imports.navigation.navigateToImport
 import com.teraper.printmaster.feature.imports.navigation.navigateToImportHistory
@@ -100,6 +103,7 @@ fun PrintMasterNavHost(navController: NavHostController, modifier: Modifier = Mo
                 onOpenSettings = navController::navigateToSettings,
                 onOpenCalls = navController::navigateToCalls,
                 onOpenTeam = navController::navigateToTeam,
+                onOpenExpenses = navController::navigateToExpenses,
                 onOpenImportHistory = {
                     navController.navigateToTab(TopLevelDestination.PAYMENTS)
                     navController.navigateToImportHistory()
@@ -110,9 +114,10 @@ fun PrintMasterNavHost(navController: NavHostController, modifier: Modifier = Mo
             catalogScreens(navController, onOpenClient = navController::openClientFromOtherTab)
             accountScreens(navController)
             settingsScreens(navController)
-            reportsScreens(navController, onOpenClient = navController::openClientFromOtherTab)
+            reportsScreens(navController, onOpenClient = navController::openClientFromOtherTab, onOpenExpenses = navController::navigateToExpenses)
             callsScreens(navController, onOpenClient = navController::openClientFromOtherTab)
             teamScreens(navController)
+            expensesScreens(navController)
         }
     }
 }
@@ -136,6 +141,7 @@ private val fullScreenRoutes = listOf(
     OrderEditDestination::class,
     PriceItemEditDestination::class,
     RepairEditDestination::class,
+    ExpenseEditDestination::class,
 )
 
 fun NavDestination?.isFullScreen(): Boolean = this != null && fullScreenRoutes.any { hasRoute(it) }

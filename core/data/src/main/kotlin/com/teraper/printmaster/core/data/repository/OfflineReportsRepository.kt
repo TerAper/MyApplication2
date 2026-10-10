@@ -1,9 +1,11 @@
 package com.teraper.printmaster.core.data.repository
 
+import com.teraper.printmaster.core.database.dao.ExpenseDao
 import com.teraper.printmaster.core.database.dao.PaymentRow
 import com.teraper.printmaster.core.database.dao.ReportDao
 import com.teraper.printmaster.core.model.BilledTotals
 import com.teraper.printmaster.core.model.ChargeSource
+import com.teraper.printmaster.core.model.ExpenseTotals
 import com.teraper.printmaster.core.model.IncomeTotals
 import com.teraper.printmaster.core.model.Money
 import com.teraper.printmaster.core.model.MonthIncome
@@ -19,6 +21,7 @@ import javax.inject.Inject
 
 internal class OfflineReportsRepository @Inject constructor(
     private val dao: ReportDao,
+    private val expenseDao: ExpenseDao,
     private val companies: CompaniesRepository,
 ) : ReportsRepository {
 
@@ -29,7 +32,8 @@ internal class OfflineReportsRepository @Inject constructor(
             dao.observePayments(companyId, from, to),
             dao.observeBilledBySource(companyId, from, to),
             dao.observeWork(companyId, from, to),
-        ) { payments, billed, work ->
+            expenseDao.observeTotals(companyId, from, to),
+        ) { payments, billed, work, expenses ->
             val bySource = billed.associate { it.source to Money(it.totalMinor) }
             MonthReport(
                 month = month,
@@ -40,6 +44,7 @@ internal class OfflineReportsRepository @Inject constructor(
                     manual = bySource[ChargeSource.MANUAL] ?: Money.ZERO,
                 ),
                 work = WorkTotals(work.orders, Money(work.revenueMinor), Money(work.costMinor)),
+                expenses = ExpenseTotals(expenses.associate { it.category to Money(it.totalMinor) }),
             )
         }
     }

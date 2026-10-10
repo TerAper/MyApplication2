@@ -10,6 +10,7 @@ import com.teraper.printmaster.core.database.dao.CallRecordingDao
 import com.teraper.printmaster.core.database.dao.CatalogDao
 import com.teraper.printmaster.core.database.dao.ClientDao
 import com.teraper.printmaster.core.database.dao.CompanyDao
+import com.teraper.printmaster.core.database.dao.ExpenseDao
 import com.teraper.printmaster.core.database.dao.ImportDao
 import com.teraper.printmaster.core.database.dao.LedgerDao
 import com.teraper.printmaster.core.database.dao.OrderDao
@@ -33,6 +34,7 @@ import com.teraper.printmaster.core.database.entity.ClientPhoneEntity
 import com.teraper.printmaster.core.database.entity.ClientPrinterCartridgeEntity
 import com.teraper.printmaster.core.database.entity.ClientPrinterEntity
 import com.teraper.printmaster.core.database.entity.CompanyEntity
+import com.teraper.printmaster.core.database.entity.ExpenseEntity
 import com.teraper.printmaster.core.database.entity.ImportBatchEntity
 import com.teraper.printmaster.core.database.entity.MasterEntity
 import com.teraper.printmaster.core.database.entity.ModelCartridgeCrossRef
@@ -79,6 +81,7 @@ import com.teraper.printmaster.core.database.entity.SyncStateEntity
         SyncOutboxEntity::class,
         SyncStateEntity::class,
         PhotoEntity::class,
+        ExpenseEntity::class,
     ],
     version = PrintMasterDatabase.VERSION,
     exportSchema = true,
@@ -95,6 +98,8 @@ import com.teraper.printmaster.core.database.entity.SyncStateEntity
         AutoMigration(from = 6, to = 7),
         // 8: photos; ids on client printers (two of one model).
         AutoMigration(from = 7, to = 8),
+        // 9: expenses typed by hand.
+        AutoMigration(from = 8, to = 9),
     ],
 )
 abstract class PrintMasterDatabase : RoomDatabase() {
@@ -110,9 +115,10 @@ abstract class PrintMasterDatabase : RoomDatabase() {
     abstract fun importDao(): ImportDao
     abstract fun syncDao(): SyncDao
     abstract fun photoDao(): PhotoDao
+    abstract fun expenseDao(): ExpenseDao
 
     companion object {
-        const val VERSION = 8
+        const val VERSION = 9
 
         /** Oldest version a backup file may have; older ones only existed on development phones. */
         const val OLDEST_RESTORABLE_VERSION = 2
