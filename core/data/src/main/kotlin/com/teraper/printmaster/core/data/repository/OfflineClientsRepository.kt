@@ -77,8 +77,11 @@ internal class OfflineClientsRepository @Inject constructor(
             .sortedBy { ClientSearch.normalizeText(it.client.name) }
     }
 
+    /** An own client with its money, or an attached company's client (opened from its order) without. */
     override fun observeClientSummary(id: Long): Flow<ClientSummary?> =
-        observeClientSummaries().map { list -> list.firstOrNull { it.client.id == id } }.distinctUntilChanged()
+        combine(observeClientSummaries(), clientDao.observeClientWithContacts(id)) { list, row ->
+            list.firstOrNull { it.client.id == id } ?: row?.takeIf { it.client.attachedCompanyId != null }?.let { ClientSummary(it.toModel()) }
+        }.distinctUntilChanged()
 
     override suspend fun saveClient(draft: ClientDraft): SaveClientResult {
         val errors = draft.validate()
@@ -141,4 +144,5 @@ private fun ClientWithContacts.toModel() = Client(
     note = client.note,
     phones = phones.sortedBy { it.id }.map { ClientPhone(it.id, it.number, it.label) },
     addresses = addresses.sortedBy { it.id }.map { ClientAddress(it.id, it.address, it.label, it.mapLink) },
+    isAttached = client.attachedCompanyId != null,
 )

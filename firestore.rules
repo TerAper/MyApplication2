@@ -1,22 +1,25 @@
 rules_version = '2';
 
-// PrintMaster shared space. Paste into Firebase console → Firestore Database → Rules → Publish.
-// The company (owner) sees and writes everything of its space; a master who joined with the
-// join code sees only orders assigned to him, the clients of those orders and the price list.
-// Debts and payments never leave the company's phone, so there is nothing about money here.
+// PrintMaster shared spaces. Paste into Firebase console → Firestore Database → Rules → Publish.
+// Every own company that invites masters has a space. Its owner sees and writes everything there;
+// a master who attached with the company's code sees only orders given to him, the clients of
+// those orders and the price list, and answers on those orders (done, taken as his own, turned down).
+// Debts and payments never leave the owner's phone, so there is nothing about money here.
 service cloud.firestore {
   match /databases/{db}/documents {
 
     function signedIn() { return request.auth != null; }
     function space(w) { return get(/databases/$(db)/documents/workspaces/$(w)).data; }
     function isOwner(w) { return signedIn() && space(w).ownerUid == request.auth.uid; }
+    // The space as it will be after this batch (a new space and its code are written together).
+    function isOwnerAfter(w) { return signedIn() && getAfter(/databases/$(db)/documents/workspaces/$(w)).data.ownerUid == request.auth.uid; }
     function isMember(w) { return signedIn() && exists(/databases/$(db)/documents/workspaces/$(w)/members/$(request.auth.uid)); }
     function mine() { return request.resource.data.author == request.auth.uid; }
 
     // A code can be looked up only by its exact value, never listed.
     match /joinCodes/{code} {
       allow get: if signedIn();
-      allow create, update: if signedIn() && isOwner(request.resource.data.workspaceId);
+      allow create, update: if isOwnerAfter(request.resource.data.workspaceId);
       allow delete: if signedIn() && isOwner(resource.data.workspaceId);
     }
 

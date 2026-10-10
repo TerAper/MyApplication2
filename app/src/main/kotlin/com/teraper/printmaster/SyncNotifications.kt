@@ -21,6 +21,7 @@ internal object SyncNotifications {
         val lines = buildList {
             if (report.finishedOrders > 0) add(context.resources.getQuantityString(R.plurals.notify_orders_finished, report.finishedOrders, report.finishedOrders))
             if (report.newOrders > 0) add(context.resources.getQuantityString(R.plurals.notify_orders_new, report.newOrders, report.newOrders))
+            if (report.declinedOrders > 0) add(context.resources.getQuantityString(R.plurals.notify_orders_declined, report.declinedOrders, report.declinedOrders))
             if (report.newClients > 0) add(context.resources.getQuantityString(R.plurals.notify_clients_new, report.newClients, report.newClients))
         }
         if (lines.isEmpty()) return

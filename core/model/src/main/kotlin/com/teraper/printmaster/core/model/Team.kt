@@ -1,6 +1,6 @@
 package com.teraper.printmaster.core.model
 
-/** Where this phone stands with the company's shared space. */
+/** The Google account this phone is signed in with. */
 data class TeamState(
     /** Firebase is set up in this build (google-services.json present). */
     val available: Boolean = false,
@@ -8,15 +8,16 @@ data class TeamState(
     val email: String? = null,
     /** The Google account's name, to suggest as the user's name. */
     val displayName: String? = null,
-    val space: TeamSpace? = null,
-    /** Owner only: masters who joined. */
-    val members: List<TeamMember> = emptyList(),
 )
 
-/** The shared space of one company. [joinCode] is shown to the owner only. */
-data class TeamSpace(val id: String, val name: String, val isOwner: Boolean, val joinCode: String?)
+sealed interface AttachResult {
+    /** [companyName] of [ownerName] now gives the user orders. */
+    data class Attached(val companyName: String, val ownerName: String) : AttachResult
+    data object WrongCode : AttachResult
 
-/** A master who joined; [masterId] is the local master record they are linked to, if any. */
-data class TeamMember(val uid: String, val name: String, val email: String, val masterId: Long?)
-
-enum class JoinResult { JOINED, WRONG_CODE, NOT_SIGNED_IN, FAILED }
+    /** The code of one of the user's own companies. */
+    data object OwnCompany : AttachResult
+    data object AlreadyAttached : AttachResult
+    data object NotSignedIn : AttachResult
+    data object Failed : AttachResult
+}

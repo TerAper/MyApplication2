@@ -3,25 +3,32 @@ package com.teraper.printmaster.core.testing
 import com.teraper.printmaster.core.data.sync.SyncController
 import com.teraper.printmaster.core.data.sync.SyncStatus
 import com.teraper.printmaster.core.data.team.TeamRepository
-import com.teraper.printmaster.core.model.JoinResult
+import com.teraper.printmaster.core.model.AttachResult
+import com.teraper.printmaster.core.model.Company
+import com.teraper.printmaster.core.model.CompanyKind
 import com.teraper.printmaster.core.model.SyncReport
-import com.teraper.printmaster.core.model.TeamMember
-import com.teraper.printmaster.core.model.TeamSpace
 import com.teraper.printmaster.core.model.TeamState
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.update
 
-/** In-memory team: [validCode] joins the space named [spaceName]. */
+/**
+ * In-memory sharing on top of [companies]: [validCode] is another owner's code that attaches
+ * the company [otherCompany]; invites get [inviteCode].
+ */
 class FakeTeamRepository(
     available: Boolean = true,
+    private val companies: FakeCompaniesRepository? = null,
     private val validCode: String = "K7PQ2MXA",
-    private val spaceName: String = "Alfa",
+    private val otherCompany: String = "Xerox",
+    private val otherOwner: String = "Apo",
+    private val inviteCode: String = "INVITE22",
 ) : TeamRepository {
     val state = MutableStateFlow(TeamState(available = available))
     var signInWorks = true
-    val linked = mutableListOf<Pair<String, Long?>>()
-    val removed = mutableListOf<String>()
+    var internetWorks = true
+    val removed = mutableListOf<Pair<Long, Long>>()
 
     override fun observeState(): Flow<TeamState> = state
 
@@ -34,40 +41,42 @@ class FakeTeamRepository(
     }
 
     override suspend fun signOut() {
-        state.value = state.value.copy(email = null)
+        state.value = state.value.copy(email = null, displayName = null)
     }
 
-    override suspend fun createSpace(): Boolean {
-        state.value = state.value.copy(space = TeamSpace("w1", spaceName, isOwner = true, joinCode = validCode))
-        return true
+    override suspend fun inviteCode(companyId: Long): String? {
+        if (!internetWorks) return null
+        companies?.companies?.update { list -> list.map { if (it.id == companyId) it.copy(joinCode = inviteCode) else it } }
+        return inviteCode
     }
 
-    override suspend fun newJoinCode(): Boolean {
-        state.value = state.value.copy(space = state.value.space?.copy(joinCode = "NEWCODE2"))
-        return true
+    override suspend fun newJoinCode(companyId: Long): String? {
+        if (!internetWorks) return null
+        companies?.companies?.update { list -> list.map { if (it.id == companyId) it.copy(joinCode = "NEWCODE2") else it } }
+        return "NEWCODE2"
     }
 
-    override suspend fun join(code: String, myName: String): JoinResult = when {
-        state.value.email == null -> JoinResult.NOT_SIGNED_IN
-        code != validCode -> JoinResult.WRONG_CODE
+    override suspend fun removeMember(companyId: Long, masterId: Long): Boolean {
+        removed += companyId to masterId
+        return internetWorks
+    }
+
+    override suspend fun attachCompany(code: String, myName: String): AttachResult = when {
+        state.value.email == null -> AttachResult.NotSignedIn
+        !internetWorks -> AttachResult.Failed
+        code == inviteCode -> AttachResult.OwnCompany
+        code != validCode -> AttachResult.WrongCode
+        companies?.attached?.value?.any { it.name == otherCompany } == true -> AttachResult.AlreadyAttached
         else -> {
-            state.value = state.value.copy(space = TeamSpace("w1", spaceName, isOwner = false, joinCode = null))
-            JoinResult.JOINED
+            companies?.attached?.update { it + Company(100, otherCompany, kind = CompanyKind.ATTACHED, ownerName = otherOwner, isShared = true) }
+            AttachResult.Attached(otherCompany, otherOwner)
         }
     }
 
-    override suspend fun linkMember(uid: String, masterId: Long?) {
-        linked += uid to masterId
-        state.value = state.value.copy(members = state.value.members.map { if (it.uid == uid) it.copy(masterId = masterId ?: 99) else it })
-    }
-
-    override suspend fun removeMember(uid: String) {
-        removed += uid
-        state.value = state.value.copy(members = state.value.members.filterNot { it.uid == uid })
-    }
-
-    fun addMember(member: TeamMember) {
-        state.value = state.value.copy(members = state.value.members + member)
+    override suspend fun leaveCompany(companyId: Long): Boolean {
+        if (!internetWorks) return false
+        companies?.attached?.update { list -> list.map { if (it.id == companyId) it.copy(isShared = false) else it } }
+        return true
     }
 }
 

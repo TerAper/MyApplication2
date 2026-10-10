@@ -4,6 +4,7 @@ import com.teraper.printmaster.core.database.dao.ClientDao
 import com.teraper.printmaster.core.database.dao.OrderDao
 import com.teraper.printmaster.core.database.dao.OrderRow
 import com.teraper.printmaster.core.database.entity.OrderEntity
+import com.teraper.printmaster.core.model.CompanyKind
 import com.teraper.printmaster.core.model.Order
 import com.teraper.printmaster.core.model.OrderDraft
 import com.teraper.printmaster.core.model.OrderDraftError
@@ -131,5 +132,12 @@ internal class OfflineOrdersRepository @Inject constructor(
         masterId = order.masterId,
         masterName = masterName,
         doneAt = order.doneAt?.let { LocalDateTime.ofInstant(Instant.ofEpochMilli(it), zone) },
+        fromAttachedCompany = companyKind == CompanyKind.ATTACHED,
+        companyName = companyName,
+        companyOwner = companyOwner,
+        takenByMaster = order.takenByMaster,
+        takenFrom = fromCompanyName,
+        declinedBy = order.declinedBy,
+        declinedReason = order.declinedReason,
     )
 }

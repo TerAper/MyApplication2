@@ -13,6 +13,7 @@ import com.teraper.printmaster.core.model.ClientType
         Index(value = ["tax_id"], unique = true),
         Index(value = ["name"]),
         Index(value = ["sync_id"], unique = true),
+        Index(value = ["attached_company_id"]),
     ],
 )
 data class ClientEntity(
@@ -27,6 +28,8 @@ data class ClientEntity(
     @ColumnInfo(name = "sync_id") val syncId: String? = null,
     /** Added by a master in the field: the company should check it. */
     @ColumnInfo(name = "needs_review", defaultValue = "0") val needsReview: Boolean = false,
+    /** A client of an attached company (another owner's), seen through its orders; null = the user's own. */
+    @ColumnInfo(name = "attached_company_id") val attachedCompanyId: Long? = null,
 )
 
 @Entity(

@@ -208,7 +208,7 @@ internal fun OrderEditScreen(state: OrderEditUiState, actions: OrderEditActions,
                     onSelect = actions.onPhoneChange,
                 )
             }
-            if (state.masters.size > 1) {
+            if (state.masters.isNotEmpty()) {
                 Label(stringResource(R.string.feature_orders_master))
                 Choices(
                     options = state.masters.map { it.id to it.name },

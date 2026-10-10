@@ -23,6 +23,18 @@ data class Order(
     val masterName: String? = null,
     /** When it was finished; null while open. */
     val doneAt: LocalDateTime? = null,
+    /** Another owner's company gave this order to the user (an attached master): no money is kept for it here. */
+    val fromAttachedCompany: Boolean = false,
+    val companyName: String = "",
+    /** ATTACHED: who owns the company that gave it. */
+    val companyOwner: String = "",
+    /** The attached master counts the order as his own; for the giving company it's only history. */
+    val takenByMaster: Boolean = false,
+    /** Master's phone: the attached company he took this order from as his own. */
+    val takenFrom: String? = null,
+    /** The attached master who turned it down, and why (owner's phone). */
+    val declinedBy: String? = null,
+    val declinedReason: String? = null,
 ) {
     val date: LocalDate get() = scheduledAt.toLocalDate()
 

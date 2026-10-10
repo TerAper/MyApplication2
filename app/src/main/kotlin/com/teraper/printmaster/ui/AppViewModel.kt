@@ -29,7 +29,13 @@ sealed interface AppUiState {
     /** Signed in, nothing registered yet: the user's name and first company. */
     data object NeedsRegistration : AppUiState
 
-    data class Ready(val activeCompany: Company?, val companies: List<Company>, val mode: AccountMode = AccountMode.OWNER) : AppUiState {
+    data class Ready(
+        val activeCompany: Company?,
+        val companies: List<Company>,
+        val mode: AccountMode = AccountMode.OWNER,
+        /** Attached to another owner's company: its orders come to this phone. */
+        val worksForOthers: Boolean = false,
+    ) : AppUiState {
         /** The switch strip is only worth its space with two or more companies. */
         val showCompanySwitch: Boolean get() = companies.size > 1 && activeCompany != null
     }
@@ -54,16 +60,17 @@ class AppViewModel @Inject constructor(
         team.observeState(),
         skipped,
         companiesRepository.observeProfile(),
-        companiesRepository.observeCompanies(),
+        combine(companiesRepository.observeCompanies(), companiesRepository.observeAttachedCompanies(), ::Pair),
         companiesRepository.observeActiveCompany(),
-    ) { account, skipped, profile, companies, active ->
+    ) { account, skipped, profile, (companies, attached), active ->
         when {
             account.available && account.email == null && !skipped -> AppUiState.NeedsSignIn(canSkipForTest)
-            profile == null -> AppUiState.NeedsRegistration
+            // A phone that only joined a company (older app) adds its own company now.
+            profile == null || profile.mode == AccountMode.JOINED -> AppUiState.NeedsRegistration
             else -> {
                 // Lets usage be split by kind of user; nothing personal.
                 analytics.setUserProperty("mode", profile.mode.name)
-                AppUiState.Ready(active, companies, profile.mode)
+                AppUiState.Ready(active, companies, profile.mode, worksForOthers = attached.any { it.isShared })
             }
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), AppUiState.Loading)

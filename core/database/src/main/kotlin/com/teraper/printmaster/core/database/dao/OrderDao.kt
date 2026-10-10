@@ -7,6 +7,7 @@ import androidx.room.Insert
 import androidx.room.Query
 import androidx.room.Update
 import com.teraper.printmaster.core.database.entity.OrderEntity
+import com.teraper.printmaster.core.model.CompanyKind
 import com.teraper.printmaster.core.model.OrderStatus
 import kotlinx.coroutines.flow.Flow
 
@@ -14,17 +15,17 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface OrderDao {
 
-    @Query("$SELECT_ROWS WHERE o.company_id = :companyId AND o.scheduled_at >= :fromMillis AND o.scheduled_at < :toMillis ORDER BY o.scheduled_at")
+    @Query("$SELECT_ROWS WHERE $COMPANY_OR_ATTACHED AND o.scheduled_at >= :fromMillis AND o.scheduled_at < :toMillis ORDER BY o.scheduled_at")
     fun observeOrdersBetween(companyId: Long, fromMillis: Long, toMillis: Long): Flow<List<OrderRow>>
 
     /** Unfinished orders planned before [beforeMillis]: the ones that were missed. */
     @Query(
-        "$SELECT_ROWS WHERE o.company_id = :companyId AND o.scheduled_at < :beforeMillis " +
+        "$SELECT_ROWS WHERE $COMPANY_OR_ATTACHED AND o.scheduled_at < :beforeMillis " +
             "AND o.status IN ('NEW', 'IN_PROGRESS') ORDER BY o.scheduled_at",
     )
     fun observeOpenOrdersBefore(companyId: Long, beforeMillis: Long): Flow<List<OrderRow>>
 
-    @Query("$SELECT_ROWS WHERE o.company_id = :companyId AND o.client_id = :clientId ORDER BY o.scheduled_at DESC")
+    @Query("$SELECT_ROWS WHERE o.client_id = :clientId AND (o.company_id = :companyId OR c.attached_company_id IS NOT NULL) ORDER BY o.scheduled_at DESC")
     fun observeClientOrders(companyId: Long, clientId: Long): Flow<List<OrderRow>>
 
     @Query("$SELECT_ROWS WHERE o.id = :id")
@@ -32,7 +33,7 @@ interface OrderDao {
 
     /** Not-cancelled order times in a range, for the per-day counts on the day strip. */
     @Query(
-        "SELECT scheduled_at FROM orders WHERE company_id = :companyId " +
+        "SELECT scheduled_at FROM orders o WHERE $COMPANY_OR_ATTACHED " +
             "AND scheduled_at >= :fromMillis AND scheduled_at < :toMillis AND status != 'CANCELLED'",
     )
     fun observeOrderTimes(companyId: Long, fromMillis: Long, toMillis: Long): Flow<List<Long>>
@@ -66,10 +67,16 @@ interface OrderDao {
     suspend fun deleteOrder(id: Long): Int
 
     private companion object {
+        /** A master's day holds his own company's orders and those attached companies gave him. */
+        const val COMPANY_OR_ATTACHED = "(o.company_id = :companyId OR o.company_id IN (SELECT id FROM companies WHERE kind = 'ATTACHED'))"
+
         const val SELECT_ROWS = """
-            SELECT o.*, c.name AS client_name, a.address AS address_text, a.map_link AS address_link, p.number AS phone_number, m.name AS master_name
+            SELECT o.*, c.name AS client_name, a.address AS address_text, a.map_link AS address_link, p.number AS phone_number, m.name AS master_name,
+                   co.kind AS company_kind, co.name AS company_name, co.owner_name AS company_owner,
+                   (SELECT name FROM companies WHERE id = o.from_company_id) AS from_company_name
             FROM orders o
             JOIN clients c ON c.id = o.client_id
+            JOIN companies co ON co.id = o.company_id
             LEFT JOIN client_addresses a ON a.id = o.address_id
             LEFT JOIN client_phones p ON p.id = o.phone_id
             LEFT JOIN masters m ON m.id = o.master_id
@@ -84,4 +91,8 @@ data class OrderRow(
     @ColumnInfo(name = "address_link") val addressLink: String?,
     @ColumnInfo(name = "phone_number") val phone: String?,
     @ColumnInfo(name = "master_name") val masterName: String?,
+    @ColumnInfo(name = "company_kind") val companyKind: CompanyKind,
+    @ColumnInfo(name = "company_name") val companyName: String,
+    @ColumnInfo(name = "company_owner") val companyOwner: String,
+    @ColumnInfo(name = "from_company_name") val fromCompanyName: String?,
 )

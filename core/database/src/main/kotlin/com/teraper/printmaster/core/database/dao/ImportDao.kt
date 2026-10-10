@@ -48,7 +48,7 @@ interface ImportDao {
     @Query("DELETE FROM charges WHERE id = :id")
     suspend fun deleteCharge(id: Long)
 
-    @Query("SELECT id, tax_id FROM clients WHERE tax_id IS NOT NULL")
+    @Query("SELECT id, tax_id FROM clients WHERE tax_id IS NOT NULL AND attached_company_id IS NULL")
     suspend fun getClientTaxIds(): List<ClientTaxId>
 
     @Insert
@@ -56,7 +56,7 @@ interface ImportDao {
 
     // Bank
 
-    @Query("SELECT id AS client_id, name AS number FROM clients")
+    @Query("SELECT id AS client_id, name AS number FROM clients WHERE attached_company_id IS NULL")
     suspend fun getClientNames(): List<ClientPhoneRow>
 
     @Query("SELECT * FROM client_aliases")

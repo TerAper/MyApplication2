@@ -27,6 +27,10 @@ class FakeCompaniesRepository(
 
     override fun observeProfile(): Flow<AppProfile?> = profile
     override fun observeCompanies(): Flow<List<Company>> = companies
+    val attached = MutableStateFlow<List<Company>>(emptyList())
+
+    override fun observeAttachedCompanies(): Flow<List<Company>> = attached
+
     override fun observeMasters(): Flow<List<Master>> = masters
 
     override fun observeActiveCompany(): Flow<Company?> = combine(profile, companies, selected) { profile, list, selected ->

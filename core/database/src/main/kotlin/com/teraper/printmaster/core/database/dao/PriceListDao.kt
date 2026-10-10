@@ -12,8 +12,23 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface PriceListDao {
 
-    @Query("SELECT * FROM repair_parts WHERE archived = 0")
+    /** The user's own price list. */
+    @Query("SELECT * FROM repair_parts WHERE archived = 0 AND attached_company_id IS NULL")
     fun observeParts(): Flow<List<RepairPartEntity>>
+
+    /** The price list for work on an order of [companyId]: an attached company's own list, else the user's. */
+    @Query(
+        """
+        SELECT * FROM repair_parts WHERE archived = 0 AND (
+            CASE WHEN (SELECT kind FROM companies WHERE id = :companyId) = 'ATTACHED'
+            THEN attached_company_id = :companyId ELSE attached_company_id IS NULL END)
+        """,
+    )
+    fun observePartsFor(companyId: Long): Flow<List<RepairPartEntity>>
+
+    /** An attached company's price list, used for its orders. */
+    @Query("SELECT * FROM repair_parts WHERE archived = 0 AND attached_company_id = :companyId")
+    fun observeAttachedParts(companyId: Long): Flow<List<RepairPartEntity>>
 
     @Query("SELECT * FROM repair_parts WHERE id = :id AND archived = 0")
     fun observePart(id: Long): Flow<RepairPartEntity?>
@@ -21,7 +36,7 @@ interface PriceListDao {
     @Query("SELECT * FROM repair_parts WHERE id = :id")
     suspend fun getPart(id: Long): RepairPartEntity?
 
-    @Query("SELECT * FROM repair_parts WHERE category = :category AND archived = 0")
+    @Query("SELECT * FROM repair_parts WHERE category = :category AND archived = 0 AND attached_company_id IS NULL")
     suspend fun getPartsIn(category: RepairCategory): List<RepairPartEntity>
 
     @Insert

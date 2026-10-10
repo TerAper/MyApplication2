@@ -34,6 +34,7 @@ import com.teraper.printmaster.core.database.entity.ClientPhoneEntity
 import com.teraper.printmaster.core.database.entity.ClientPrinterCartridgeEntity
 import com.teraper.printmaster.core.database.entity.ClientPrinterEntity
 import com.teraper.printmaster.core.database.entity.CompanyEntity
+import com.teraper.printmaster.core.database.entity.CompanyMemberEntity
 import com.teraper.printmaster.core.database.entity.ExpenseEntity
 import com.teraper.printmaster.core.database.entity.ImportBatchEntity
 import com.teraper.printmaster.core.database.entity.MasterEntity
@@ -53,6 +54,7 @@ import com.teraper.printmaster.core.database.entity.SyncStateEntity
 @Database(
     entities = [
         CompanyEntity::class,
+        CompanyMemberEntity::class,
         MasterEntity::class,
         AppProfileEntity::class,
         ClientEntity::class,
@@ -100,6 +102,8 @@ import com.teraper.printmaster.core.database.entity.SyncStateEntity
         AutoMigration(from = 7, to = 8),
         // 9: expenses typed by hand.
         AutoMigration(from = 8, to = 9),
+        // 10: own and attached companies (shared spaces), attached clients and price lists, order hand-over.
+        AutoMigration(from = 9, to = 10),
     ],
 )
 abstract class PrintMasterDatabase : RoomDatabase() {
@@ -118,7 +122,7 @@ abstract class PrintMasterDatabase : RoomDatabase() {
     abstract fun expenseDao(): ExpenseDao
 
     companion object {
-        const val VERSION = 9
+        const val VERSION = 10
 
         /** Oldest version a backup file may have; older ones only existed on development phones. */
         const val OLDEST_RESTORABLE_VERSION = 2

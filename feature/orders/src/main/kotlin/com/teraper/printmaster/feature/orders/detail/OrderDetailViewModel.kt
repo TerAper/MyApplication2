@@ -4,11 +4,13 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.teraper.printmaster.core.data.repository.CallRecordingsRepository
+import com.teraper.printmaster.core.data.repository.CompaniesRepository
 import com.teraper.printmaster.core.data.repository.DeleteOrderResult
 import com.teraper.printmaster.core.data.repository.OrdersRepository
 import com.teraper.printmaster.core.data.repository.PhotoRepository
 import com.teraper.printmaster.core.data.repository.RepairsRepository
 import com.teraper.printmaster.core.model.CallRecording
+import com.teraper.printmaster.core.model.Company
 import com.teraper.printmaster.core.model.Order
 import com.teraper.printmaster.core.model.OrderStatus
 import com.teraper.printmaster.core.model.OrderWork
@@ -35,7 +37,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-enum class OrderDetailDialog { CONFIRM_DELETE, DELETE_BLOCKED, CONFIRM_CANCEL, CONFIRM_REOPEN }
+enum class OrderDetailDialog { CONFIRM_DELETE, DELETE_BLOCKED, CONFIRM_CANCEL, CONFIRM_REOPEN, DECLINE }
 
 sealed interface OrderDetailUiState {
     data object Loading : OrderDetailUiState
@@ -49,6 +51,11 @@ sealed interface OrderDetailUiState {
         val calls: List<CallRecording> = emptyList(),
         val playing: CallRecording? = null,
         val photos: List<Photo> = emptyList(),
+        /** An attached company's order being finished (paid in cash or not): asking whose order it is. */
+        val finishChoice: Boolean? = null,
+        /** The user's own companies, to count an attached company's order as one of theirs. */
+        val ownCompanies: List<Company> = emptyList(),
+        val declineReason: String = "",
     ) : OrderDetailUiState {
         /** Work can be added or changed only while the order is open. */
         val canEditWork: Boolean get() = order.isOpen && !work.isBilled
@@ -68,6 +75,7 @@ class OrderDetailViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val ordersRepository: OrdersRepository,
     private val repairsRepository: RepairsRepository,
+    companiesRepository: CompaniesRepository,
     callRecordingsRepository: CallRecordingsRepository,
     private val photoRepository: PhotoRepository,
     clock: Clock,
@@ -78,6 +86,8 @@ class OrderDetailViewModel @Inject constructor(
     private val dialog = MutableStateFlow<OrderDetailDialog?>(null)
     private val deleting = MutableStateFlow(false)
     private val playing = MutableStateFlow<CallRecording?>(null)
+    private val finishChoice = MutableStateFlow<Boolean?>(null)
+    private val declineReason = MutableStateFlow("")
 
     private val _events = Channel<OrderDetailEvent>(Channel.BUFFERED)
     val events: Flow<OrderDetailEvent> = _events.receiveAsFlow()
@@ -92,21 +102,37 @@ class OrderDetailViewModel @Inject constructor(
         }
     }
 
-    private val view = combine(dialog, deleting, playing, photoRepository.observePhotos(PhotoOwner.ORDER, listOf(orderId))) { dialog, deleting, playing, photos ->
-        ViewState(dialog, deleting, playing, photos)
+    private val view = combine(
+        combine(dialog, deleting, playing, ::Triple),
+        photoRepository.observePhotos(PhotoOwner.ORDER, listOf(orderId)),
+        finishChoice,
+        companiesRepository.observeCompanies(),
+        declineReason,
+    ) { (dialog, deleting, playing), photos, finishChoice, companies, reason ->
+        ViewState(dialog, deleting, playing, photos, finishChoice, companies, reason)
     }
 
-    private data class ViewState(val dialog: OrderDetailDialog?, val deleting: Boolean, val playing: CallRecording?, val photos: List<Photo>)
+    private data class ViewState(
+        val dialog: OrderDetailDialog?,
+        val deleting: Boolean,
+        val playing: CallRecording?,
+        val photos: List<Photo>,
+        val finishChoice: Boolean?,
+        val companies: List<Company>,
+        val declineReason: String,
+    )
 
     val uiState: StateFlow<OrderDetailUiState> = combine(
         order,
         repairsRepository.observeOrderWork(orderId),
         calls,
         view,
-    ) { order, work, calls, (dialog, deleting, playing, photos) ->
+    ) { order, work, calls, view ->
         when {
-            order != null -> OrderDetailUiState.Loaded(order, today, work, dialog, calls, playing, photos)
-            deleting -> OrderDetailUiState.Loading
+            order != null -> OrderDetailUiState.Loaded(
+                order, today, work, view.dialog, calls, view.playing, view.photos, view.finishChoice, view.companies, view.declineReason,
+            )
+            view.deleting -> OrderDetailUiState.Loading
             else -> OrderDetailUiState.NotFound
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), OrderDetailUiState.Loading)
@@ -121,9 +147,40 @@ class OrderDetailViewModel @Inject constructor(
         }
     }
 
-    /** Charges the client for the work and closes the order; [paidInCash] also records the cash. */
+    /**
+     * Charges the client for the work and closes the order; [paidInCash] also records the cash.
+     * An attached company's order first asks whose it is.
+     */
     fun onFinish(paidInCash: Boolean) {
+        if ((uiState.value as? OrderDetailUiState.Loaded)?.order?.fromAttachedCompany == true) {
+            finishChoice.value = paidInCash
+            return
+        }
         viewModelScope.launch { repairsRepository.finishOrder(orderId, paidInCash) }
+    }
+
+    /** [companyId] null = done for the attached company (its client owes it); else counted in that own company. */
+    fun onFinishFor(companyId: Long?) {
+        val paidInCash = finishChoice.value ?: return
+        finishChoice.value = null
+        viewModelScope.launch {
+            if (companyId == null) repairsRepository.finishOrder(orderId, paidInCash) else repairsRepository.finishAsMine(orderId, companyId, paidInCash)
+        }
+    }
+
+    fun onDismissFinishChoice() = finishChoice.update { null }
+
+    /** An attached company's order: turned down with a reason, it goes back to that company. */
+    fun onDeclineClick() {
+        declineReason.value = ""
+        dialog.value = OrderDetailDialog.DECLINE
+    }
+
+    fun onDeclineReasonChange(reason: String) = declineReason.update { reason }
+
+    fun onConfirmDecline() {
+        dialog.value = null
+        viewModelScope.launch { repairsRepository.declineOrder(orderId, declineReason.value) }
     }
 
     /** Removes the charge (and cash) made when the order was finished, so the work can change. */

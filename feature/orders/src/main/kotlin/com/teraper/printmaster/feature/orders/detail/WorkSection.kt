@@ -150,7 +150,7 @@ private fun TotalRow(label: String, amount: Money, tone: AmountTone, style: Text
 
 /** An open order with work: finish it by taking cash now, or leave it owed. */
 @Composable
-internal fun FinishButtons(total: Money, actions: OrderDetailActions) {
+internal fun FinishButtons(total: Money, actions: OrderDetailActions, attached: Boolean = false) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         PmPrimaryButton(
             text = stringResource(R.string.feature_orders_finish_cash, total.format()),
@@ -165,8 +165,8 @@ internal fun FinishButtons(total: Money, actions: OrderDetailActions) {
                 modifier = Modifier.weight(1f),
             )
             PmSecondaryButton(
-                text = stringResource(R.string.feature_orders_finish_cancel),
-                onClick = { actions.onStatusChange(OrderStatus.CANCELLED) },
+                text = stringResource(if (attached) R.string.feature_orders_decline else R.string.feature_orders_finish_cancel),
+                onClick = { if (attached) actions.onDecline() else actions.onStatusChange(OrderStatus.CANCELLED) },
                 modifier = Modifier.weight(1f),
             )
         }

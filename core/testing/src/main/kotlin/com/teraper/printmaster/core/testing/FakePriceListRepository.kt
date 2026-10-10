@@ -16,6 +16,8 @@ class FakePriceListRepository(initial: List<PriceItem> = emptyList()) : PriceLis
 
     override fun observeItems(): Flow<List<PriceItem>> = items
 
+    override fun observeItemsFor(companyId: Long): Flow<List<PriceItem>> = items
+
     override fun observeItem(id: Long): Flow<PriceItem?> = items.map { list -> list.firstOrNull { it.id == id } }
 
     override suspend fun saveItem(draft: PriceItemDraft): SavePriceItemResult {

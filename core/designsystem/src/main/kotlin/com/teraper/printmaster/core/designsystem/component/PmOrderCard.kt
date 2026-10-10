@@ -10,10 +10,12 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.teraper.printmaster.core.designsystem.R
 import com.teraper.printmaster.core.designsystem.theme.PmTheme
 import com.teraper.printmaster.core.model.Order
 import com.teraper.printmaster.core.model.OrderStatus
@@ -68,11 +70,27 @@ fun PmOrderCard(
                 if (details.isNotEmpty()) {
                     Text(details, style = MaterialTheme.typography.bodySmall, color = PmTheme.colors.inkMuted, maxLines = 1, overflow = TextOverflow.Ellipsis)
                 }
-                if (order.status != OrderStatus.NEW) {
-                    PmTag(order.status.label(), order.status.tagTone(), Modifier.padding(top = 2.dp))
+                val tags = order.handOverTags()
+                if (order.status != OrderStatus.NEW || tags.isNotEmpty()) {
+                    Row(Modifier.padding(top = 2.dp), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        if (order.status != OrderStatus.NEW) PmTag(order.status.label(), order.status.tagTone())
+                        tags.forEach { (text, tone) -> PmTag(text, tone) }
+                    }
                 }
             }
         }
+    }
+}
+
+/** Orders between owners: "From Xerox", "Turned down: Armen", "Done by the master". */
+@Composable
+fun Order.handOverTags(): List<Pair<String, TagTone>> = buildList {
+    if (fromAttachedCompany) add(stringResource(R.string.core_designsystem_order_from, companyName) to TagTone.Info)
+    declinedBy?.let { add(stringResource(R.string.core_designsystem_order_declined_by, it) to TagTone.Warning) }
+    val from = takenFrom
+    when {
+        from != null -> add(stringResource(R.string.core_designsystem_order_taken_from, from) to TagTone.Info)
+        takenByMaster -> add(stringResource(R.string.core_designsystem_order_taken) to TagTone.Neutral)
     }
 }
 

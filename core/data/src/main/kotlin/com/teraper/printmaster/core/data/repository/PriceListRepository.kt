@@ -8,7 +8,11 @@ import kotlinx.coroutines.flow.Flow
 /** The master's price list. Shared by all companies. */
 interface PriceListRepository {
     /** Sorted by category, then name. */
+    /** The user's own price list. */
     fun observeItems(): Flow<List<PriceItem>>
+
+    /** For work on an order of [companyId]: an attached company's prices, otherwise the user's own. */
+    fun observeItemsFor(companyId: Long): Flow<List<PriceItem>>
 
     fun observeItem(id: Long): Flow<PriceItem?>
 

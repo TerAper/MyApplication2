@@ -15,6 +15,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -42,6 +44,7 @@ import com.teraper.printmaster.core.designsystem.component.PmRecordingPlayerShee
 import com.teraper.printmaster.core.designsystem.component.PmRecordingRow
 import com.teraper.printmaster.core.designsystem.component.PmSecondaryButton
 import com.teraper.printmaster.core.designsystem.component.PmTag
+import com.teraper.printmaster.core.designsystem.component.PmTextField
 import com.teraper.printmaster.core.designsystem.component.PmTopBar
 import com.teraper.printmaster.core.designsystem.component.formatTime
 import com.teraper.printmaster.core.designsystem.component.label
@@ -89,6 +92,11 @@ internal fun OrderDetailRoute(
             onStatusChange = viewModel::onStatusChange,
             onOpenRepair = onOpenRepair,
             onFinish = viewModel::onFinish,
+            onFinishFor = viewModel::onFinishFor,
+            onDismissFinishChoice = viewModel::onDismissFinishChoice,
+            onDecline = viewModel::onDeclineClick,
+            onDeclineReasonChange = viewModel::onDeclineReasonChange,
+            onConfirmDecline = viewModel::onConfirmDecline,
             onConfirmReopen = viewModel::onConfirmReopen,
             onConfirmCancel = viewModel::onConfirmCancel,
             onDelete = viewModel::onDeleteClick,
@@ -120,6 +128,12 @@ internal data class OrderDetailActions(
     /** repairId 0 = add new work. */
     val onOpenRepair: (orderId: Long, repairId: Long) -> Unit = { _, _ -> },
     val onFinish: (paidInCash: Boolean) -> Unit = {},
+    /** Attached company's order: null = done for it, else counted in that own company. */
+    val onFinishFor: (companyId: Long?) -> Unit = {},
+    val onDismissFinishChoice: () -> Unit = {},
+    val onDecline: () -> Unit = {},
+    val onDeclineReasonChange: (String) -> Unit = {},
+    val onConfirmDecline: () -> Unit = {},
     val onConfirmReopen: () -> Unit = {},
     val onConfirmCancel: () -> Unit = {},
     val onDelete: () -> Unit = {},
@@ -141,7 +155,8 @@ internal fun OrderDetailScreen(state: OrderDetailUiState, actions: OrderDetailAc
             navigationLabel = stringResource(R.string.feature_orders_back),
             onNavigate = actions.onBack,
             actions = {
-                if (loaded != null) {
+                // Another owner's order is planned by that owner: no editing or deleting here.
+                if (loaded != null && !loaded.order.fromAttachedCompany) {
                     IconButton(onClick = { actions.onEdit(loaded.order.id) }) {
                         Icon(PmIcons.Edit, contentDescription = stringResource(R.string.feature_orders_edit))
                     }
@@ -192,7 +207,99 @@ internal fun OrderDetailScreen(state: OrderDetailUiState, actions: OrderDetailAc
                 onConfirm = actions.onConfirmReopen,
                 onDismiss = actions.onDismissDialog,
             )
+            OrderDetailDialog.DECLINE -> DeclineDialog(loaded, actions)
             null -> Unit
+        }
+        if (loaded.finishChoice != null) WhoseOrderDialog(loaded, actions)
+    }
+}
+
+/** "Whose order is this?": done for the company that gave it, or counted in one of the user's companies. */
+@Composable
+private fun WhoseOrderDialog(state: OrderDetailUiState.Loaded, actions: OrderDetailActions) {
+    val order = state.order
+    AlertDialog(
+        onDismissRequest = actions.onDismissFinishChoice,
+        title = { Text(stringResource(R.string.feature_orders_whose_title)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(stringResource(R.string.feature_orders_whose_message), style = MaterialTheme.typography.bodySmall, color = PmTheme.colors.inkSecondary)
+                ChoiceCard(
+                    title = stringResource(R.string.feature_orders_whose_theirs, order.companyName),
+                    message = stringResource(R.string.feature_orders_whose_theirs_hint, order.companyName),
+                    onClick = { actions.onFinishFor(null) },
+                )
+                state.ownCompanies.forEach { company ->
+                    ChoiceCard(
+                        title = stringResource(R.string.feature_orders_whose_mine, company.name),
+                        message = stringResource(R.string.feature_orders_whose_mine_hint, order.companyName),
+                        onClick = { actions.onFinishFor(company.id) },
+                    )
+                }
+            }
+        },
+        confirmButton = {},
+        dismissButton = { TextButton(onClick = actions.onDismissFinishChoice) { Text(stringResource(R.string.feature_orders_cancel)) } },
+        containerColor = PmTheme.colors.surface,
+    )
+}
+
+@Composable
+private fun ChoiceCard(title: String, message: String, onClick: () -> Unit) {
+    PmCard(Modifier.fillMaxWidth(), onClick = onClick) {
+        Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+            Text(title, style = MaterialTheme.typography.titleSmall)
+            Text(message, style = MaterialTheme.typography.bodySmall, color = PmTheme.colors.inkMuted)
+        }
+    }
+}
+
+@Composable
+private fun DeclineDialog(state: OrderDetailUiState.Loaded, actions: OrderDetailActions) {
+    AlertDialog(
+        onDismissRequest = actions.onDismissDialog,
+        title = { Text(stringResource(R.string.feature_orders_decline_title)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text(
+                    stringResource(R.string.feature_orders_decline_message, state.order.companyName),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = PmTheme.colors.inkSecondary,
+                )
+                PmTextField(
+                    value = state.declineReason,
+                    onValueChange = actions.onDeclineReasonChange,
+                    label = stringResource(R.string.feature_orders_decline_reason),
+                    singleLine = false,
+                    minLines = 2,
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = actions.onConfirmDecline) { Text(stringResource(R.string.feature_orders_decline), color = PmTheme.colors.error) }
+        },
+        dismissButton = { TextButton(onClick = actions.onDismissDialog) { Text(stringResource(R.string.feature_orders_cancel)) } },
+        containerColor = PmTheme.colors.surface,
+    )
+}
+
+/** Orders between owners: where it came from, who turned it down, who took it. */
+@Composable
+private fun HandOverNote(order: Order) {
+    val declinedBy = order.declinedBy
+    val takenFrom = order.takenFrom
+    val text = when {
+        order.fromAttachedCompany -> stringResource(R.string.feature_orders_from_company, order.companyName, order.companyOwner.ifBlank { order.companyName })
+        declinedBy != null && order.isOpen -> stringResource(R.string.feature_orders_declined_note, declinedBy, order.declinedReason.orEmpty())
+        takenFrom != null -> stringResource(R.string.feature_orders_taken_from_note, takenFrom)
+        order.takenByMaster -> stringResource(R.string.feature_orders_taken_note, order.masterName.orEmpty())
+        else -> return
+    }
+    val warning = declinedBy != null && order.isOpen && !order.fromAttachedCompany
+    PmCard(Modifier.fillMaxWidth()) {
+        Row(Modifier.padding(12.dp), horizontalArrangement = Arrangement.spacedBy(10.dp), verticalAlignment = Alignment.CenterVertically) {
+            Icon(if (warning) PmIcons.Warning else PmIcons.Share, contentDescription = null, tint = if (warning) PmTheme.colors.warning else PmTheme.colors.primary)
+            Text(text, style = MaterialTheme.typography.bodyMedium, color = PmTheme.colors.inkSecondary)
         }
     }
 }
@@ -222,6 +329,7 @@ private fun OrderContent(state: OrderDetailUiState.Loaded, actions: OrderDetailA
                 )
             }
             Text(order.description, style = MaterialTheme.typography.bodyLarge, color = PmTheme.colors.ink)
+            HandOverNote(order)
 
             PmCard(Modifier.fillMaxWidth()) {
                 InfoRow(PmIcons.Clients, order.clientName, stringResource(R.string.feature_orders_open_client)) { actions.onOpenClient(order.clientId) }
@@ -289,13 +397,17 @@ private fun OrderContent(state: OrderDetailUiState.Loaded, actions: OrderDetailA
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             if (state.canFinishWithWork) {
-                FinishButtons(state.work.total, actions)
+                FinishButtons(state.work.total, actions, attached = order.fromAttachedCompany)
                 return@Column
+            }
+            // Another owner's order isn't cancelled here: it's turned down and goes back.
+            val onStatus: (OrderStatus) -> Unit = { status ->
+                if (order.fromAttachedCompany && status == OrderStatus.CANCELLED) actions.onDecline() else actions.onStatusChange(status)
             }
             next.firstOrNull()?.let { main ->
                 PmPrimaryButton(
                     text = main.actionLabel(),
-                    onClick = { actions.onStatusChange(main) },
+                    onClick = { onStatus(main) },
                     containerColor = if (main == OrderStatus.DONE) PmTheme.colors.paid else PmTheme.colors.primary,
                     modifier = Modifier.fillMaxWidth(),
                 )
@@ -303,7 +415,8 @@ private fun OrderContent(state: OrderDetailUiState.Loaded, actions: OrderDetailA
             if (next.size > 1) {
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     next.drop(1).forEach { status ->
-                        PmSecondaryButton(text = status.actionLabel(), onClick = { actions.onStatusChange(status) }, modifier = Modifier.weight(1f))
+                        val label = if (order.fromAttachedCompany && status == OrderStatus.CANCELLED) stringResource(R.string.feature_orders_decline) else status.actionLabel()
+                        PmSecondaryButton(text = label, onClick = { onStatus(status) }, modifier = Modifier.weight(1f))
                     }
                 }
             }

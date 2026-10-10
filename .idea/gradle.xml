@@ -34,6 +34,7 @@
             <option value="$PROJECT_DIR$/feature/calls" />
             <option value="$PROJECT_DIR$/feature/catalog" />
             <option value="$PROJECT_DIR$/feature/clients" />
+            <option value="$PROJECT_DIR$/feature/expenses" />
             <option value="$PROJECT_DIR$/feature/imports" />
             <option value="$PROJECT_DIR$/feature/more" />
             <option value="$PROJECT_DIR$/feature/orders" />
@@ -41,6 +42,7 @@
             <option value="$PROJECT_DIR$/feature/pricelist" />
             <option value="$PROJECT_DIR$/feature/reports" />
             <option value="$PROJECT_DIR$/feature/settings" />
+            <option value="$PROJECT_DIR$/feature/team" />
             <option value="$PROJECT_DIR$/feature/today" />
           </set>
         </option>

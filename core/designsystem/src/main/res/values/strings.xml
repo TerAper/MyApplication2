@@ -57,4 +57,8 @@
     <string name="core_designsystem_column_bank_own_account_use">Ձեր հաշվեհամարով տողի առաջին բջիջը։</string>
     <string name="core_designsystem_column_bank_own_tax_id">Ձեր ՀՎՀՀ-ն (աղյուսակից վերև)</string>
     <string name="core_designsystem_column_bank_own_tax_id_use">Ձեր ՀՎՀՀ-ով տողի առաջին բջիջը։</string>
+    <string name="core_designsystem_order_from">%1$s-ից</string>
+    <string name="core_designsystem_order_declined_by">Մերժեց՝ %1$s</string>
+    <string name="core_designsystem_order_taken">Վարպետը կատարեց որպես իր պատվեր</string>
+    <string name="core_designsystem_order_taken_from">Վերցված է %1$s-ից</string>
 </resources>

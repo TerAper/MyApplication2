@@ -70,10 +70,19 @@ data class OrderEntity(
     @ColumnInfo(name = "done_at") val doneAt: Long? = null,
     /** Same order on every phone of the company (see sync). Null until first shared. */
     @ColumnInfo(name = "sync_id") val syncId: String? = null,
+    /** Attached master's phone: the attached company this order came from (kept if moved to an own company). */
+    @ColumnInfo(name = "from_company_id") val fromCompanyId: Long? = null,
+    /** The attached master counts this order as his own: for the giving company it is only history. */
+    @ColumnInfo(name = "taken_by_master", defaultValue = "0") val takenByMaster: Boolean = false,
+    /** Owner's phone: the attached master who turned the order down, and why. */
+    @ColumnInfo(name = "declined_by") val declinedBy: String? = null,
+    @ColumnInfo(name = "declined_reason") val declinedReason: String? = null,
+    /** Attached master's phone: the client paid cash for an order done for the attached company (no money is kept here). */
+    @ColumnInfo(name = "paid_in_cash", defaultValue = "0") val paidInCash: Boolean = false,
 )
 
 /** One line of the price list. */
-@Entity(tableName = "repair_parts", indices = [Index(value = ["category"])])
+@Entity(tableName = "repair_parts", indices = [Index(value = ["category"]), Index(value = ["attached_company_id"])])
 data class RepairPartEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val category: RepairCategory,
@@ -85,6 +94,8 @@ data class RepairPartEntity(
     val archived: Boolean = false,
     /** Same item on every phone of the company (see sync). */
     @ColumnInfo(name = "sync_id") val syncId: String? = null,
+    /** An attached company's price list item (for its orders); null = the user's own price list. */
+    @ColumnInfo(name = "attached_company_id") val attachedCompanyId: Long? = null,
 )
 
 /** The work done during a visit on one device. */

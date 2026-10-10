@@ -9,7 +9,7 @@
     <string name="manage_companies">Manage companies</string>
     <string name="share_place_label">PrintMaster: client address</string>
     <string name="share_place_not_waiting">To use a place, open a client\'s form in PrintMaster and tap “Pick on map” first.</string>
-    <string name="notify_channel">Orders from masters</string>
+    <string name="notify_channel">Orders from masters and companies</string>
     <string name="notify_open">Open PrintMaster</string>
     <plurals name="notify_orders_finished">
         <item quantity="one">Master finished %1$d order</item>
@@ -22,5 +22,9 @@
     <plurals name="notify_clients_new">
         <item quantity="one">%1$d new client to review</item>
         <item quantity="other">%1$d new clients to review</item>
+    </plurals>
+    <plurals name="notify_orders_declined">
+        <item quantity="one">%d order turned down by a master</item>
+        <item quantity="other">%d orders turned down by masters</item>
     </plurals>
 </resources>

@@ -103,4 +103,18 @@
     <string name="feature_orders_photo_gallery">Gallery</string>
     <string name="feature_orders_photo_delete">Delete photo</string>
     <string name="feature_orders_photo_close">Close</string>
+    <string name="feature_orders_whose_title">Whose order is it?</string>
+    <string name="feature_orders_whose_message">Choose who counts this work and its money.</string>
+    <string name="feature_orders_whose_theirs">Done for %1$s</string>
+    <string name="feature_orders_whose_theirs_hint">The client pays %1$s. For you it\'s only history.</string>
+    <string name="feature_orders_whose_mine">My order · %1$s</string>
+    <string name="feature_orders_whose_mine_hint">The client owes your company. %1$s only learns it was done.</string>
+    <string name="feature_orders_decline">Turn down</string>
+    <string name="feature_orders_decline_title">Turn the order down?</string>
+    <string name="feature_orders_decline_message">It goes back to %1$s so they can give it to someone else.</string>
+    <string name="feature_orders_decline_reason">Why (they will see it)</string>
+    <string name="feature_orders_from_company">From %1$s (owner %2$s). You see the client\'s contacts and printers, not what they owe.</string>
+    <string name="feature_orders_declined_note">%1$s turned it down: %2$s. Edit the order to give it to someone else or do it yourself.</string>
+    <string name="feature_orders_taken_from_note">Taken from %1$s as your own order.</string>
+    <string name="feature_orders_taken_note">%1$s did it as his own order. It isn\'t counted here.</string>
 </resources>

@@ -56,4 +56,18 @@ class FakeRepairsRepository(initial: List<Repair> = emptyList()) : RepairsReposi
         reopened += orderId
         billed.value = billed.value - orderId
     }
+
+    /** Order → the own company it was finished in as the master's own. */
+    val takenAsMine = mutableMapOf<Long, Long>()
+    val declined = mutableMapOf<Long, String>()
+
+    override suspend fun finishAsMine(orderId: Long, companyId: Long, paidInCash: Boolean): FinishOrderResult {
+        takenAsMine[orderId] = companyId
+        return finishOrder(orderId, paidInCash)
+    }
+
+    override suspend fun declineOrder(orderId: Long, reason: String): Boolean {
+        declined[orderId] = reason
+        return true
+    }
 }

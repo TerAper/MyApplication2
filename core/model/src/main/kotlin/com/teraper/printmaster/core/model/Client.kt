@@ -23,6 +23,8 @@ data class Client(
     val note: String,
     val phones: List<ClientPhone>,
     val addresses: List<ClientAddress>,
+    /** A client of another owner's company, seen through its orders: no money is kept for it here. */
+    val isAttached: Boolean = false,
 )
 
 /** A client as shown in lists: contacts plus counts and money totals. */

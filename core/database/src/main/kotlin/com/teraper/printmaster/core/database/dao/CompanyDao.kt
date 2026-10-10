@@ -2,11 +2,13 @@ package com.teraper.printmaster.core.database.dao
 
 import androidx.room.Dao
 import androidx.room.Insert
+import androidx.room.OnConflictStrategy
 import androidx.room.Query
 import androidx.room.Update
 import androidx.room.Upsert
 import com.teraper.printmaster.core.database.entity.AppProfileEntity
 import com.teraper.printmaster.core.database.entity.CompanyEntity
+import com.teraper.printmaster.core.database.entity.CompanyMemberEntity
 import com.teraper.printmaster.core.database.entity.MasterEntity
 import kotlinx.coroutines.flow.Flow
 
@@ -23,8 +25,40 @@ interface CompanyDao {
     @Upsert
     suspend fun upsertProfile(profile: AppProfileEntity)
 
-    @Query("SELECT * FROM companies ORDER BY id")
+    /** The user's own companies (money, switching, imports). */
+    @Query("SELECT * FROM companies WHERE kind = 'OWN' ORDER BY id")
     fun observeCompanies(): Flow<List<CompanyEntity>>
+
+    /** Other owners' companies that give the user orders. */
+    @Query("SELECT * FROM companies WHERE kind = 'ATTACHED' ORDER BY id")
+    fun observeAttachedCompanies(): Flow<List<CompanyEntity>>
+
+    /** Companies with a shared space to sync. */
+    @Query("SELECT * FROM companies WHERE space_id IS NOT NULL ORDER BY id")
+    suspend fun getSharedCompanies(): List<CompanyEntity>
+
+    @Query("SELECT * FROM companies WHERE space_id IS NOT NULL ORDER BY id")
+    fun observeSharedCompanies(): Flow<List<CompanyEntity>>
+
+    @Query("SELECT * FROM companies WHERE space_id = :spaceId LIMIT 1")
+    suspend fun getCompanyBySpace(spaceId: String): CompanyEntity?
+
+    @Query("UPDATE companies SET space_id = :spaceId, join_code = :joinCode WHERE id = :id")
+    suspend fun setSpace(id: Long, spaceId: String?, joinCode: String?)
+
+    // Attached masters of own companies
+
+    @Query("SELECT * FROM company_members")
+    fun observeMemberships(): Flow<List<CompanyMemberEntity>>
+
+    @Query("SELECT * FROM company_members WHERE company_id = :companyId")
+    suspend fun getMemberships(companyId: Long): List<CompanyMemberEntity>
+
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun insertMembership(member: CompanyMemberEntity)
+
+    @Query("DELETE FROM company_members WHERE company_id = :companyId AND master_id = :masterId")
+    suspend fun deleteMembership(companyId: Long, masterId: Long)
 
     @Query("SELECT * FROM companies WHERE id = :id")
     suspend fun getCompany(id: Long): CompanyEntity?
@@ -32,7 +66,7 @@ interface CompanyDao {
     @Query("SELECT * FROM companies WHERE tax_id = :taxId AND id != :excludeId LIMIT 1")
     suspend fun findOtherCompanyWithTaxId(taxId: String, excludeId: Long): CompanyEntity?
 
-    @Query("SELECT COUNT(*) FROM companies")
+    @Query("SELECT COUNT(*) FROM companies WHERE kind = 'OWN'")
     suspend fun countCompanies(): Int
 
     @Insert

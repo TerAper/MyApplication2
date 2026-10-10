@@ -1,44 +1,44 @@
 package com.teraper.printmaster.core.data.team
 
 import android.content.Context
+import androidx.core.content.edit
+import androidx.room.withTransaction
 import com.google.firebase.FirebaseApp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.teraper.printmaster.core.data.analytics.AppAnalytics
-import com.teraper.printmaster.core.data.repository.CompaniesRepository
 import com.teraper.printmaster.core.database.PrintMasterDatabase
 import com.teraper.printmaster.core.database.dao.CompanyDao
 import com.teraper.printmaster.core.database.dao.SyncDao
-import com.teraper.printmaster.core.database.entity.MasterEntity
-import com.teraper.printmaster.core.model.JoinResult
-import com.teraper.printmaster.core.model.TeamMember
-import com.teraper.printmaster.core.model.TeamSpace
+import com.teraper.printmaster.core.database.entity.CompanyEntity
+import com.teraper.printmaster.core.database.entity.CompanyMemberEntity
+import com.teraper.printmaster.core.database.entity.SyncStateEntity
+import com.teraper.printmaster.core.model.AccountMode
+import com.teraper.printmaster.core.model.AttachResult
+import com.teraper.printmaster.core.model.CompanyKind
 import com.teraper.printmaster.core.model.TeamState
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.callbackFlow
-import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.tasks.await
-import java.time.Clock
 import java.security.SecureRandom
+import java.time.Clock
 import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
- * Firestore layout (rules in firestore.rules):
+ * Firestore layout (rules in firestore.rules), one space per own company that invited masters:
  *  joinCodes/{code}                 → { workspaceId }
- *  workspaces/{id}                  → { name, ownerUid, joinCode }
+ *  workspaces/{id}                  → { name, ownerUid, ownerName, joinCode }
  *  workspaces/{id}/members/{uid}    → { name, email, joinCode }
  *  workspaces/{id}/clients|orders|prices/{syncId}  (see FirebaseSyncBackend)
+ * Locally a space is a company row: OWN with space_id/join_code, or ATTACHED (another owner's).
  */
 @Singleton
 internal class FirebaseTeamRepository @Inject constructor(
@@ -46,7 +46,6 @@ internal class FirebaseTeamRepository @Inject constructor(
     private val db: PrintMasterDatabase,
     private val syncDao: SyncDao,
     private val companyDao: CompanyDao,
-    private val companies: CompaniesRepository,
     private val analytics: AppAnalytics,
     private val clock: Clock,
 ) : TeamRepository {
@@ -54,42 +53,20 @@ internal class FirebaseTeamRepository @Inject constructor(
     /** The Firebase plugin initializes Firebase only when google-services.json was in the build. */
     val available: Boolean = FirebaseApp.getApps(context).isNotEmpty()
 
-    private val prefs = context.getSharedPreferences("team", Context.MODE_PRIVATE)
-    private val space = MutableStateFlow(loadSpace())
     private val account = MutableStateFlow(currentAccount())
 
-    private fun currentAccount(): Pair<String, String?>? =
-        if (available) FirebaseAuth.getInstance().currentUser?.let { user -> user.email.orEmpty() to user.displayName } else null
-
-    val currentSpace: TeamSpace? get() = space.value
-    val spaceFlow: kotlinx.coroutines.flow.StateFlow<TeamSpace?> get() = space
     val uid: String? get() = if (available) FirebaseAuth.getInstance().currentUser?.uid else null
     val firestore: FirebaseFirestore get() = FirebaseFirestore.getInstance()
 
     override val googleClientId: String? =
         context.resources.getIdentifier("default_web_client_id", "string", context.packageName).takeIf { it != 0 }?.let(context::getString)
 
-    @OptIn(ExperimentalCoroutinesApi::class)
+    private fun currentAccount(): Pair<String, String?>? =
+        if (available) FirebaseAuth.getInstance().currentUser?.let { user -> user.email.orEmpty() to user.displayName } else null
+
     override fun observeState(): Flow<TeamState> {
         if (!available) return flowOf(TeamState(available = false))
-        val members = space.flatMapLatest { s -> if (s?.isOwner == true) membersOf(s.id) else flowOf(emptyList()) }
-        return combine(account, space, members, companyDao.observeMasters()) { account, space, members, masters ->
-            TeamState(
-                available = true,
-                email = account?.first,
-                displayName = account?.second,
-                space = space,
-                members = members.map { m -> m.copy(masterId = masters.firstOrNull { it.memberUid == m.uid }?.id) },
-            )
-        }
-    }
-
-    private fun membersOf(spaceId: String): Flow<List<TeamMember>> = callbackFlow {
-        val registration = firestore.collection("workspaces").document(spaceId).collection("members")
-            .addSnapshotListener { snapshot, _ ->
-                trySend(snapshot?.documents.orEmpty().map { TeamMember(it.id, it.getString("name").orEmpty(), it.getString("email").orEmpty(), null) })
-            }
-        awaitClose { registration.remove() }
+        return account.map { TeamState(available = true, email = it?.first, displayName = it?.second) }
     }
 
     override suspend fun signIn(idToken: String): Boolean = attempt {
@@ -104,38 +81,59 @@ internal class FirebaseTeamRepository @Inject constructor(
         account.value = null
     }
 
-    override suspend fun createSpace(): Boolean = attempt {
-        val uid = uid ?: error("not signed in")
-        val company = companies.observeActiveCompany().first() ?: error("no company")
-        val ref = firestore.collection("workspaces").document()
-        val code = newCode()
-        firestore.batch()
-            .set(ref, mapOf("name" to company.name, "ownerUid" to uid, "joinCode" to code, "createdAt" to FieldValue.serverTimestamp()))
-            .set(firestore.collection("joinCodes").document(code), mapOf("workspaceId" to ref.id))
-            .commit().await()
-        saveSpace(TeamSpace(ref.id, company.name, isOwner = true, joinCode = code))
-        // Everything already assigned to joined masters, and the price list, goes out with the first sync.
-        queueAllForMasters()
-        analytics.log("team_space_created")
+    override suspend fun inviteCode(companyId: Long): String? {
+        val company = companyDao.getCompany(companyId)?.takeIf { it.kind == CompanyKind.OWN } ?: return null
+        if (company.spaceId != null && company.joinCode != null) return company.joinCode
+        return attemptOrNull {
+            val uid = uid ?: error("not signed in")
+            val ref = firestore.collection("workspaces").document()
+            val code = newCode()
+            firestore.batch()
+                .set(ref, mapOf("name" to company.name, "ownerUid" to uid, "ownerName" to ownerName(), "joinCode" to code, "createdAt" to FieldValue.serverTimestamp()))
+                .set(firestore.collection("joinCodes").document(code), mapOf("workspaceId" to ref.id))
+                .commit().await()
+            companyDao.setSpace(company.id, ref.id, code)
+            // The price list goes out with the first sync; orders once a master attaches and gets one.
+            queuePrices()
+            analytics.log("team_space_created")
+            code
+        }
     }
 
-    override suspend fun newJoinCode(): Boolean = attempt {
-        val current = space.value?.takeIf { it.isOwner } ?: error("not owner")
-        val code = newCode()
-        val batch = firestore.batch()
-            .set(firestore.collection("joinCodes").document(code), mapOf("workspaceId" to current.id))
-            .update(firestore.collection("workspaces").document(current.id), "joinCode", code)
-        current.joinCode?.let { batch.delete(firestore.collection("joinCodes").document(it)) }
-        batch.commit().await()
-        saveSpace(current.copy(joinCode = code))
+    override suspend fun newJoinCode(companyId: Long): String? {
+        val company = companyDao.getCompany(companyId)?.takeIf { it.kind == CompanyKind.OWN && it.spaceId != null } ?: return null
+        val spaceId = checkNotNull(company.spaceId)
+        return attemptOrNull {
+            val code = newCode()
+            val batch = firestore.batch()
+                .set(firestore.collection("joinCodes").document(code), mapOf("workspaceId" to spaceId))
+                .update(firestore.collection("workspaces").document(spaceId), "joinCode", code)
+            company.joinCode?.let { batch.delete(firestore.collection("joinCodes").document(it)) }
+            batch.commit().await()
+            companyDao.setSpace(company.id, spaceId, code)
+            code
+        }
     }
 
-    override suspend fun join(code: String, myName: String): JoinResult {
-        if (!available) return JoinResult.FAILED
-        val uid = uid ?: return JoinResult.NOT_SIGNED_IN
+    override suspend fun removeMember(companyId: Long, masterId: Long): Boolean {
+        val company = companyDao.getCompany(companyId) ?: return false
+        val memberUid = syncDao.getMaster(masterId)?.memberUid ?: return false
+        return attempt {
+            company.spaceId?.let { firestore.collection("workspaces").document(it).collection("members").document(memberUid).delete().await() }
+            companyDao.deleteMembership(companyId, masterId)
+        }
+    }
+
+    override suspend fun attachCompany(code: String, myName: String): AttachResult {
+        if (!available) return AttachResult.Failed
+        val uid = uid ?: return AttachResult.NotSignedIn
         val clean = code.filter { it.isLetterOrDigit() }.uppercase()
+        if (clean.isEmpty()) return AttachResult.WrongCode
         return try {
-            val spaceId = firestore.collection("joinCodes").document(clean).get().await().getString("workspaceId") ?: return JoinResult.WRONG_CODE
+            val spaceId = firestore.collection("joinCodes").document(clean).get().await().getString("workspaceId") ?: return AttachResult.WrongCode
+            companyDao.getCompanyBySpace(spaceId)?.let { existing ->
+                return if (existing.kind == CompanyKind.OWN) AttachResult.OwnCompany else AttachResult.AlreadyAttached
+            }
             val ref = firestore.collection("workspaces").document(spaceId)
             ref.collection("members").document(uid).set(
                 mapOf(
@@ -145,81 +143,83 @@ internal class FirebaseTeamRepository @Inject constructor(
                     "joinedAt" to FieldValue.serverTimestamp(),
                 ),
             ).await()
-            val name = ref.get().await().getString("name").orEmpty()
-            saveSpace(TeamSpace(spaceId, name, isOwner = false, joinCode = null))
+            val space = ref.get().await()
+            val name = space.getString("name").orEmpty()
+            val owner = space.getString("ownerName").orEmpty()
+            val used = companyDao.observeAttachedCompanies().first().map { it.colorIndex } + companyDao.observeCompanies().first().map { it.colorIndex }
+            companyDao.insertCompany(
+                CompanyEntity(
+                    name = name, taxId = null, createdAt = clock.millis(), kind = CompanyKind.ATTACHED,
+                    spaceId = spaceId, ownerName = owner, colorIndex = (0 until PALETTE_SIZE).firstOrNull { it !in used } ?: used.size % PALETTE_SIZE,
+                ),
+            )
             analytics.log("team_joined")
-            JoinResult.JOINED
+            AttachResult.Attached(name, owner)
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
-            JoinResult.FAILED
+            AttachResult.Failed
         }
     }
 
-    override suspend fun linkMember(uid: String, masterId: Long?) {
-        val current = space.value?.takeIf { it.isOwner } ?: return
-        val doc = firestore.collection("workspaces").document(current.id).collection("members").document(uid).get().await()
-        val name = doc.getString("name").orEmpty()
-        val mail = doc.getString("email")
-        // One local master per member.
-        companyDao.observeMasters().first().filter { it.memberUid == uid && it.id != masterId }.forEach {
-            companyDao.updateMaster(it.copy(memberUid = null, memberEmail = null))
+    override suspend fun leaveCompany(companyId: Long): Boolean {
+        val company = companyDao.getCompany(companyId)?.takeIf { it.kind == CompanyKind.ATTACHED } ?: return false
+        val spaceId = company.spaceId ?: return true
+        return attempt {
+            uid?.let { firestore.collection("workspaces").document(spaceId).collection("members").document(it).delete().await() }
+            companyDao.setSpace(company.id, null, null)
         }
-        if (masterId == null) {
-            companyDao.insertMaster(MasterEntity(name = name.ifBlank { mail.orEmpty() }, createdAt = clock.millis(), memberEmail = mail, memberUid = uid))
-        } else {
-            companyDao.observeMasters().first().firstOrNull { it.id == masterId }?.let {
-                companyDao.updateMaster(it.copy(memberEmail = mail, memberUid = uid))
+    }
+
+    /**
+     * Phones from before own/attached companies had one space, kept in preferences.
+     * The owner's becomes its default company's space; a joined master's company becomes attached.
+     */
+    suspend fun moveOldSpace() {
+        val prefs = context.getSharedPreferences("team", Context.MODE_PRIVATE)
+        val id = prefs.getString("id", null) ?: return
+        db.withTransaction {
+            val profile = companyDao.getProfile() ?: return@withTransaction
+            val company = companyDao.getCompany(profile.defaultCompanyId) ?: return@withTransaction
+            if (prefs.getBoolean("owner", false)) {
+                companyDao.setSpace(company.id, id, prefs.getString("code", null))
+                companyDao.observeMasters().first().filter { it.memberUid != null }.forEach {
+                    companyDao.insertMembership(CompanyMemberEntity(company.id, it.id))
+                }
+            } else if (profile.mode == AccountMode.JOINED) {
+                companyDao.updateCompany(company.copy(kind = CompanyKind.ATTACHED, spaceId = id, taxId = null))
+                syncDao.attachAllClients(company.id)
+                syncDao.attachAllParts(company.id)
             }
+            syncDao.getState("cursor")?.let { syncDao.setState(SyncStateEntity("cursor:$id", it)) }
         }
-        queueAllForMasters()
+        prefs.edit { clear() }
     }
 
-    override suspend fun removeMember(uid: String) {
-        val current = space.value?.takeIf { it.isOwner } ?: return
-        firestore.collection("workspaces").document(current.id).collection("members").document(uid).delete().await()
-        companyDao.observeMasters().first().filter { it.memberUid == uid }.forEach {
-            companyDao.updateMaster(it.copy(memberUid = null, memberEmail = null))
-        }
-    }
+    private suspend fun ownerName(): String = companyDao.getProfile()?.ownerName?.ifBlank { null }
+        ?: FirebaseAuth.getInstance().currentUser?.displayName.orEmpty()
 
-    /** Puts orders of joined masters and the whole price list into the outbox. */
-    private fun queueAllForMasters() {
-        val sql = db.openHelper.writableDatabase
-        sql.execSQL(
+    /** Puts the own price list into the outbox (a new space needs all of it). */
+    private fun queuePrices() {
+        db.openHelper.writableDatabase.execSQL(
             """
             INSERT INTO sync_outbox (entity, row_id)
-            SELECT 'order', o.id FROM orders o JOIN masters m ON m.id = o.master_id
-            WHERE m.member_uid IS NOT NULL AND NOT EXISTS (SELECT 1 FROM sync_outbox WHERE entity = 'order' AND row_id = o.id)
-            """,
-        )
-        sql.execSQL(
-            """
-            INSERT INTO sync_outbox (entity, row_id)
-            SELECT 'price', p.id FROM repair_parts p WHERE NOT EXISTS (SELECT 1 FROM sync_outbox WHERE entity = 'price' AND row_id = p.id)
+            SELECT 'price', p.id FROM repair_parts p
+            WHERE p.attached_company_id IS NULL AND NOT EXISTS (SELECT 1 FROM sync_outbox WHERE entity = 'price' AND row_id = p.id)
             """,
         )
     }
 
-    private fun loadSpace(): TeamSpace? {
-        val id = prefs.getString("id", null) ?: return null
-        return TeamSpace(id, prefs.getString("name", "").orEmpty(), prefs.getBoolean("owner", false), prefs.getString("code", null))
-    }
+    private suspend fun attempt(block: suspend () -> Unit): Boolean = attemptOrNull { block(); true } ?: false
 
-    private fun saveSpace(value: TeamSpace) {
-        prefs.edit().putString("id", value.id).putString("name", value.name).putBoolean("owner", value.isOwner).putString("code", value.joinCode).apply()
-        space.value = value
-    }
-
-    private suspend fun attempt(block: suspend () -> Unit): Boolean {
-        if (!available) return false
+    private suspend fun <T> attemptOrNull(block: suspend () -> T): T? {
+        if (!available) return null
         return try {
             block()
-            true
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
-            false
+            null
         }
     }
 
@@ -228,5 +228,10 @@ internal class FirebaseTeamRepository @Inject constructor(
         val alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
         val random = SecureRandom()
         return (1..8).map { alphabet[random.nextInt(alphabet.length)] }.joinToString("")
+    }
+
+    private companion object {
+        /** Same number of colors as the company badge palette. */
+        const val PALETTE_SIZE = 8
     }
 }

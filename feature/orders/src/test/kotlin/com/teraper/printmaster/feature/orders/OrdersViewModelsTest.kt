@@ -6,6 +6,7 @@ import com.teraper.printmaster.core.data.repository.DeleteClientResult
 import com.teraper.printmaster.core.data.repository.SaveClientResult
 import com.teraper.printmaster.core.model.CallRecording
 import com.teraper.printmaster.core.model.Client
+import com.teraper.printmaster.core.model.Company
 import com.teraper.printmaster.core.model.ClientAddress
 import com.teraper.printmaster.core.model.ClientDraft
 import com.teraper.printmaster.core.model.ClientPhone
@@ -149,7 +150,7 @@ class OrdersViewModelsTest {
     fun detailChangesStatusAsksBeforeCancellingAndBlocksDelete() = runTest {
         val orders = FakeOrdersRepository(listOf(order(1, today, 10)))
         orders.blockedIds = setOf(1)
-        val vm = OrderDetailViewModel(SavedStateHandle(mapOf("orderId" to 1L)), orders, FakeRepairsRepository(), FakeCallRecordingsRepository(), FakePhotoRepository(), clock)
+        val vm = OrderDetailViewModel(SavedStateHandle(mapOf("orderId" to 1L)), orders, FakeRepairsRepository(), FakeCompaniesRepository(), FakeCallRecordingsRepository(), FakePhotoRepository(), clock)
         collect(vm.uiState)
         val loaded = { vm.uiState.value as OrderDetailUiState.Loaded }
 
@@ -174,9 +175,33 @@ class OrdersViewModelsTest {
         fun call(id: Long, day: LocalDate, clientId: Long) =
             CallRecording(id, "u$id", "f$id.m4a", "Firm", day.atTime(9, 0), 1_000, listOf(RecordingClient(clientId, "Firm")))
         val calls = FakeCallRecordingsRepository(listOf(call(1, today, 1), call(2, today.minusDays(1), 1), call(3, today, 2)))
-        val vm = OrderDetailViewModel(SavedStateHandle(mapOf("orderId" to 1L)), orders, FakeRepairsRepository(), calls, FakePhotoRepository(), clock)
+        val vm = OrderDetailViewModel(SavedStateHandle(mapOf("orderId" to 1L)), orders, FakeRepairsRepository(), FakeCompaniesRepository(), calls, FakePhotoRepository(), clock)
         collect(vm.uiState)
 
         assertEquals(listOf(1L), (vm.uiState.value as OrderDetailUiState.Loaded).calls.map { it.id })
+    }
+
+    @Test
+    fun anAttachedCompanysOrderAsksWhoseItIsAndIsTurnedDownInsteadOfCancelled() = runTest {
+        val attached = order(1, today, 10).copy(fromAttachedCompany = true, companyName = "Xerox", companyOwner = "Apo")
+        val orders = FakeOrdersRepository(listOf(attached))
+        val repairs = FakeRepairsRepository()
+        val companies = FakeCompaniesRepository(listOf(Company(5, "Delta")))
+        val vm = OrderDetailViewModel(SavedStateHandle(mapOf("orderId" to 1L)), orders, repairs, companies, FakeCallRecordingsRepository(), FakePhotoRepository(), clock)
+        collect(vm.uiState)
+        val loaded = { vm.uiState.value as OrderDetailUiState.Loaded }
+
+        vm.onFinish(paidInCash = true)
+        assertEquals(true, loaded().finishChoice)
+        assertEquals(listOf("Delta"), loaded().ownCompanies.map { it.name })
+        vm.onFinishFor(5)
+        assertNull(loaded().finishChoice)
+        assertEquals(mapOf(1L to 5L), repairs.takenAsMine)
+
+        vm.onDeclineClick()
+        assertEquals(OrderDetailDialog.DECLINE, loaded().dialog)
+        vm.onDeclineReasonChange("Too far")
+        vm.onConfirmDecline()
+        assertEquals(mapOf(1L to "Too far"), repairs.declined)
     }
 }

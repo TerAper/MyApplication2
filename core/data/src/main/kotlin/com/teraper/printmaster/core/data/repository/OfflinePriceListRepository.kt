@@ -21,6 +21,10 @@ internal class OfflinePriceListRepository @Inject constructor(
         rows.map { it.toModel() }.sortedWith(compareBy({ it.category.ordinal }, { PriceListSearch.key(it.name) }))
     }
 
+    override fun observeItemsFor(companyId: Long): Flow<List<PriceItem>> = dao.observePartsFor(companyId).map { rows ->
+        rows.map { it.toModel() }.sortedWith(compareBy({ it.category.ordinal }, { PriceListSearch.key(it.name) }))
+    }
+
     override fun observeItem(id: Long): Flow<PriceItem?> = dao.observePart(id).map { it?.toModel() }
 
     override suspend fun saveItem(draft: PriceItemDraft): SavePriceItemResult {

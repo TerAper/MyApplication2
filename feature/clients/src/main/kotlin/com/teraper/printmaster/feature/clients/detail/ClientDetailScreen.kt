@@ -238,9 +238,10 @@ private fun ClientDetailContent(
     onNewOrder: () -> Unit,
     onOrderClick: (Long) -> Unit,
 ) {
-    val showMoney = LocalShowMoney.current
     val summary = state.summary
     val client = summary.client
+    // Another owner's client: what it owes is that owner's business.
+    val showMoney = LocalShowMoney.current && !client.isAttached
     Column(
         modifier = Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
     ) {

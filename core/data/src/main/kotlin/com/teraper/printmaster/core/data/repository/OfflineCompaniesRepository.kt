@@ -16,6 +16,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.first
 import java.time.Clock
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -38,7 +39,17 @@ internal class OfflineCompaniesRepository @Inject constructor(
     override fun observeCompanies(): Flow<List<Company>> = dao.observeCompanies().map { rows -> rows.map { it.toModel() } }
 
     override fun observeMasters(): Flow<List<Master>> =
-        dao.observeMasters().map { rows -> rows.map { Master(it.id, it.name, it.phone) } }
+        combine(dao.observeMasters(), dao.observeMemberships()) { rows, memberships ->
+            rows.map { m ->
+                Master(
+                    m.id, m.name, m.phone,
+                    email = m.memberUid?.let { m.memberEmail.orEmpty() },
+                    companyIds = memberships.filter { it.masterId == m.id }.map { it.companyId }.toSet(),
+                )
+            }
+        }
+
+    override fun observeAttachedCompanies(): Flow<List<Company>> = dao.observeAttachedCompanies().map { rows -> rows.map { it.toModel() } }
 
     override fun observeActiveCompany(): Flow<Company?> =
         combine(dao.observeProfile(), observeCompanies(), selectedId) { profile, companies, selected ->
@@ -77,7 +88,9 @@ internal class OfflineCompaniesRepository @Inject constructor(
                 SaveCompanyResult.Saved(dao.insertCompany(draft.toEntity(createdAt = clock.millis())))
             } else {
                 val existing = dao.getCompany(draft.id) ?: return@withTransaction SaveCompanyResult.Invalid(emptySet())
-                dao.updateCompany(draft.toEntity(createdAt = existing.createdAt).copy(id = existing.id))
+                // Only the form's fields change; the shared space and kind stay.
+                val form = draft.toEntity(createdAt = existing.createdAt)
+                dao.updateCompany(existing.copy(name = form.name, taxId = form.taxId, bankAccounts = form.bankAccounts, colorIndex = form.colorIndex))
                 SaveCompanyResult.Saved(existing.id)
             }
         }
@@ -109,7 +122,9 @@ internal class OfflineCompaniesRepository @Inject constructor(
         if (id == 0L) {
             dao.insertMaster(MasterEntity(name = cleanName, phone = phone.trim(), createdAt = clock.millis()))
         } else {
-            dao.updateMaster(MasterEntity(id = id, name = cleanName, phone = phone.trim(), createdAt = clock.millis()))
+            // An attached master keeps the account link.
+            val existing = dao.observeMasters().first().firstOrNull { it.id == id } ?: return false
+            dao.updateMaster(existing.copy(name = cleanName, phone = phone.trim()))
         }
         return true
     }
@@ -123,6 +138,10 @@ private fun CompanyEntity.toModel() = Company(
     taxId = taxId,
     bankAccounts = bankAccounts.lines().filter { it.isNotBlank() },
     colorIndex = colorIndex,
+    kind = kind,
+    joinCode = joinCode,
+    ownerName = ownerName,
+    isShared = spaceId != null,
 )
 
 private fun CompanyDraft.toEntity(createdAt: Long) = CompanyEntity(

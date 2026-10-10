@@ -13,7 +13,11 @@ interface CompaniesRepository {
     /** Null until the first-launch registration is done. */
     fun observeProfile(): Flow<AppProfile?>
 
+    /** The user's own companies. */
     fun observeCompanies(): Flow<List<Company>>
+
+    /** Other owners' companies the user joined with a code: they give the user orders. */
+    fun observeAttachedCompanies(): Flow<List<Company>>
 
     fun observeMasters(): Flow<List<Master>>
 

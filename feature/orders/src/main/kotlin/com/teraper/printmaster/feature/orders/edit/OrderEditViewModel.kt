@@ -85,6 +85,9 @@ class OrderEditViewModel @Inject constructor(
 
     private val form = MutableStateFlow(OrderForm(isLoading = true, draft = initialDraft))
 
+    /** An existing order's company; a new order goes to the active company. */
+    private val orderCompanyId = MutableStateFlow<Long?>(null)
+
     private val allClients = clientsRepository.observeClientSummaries()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
@@ -92,13 +95,15 @@ class OrderEditViewModel @Inject constructor(
         form,
         allClients,
         companiesRepository.observeMasters(),
-        companiesRepository.observeActiveCompany(),
-    ) { form, clients, masters, company ->
+        combine(companiesRepository.observeActiveCompany(), orderCompanyId, ::Pair),
+    ) { form, clients, masters, (company, orderCompanyId) ->
+        val companyId = orderCompanyId ?: company?.id
         OrderEditUiState(
             form = form,
             today = today,
             client = clients.firstOrNull { it.client.id == form.draft.clientId },
-            masters = masters,
+            // Attached masters get only orders of the companies they attached to.
+            masters = masters.filter { companyId == null || it.canWorkFor(companyId) },
             company = company,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), OrderEditUiState(form.value, today))
@@ -123,9 +128,10 @@ class OrderEditViewModel @Inject constructor(
                     return@launch
                 }
                 initialDraft = OrderDraft.from(order)
+                orderCompanyId.value = order.companyId
             } else {
-                // One master (the usual MASTER account): they do every job.
-                var draft = OrderDraft(date = presetDate, masterId = masters.singleOrNull()?.id)
+                // One master without the app (older accounts listed the user as one): they do every job.
+                var draft = OrderDraft(date = presetDate, masterId = masters.filterNot { it.isAttached }.singleOrNull()?.id)
                 if (presetClientId != null) {
                     clientsRepository.observeClientSummary(presetClientId).first()?.let { draft = draft.withClient(it.client) }
                 }

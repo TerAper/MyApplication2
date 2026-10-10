@@ -6,6 +6,7 @@ import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
 import com.teraper.printmaster.core.model.AccountMode
+import com.teraper.printmaster.core.model.CompanyKind
 
 /** A company money goes through. Bank accounts are stored one per line. */
 @Entity(tableName = "companies", indices = [Index(value = ["tax_id"], unique = true)])
@@ -16,6 +17,29 @@ data class CompanyEntity(
     @ColumnInfo(name = "bank_accounts") val bankAccounts: String = "",
     @ColumnInfo(name = "color_index") val colorIndex: Int = 0,
     @ColumnInfo(name = "created_at") val createdAt: Long,
+    /** OWN = the user's company; ATTACHED = another owner's company that gives the user orders. */
+    @ColumnInfo(defaultValue = "OWN") val kind: CompanyKind = CompanyKind.OWN,
+    /** Its shared space in Firebase: OWN once a master was invited, ATTACHED always (null = left it). */
+    @ColumnInfo(name = "space_id") val spaceId: String? = null,
+    /** OWN: the code masters enter to attach. */
+    @ColumnInfo(name = "join_code") val joinCode: String? = null,
+    /** ATTACHED: the name of the owner who gave the code. */
+    @ColumnInfo(name = "owner_name", defaultValue = "") val ownerName: String = "",
+)
+
+/** An attached master (one who joined with a code) may get orders of this own company. */
+@Entity(
+    tableName = "company_members",
+    primaryKeys = ["company_id", "master_id"],
+    foreignKeys = [
+        ForeignKey(entity = CompanyEntity::class, parentColumns = ["id"], childColumns = ["company_id"], onDelete = ForeignKey.CASCADE),
+        ForeignKey(entity = MasterEntity::class, parentColumns = ["id"], childColumns = ["master_id"], onDelete = ForeignKey.CASCADE),
+    ],
+    indices = [Index(value = ["master_id"])],
+)
+data class CompanyMemberEntity(
+    @ColumnInfo(name = "company_id") val companyId: Long,
+    @ColumnInfo(name = "master_id") val masterId: Long,
 )
 
 /** A person who does the work. */

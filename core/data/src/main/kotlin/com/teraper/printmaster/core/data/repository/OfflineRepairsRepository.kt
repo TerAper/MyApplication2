@@ -8,11 +8,18 @@ import com.teraper.printmaster.core.database.dao.OrderDao
 import com.teraper.printmaster.core.database.dao.RepairDao
 import com.teraper.printmaster.core.database.dao.RepairWithItems
 import com.teraper.printmaster.core.database.entity.ChargeEntity
+import com.teraper.printmaster.core.model.ClientSearch
+import com.teraper.printmaster.core.database.entity.ClientPrinterCartridgeEntity
+import com.teraper.printmaster.core.database.entity.ClientPrinterEntity
+import com.teraper.printmaster.core.database.entity.ClientAddressEntity
+import com.teraper.printmaster.core.database.entity.ClientPhoneEntity
+import com.teraper.printmaster.core.database.entity.ClientEntity
 import com.teraper.printmaster.core.database.entity.OrderEntity
 import com.teraper.printmaster.core.database.entity.PaymentEntity
 import com.teraper.printmaster.core.database.entity.RepairEntity
 import com.teraper.printmaster.core.database.entity.RepairItemEntity
 import com.teraper.printmaster.core.model.ChargeSource
+import com.teraper.printmaster.core.model.CompanyKind
 import com.teraper.printmaster.core.model.ClientPrinter
 import com.teraper.printmaster.core.model.Money
 import com.teraper.printmaster.core.model.OrderStatus
@@ -131,6 +138,11 @@ internal class OfflineRepairsRepository @Inject constructor(
 
         val today = finishedAt.atZone(clock.zone).toLocalDate().toEpochDay()
         val now = finishedAt.toEpochMilli()
+        // Done for another owner's company: its client owes that company, not this phone's user.
+        if (db.companyDao().getCompany(order.companyId)?.kind == CompanyKind.ATTACHED) {
+            orderDao.updateOrder(order.copy(status = OrderStatus.DONE, doneAt = now, paidInCash = paidInCash))
+            return FinishOrderResult.FINISHED
+        }
         repairs.forEach { repair ->
             ledgerDao.insertCharge(
                 ChargeEntity(
@@ -169,6 +181,87 @@ internal class OfflineRepairsRepository @Inject constructor(
         }
         orderDao.setStatus(orderId, OrderStatus.DONE, doneAt = now)
         return FinishOrderResult.FINISHED
+    }
+
+    override suspend fun finishAsMine(orderId: Long, companyId: Long, paidInCash: Boolean): FinishOrderResult {
+        val order = orderDao.getOrder(orderId) ?: return FinishOrderResult.NOT_FOUND
+        if (!order.isOpen()) return FinishOrderResult.NOT_OPEN
+        if (repairDao.getRepairs(orderId).none { r -> r.items.any { it.priceMinor * it.quantity > 0 } }) return FinishOrderResult.NO_WORK
+        val company = db.companyDao().getCompany(companyId)
+        if (company == null || company.kind != CompanyKind.OWN) return FinishOrderResult.NOT_FOUND
+        db.withTransaction { moveToOwnCompany(order, companyId) }
+        return finishOrder(orderId, paidInCash)
+    }
+
+    /** The order, its client (copied or found among own clients) and its work's devices, under an own company. */
+    private suspend fun moveToOwnCompany(order: OrderEntity, companyId: Long) {
+        val sync = db.syncDao()
+        val clientDao = db.clientDao()
+        val catalog = db.catalogDao()
+        val source = sync.getClientWithContacts(order.clientId) ?: return
+        val own = source.client.taxId?.let { clientDao.findOtherClientWithTaxId(it, 0) }?.takeIf { it.attachedCompanyId == null }
+            ?: clientDao.observeClientsWithContacts().first().map { it.client }
+                .firstOrNull { ClientSearch.normalizeText(it.name) == ClientSearch.normalizeText(source.client.name) }
+        val clientId = own?.id ?: run {
+            // The tax ID moves to the own client: that's the one invoices and payments are matched to.
+            val taxId = source.client.taxId?.takeIf { clientDao.findOtherClientWithTaxId(it, source.client.id) == null }
+            if (taxId != null) clientDao.updateClient(source.client.copy(taxId = null))
+            clientDao.insertClient(ClientEntity(name = source.client.name, type = source.client.type, taxId = taxId, createdAt = clock.millis()))
+        }
+        // Contacts the own client lacks are added, so the order keeps its phone and address.
+        val target = checkNotNull(sync.getClientWithContacts(clientId))
+        clientDao.upsertPhones(source.phones.filter { p -> target.phones.none { it.number == p.number } }.map { ClientPhoneEntity(clientId = clientId, number = it.number, label = it.label) })
+        clientDao.upsertAddresses(
+            source.addresses.filter { a -> target.addresses.none { it.address == a.address } }
+                .map { ClientAddressEntity(clientId = clientId, address = it.address, label = it.label, mapLink = it.mapLink) },
+        )
+        val contacts = checkNotNull(sync.getClientWithContacts(clientId))
+        val phone = source.phones.firstOrNull { it.id == order.phoneId }?.let { p -> contacts.phones.firstOrNull { it.number == p.number } }
+        val address = source.addresses.firstOrNull { it.id == order.addressId }?.let { a -> contacts.addresses.firstOrNull { it.address == a.address } }
+
+        // Printers: the own client's of the same model and place, or copies; the work points at them.
+        val ownPrinters = sync.getClientPrinterIds(clientId).mapNotNull { catalog.getClientPrinter(it) }.toMutableList()
+        val printerMap = HashMap<Long, Long>()
+        val cartridgeMap = HashMap<Long, Long>()
+        for (printer in sync.getClientPrinterIds(order.clientId).mapNotNull { catalog.getClientPrinter(it) }) {
+            val same = ownPrinters.firstOrNull { it.printer.modelId == printer.printer.modelId && it.printer.location == printer.printer.location }
+            val targetId = same?.printer?.id ?: catalog.insertClientPrinter(
+                ClientPrinterEntity(clientId = clientId, modelId = printer.printer.modelId, location = printer.printer.location, note = printer.printer.note),
+            )
+            val existing = same?.cartridges?.map { it.row }.orEmpty()
+            val missing = printer.cartridges.map { it.row }.filter { c -> existing.none { it.cartridgeId == c.cartridgeId } }
+            catalog.insertClientPrinterCartridges(missing.map { ClientPrinterCartridgeEntity(clientPrinterId = targetId, cartridgeId = it.cartridgeId) })
+            val rows = catalog.getClientPrinterCartridges(targetId)
+            printerMap[printer.printer.id] = targetId
+            printer.cartridges.forEach { c -> rows.firstOrNull { it.cartridgeId == c.row.cartridgeId }?.let { cartridgeMap[c.row.id] = it.id } }
+            if (same == null) catalog.getClientPrinter(targetId)?.let { ownPrinters += it }
+        }
+        repairDao.getRepairs(order.id).forEach { r ->
+            val repair = r.repair
+            repairDao.updateRepair(
+                repair.copy(
+                    clientPrinterId = repair.clientPrinterId?.let { printerMap[it] },
+                    clientPrinterCartridgeId = repair.clientPrinterCartridgeId?.let { cartridgeMap[it] },
+                ),
+            )
+        }
+        orderDao.updateOrder(
+            order.copy(
+                companyId = companyId,
+                clientId = clientId,
+                phoneId = phone?.id,
+                addressId = address?.id,
+                fromCompanyId = order.companyId,
+                takenByMaster = true,
+            ),
+        )
+    }
+
+    override suspend fun declineOrder(orderId: Long, reason: String): Boolean {
+        val order = orderDao.getOrder(orderId) ?: return false
+        if (!order.isOpen() || db.companyDao().getCompany(order.companyId)?.kind != CompanyKind.ATTACHED) return false
+        orderDao.updateOrder(order.copy(status = OrderStatus.CANCELLED, declinedReason = reason.trim().ifEmpty { "—" }))
+        return true
     }
 
     override suspend fun reopenOrder(orderId: Long) {

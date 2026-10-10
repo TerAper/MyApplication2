@@ -51,7 +51,14 @@ data class SharedOrder(
     val paidCash: Boolean? = null,
     val work: List<SharedRepair> = emptyList(),
     val createdByMaster: Boolean = false,
+    /** The master did it as his own order: for the company it's only history (no work, no money). */
+    val takenByMaster: Boolean = false,
+    /** The master turned it down; the company gives it to someone else. */
+    val declinedReason: String? = null,
 )
+
+/** Someone who joined a company's shared space with its code. */
+data class SharedMember(val uid: String, val name: String, val email: String)
 
 /** Work on one device: "CF283A · HP M125", or null when no device was chosen. */
 data class SharedRepair(
@@ -92,4 +99,11 @@ data class SyncReport(
     val finishedOrders: Int = 0,
     /** Company: clients masters added, waiting for review. */
     val newClients: Int = 0,
-)
+    /** Company: orders masters turned down. */
+    val declinedOrders: Int = 0,
+) {
+    operator fun plus(other: SyncReport) = SyncReport(
+        sent + other.sent, received + other.received, newOrders + other.newOrders,
+        finishedOrders + other.finishedOrders, newClients + other.newClients, declinedOrders + other.declinedOrders,
+    )
+}

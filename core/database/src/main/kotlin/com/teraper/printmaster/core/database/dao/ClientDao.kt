@@ -16,8 +16,9 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface ClientDao {
 
+    /** The user's own clients; attached companies' clients are seen only through their orders. */
     @Transaction
-    @Query("SELECT * FROM clients")
+    @Query("SELECT * FROM clients WHERE attached_company_id IS NULL")
     fun observeClientsWithContacts(): Flow<List<ClientWithContacts>>
 
     @Transaction

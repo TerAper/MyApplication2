@@ -92,6 +92,7 @@ class RepairEditViewModel @Inject constructor(
 
     private val form = MutableStateFlow(RepairForm(draft = initialDraft))
     private val clientId = MutableStateFlow<Long?>(null)
+    private val companyId = MutableStateFlow<Long?>(null)
 
     private val _events = Channel<RepairEditEvent>(Channel.BUFFERED)
     val events: Flow<RepairEditEvent> = _events.receiveAsFlow()
@@ -102,7 +103,8 @@ class RepairEditViewModel @Inject constructor(
     val uiState: StateFlow<RepairEditUiState> = combine(
         form,
         printers,
-        priceListRepository.observeItems(),
+        // An attached company's order is priced from that company's list.
+        companyId.filterNotNull().flatMapLatest { priceListRepository.observeItemsFor(it) },
     ) { form, printers, items ->
         RepairEditUiState(
             form = form,
@@ -122,6 +124,7 @@ class RepairEditViewModel @Inject constructor(
                 return@launch
             }
             clientId.value = order.clientId
+            companyId.value = order.companyId
             val clientPrinters = printers.filterNotNull().first()
             initialDraft = if (repairId != 0L) {
                 val repair = repairsRepository.observeRepair(repairId).first()

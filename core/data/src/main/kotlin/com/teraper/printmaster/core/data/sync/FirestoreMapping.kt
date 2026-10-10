@@ -71,6 +71,8 @@ internal object FirestoreMapping {
             )
         },
         "createdByMaster" to createdByMaster,
+        "takenByMaster" to takenByMaster,
+        "declinedReason" to declinedReason,
     )
 
     fun order(id: String, d: Map<String, Any?>) = SharedOrder(
@@ -94,6 +96,8 @@ internal object FirestoreMapping {
             )
         },
         createdByMaster = d["createdByMaster"] == true,
+        takenByMaster = d["takenByMaster"] == true,
+        declinedReason = d["declinedReason"] as? String,
     )
 
     fun SharedPriceItem.toMap(): Map<String, Any?> = mapOf(

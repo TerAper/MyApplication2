@@ -1,10 +1,13 @@
 package com.teraper.printmaster.core.data.team
 
-import com.teraper.printmaster.core.model.JoinResult
+import com.teraper.printmaster.core.model.AttachResult
 import com.teraper.printmaster.core.model.TeamState
 import kotlinx.coroutines.flow.Flow
 
-/** Signing in and the company's shared space (create, join code, members). */
+/**
+ * The Google account and the shared spaces: own companies invite masters with a code,
+ * and the user attaches to other owners' companies with their codes.
+ */
 interface TeamRepository {
 
     fun observeState(): Flow<TeamState>
@@ -17,18 +20,18 @@ interface TeamRepository {
 
     suspend fun signOut()
 
-    /** Company side: creates the shared space for the active company, with a new join code. */
-    suspend fun createSpace(): Boolean
+    /** Own company: the code masters enter to attach; its shared space is made the first time. Null = failed. */
+    suspend fun inviteCode(companyId: Long): String?
 
-    /** Company side: a new code; the old one stops working (masters who joined stay). */
-    suspend fun newJoinCode(): Boolean
+    /** Own company: a new code; the old one stops working (attached masters stay). */
+    suspend fun newJoinCode(companyId: Long): String?
 
-    /** Master side: joins with the code the company gave; [myName] is shown to the company. */
-    suspend fun join(code: String, myName: String): JoinResult
+    /** Own company: the master gets no more of its orders. */
+    suspend fun removeMember(companyId: Long, masterId: Long): Boolean
 
-    /** Company side: this joined master is local master [masterId] (null = create a new master record). */
-    suspend fun linkMember(uid: String, masterId: Long?)
+    /** Another owner's code: their company appears as attached and starts giving orders. */
+    suspend fun attachCompany(code: String, myName: String): AttachResult
 
-    /** Company side: removes a master from the space. */
-    suspend fun removeMember(uid: String)
+    /** Stops working for an attached company; the orders done for it stay as history. */
+    suspend fun leaveCompany(companyId: Long): Boolean
 }

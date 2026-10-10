@@ -103,4 +103,18 @@
     <string name="feature_orders_photo_gallery">Պատկերասրահ</string>
     <string name="feature_orders_photo_delete">Ջնջել լուսանկարը</string>
     <string name="feature_orders_photo_close">Փակել</string>
+    <string name="feature_orders_whose_title">Ու՞մ պատվերն է</string>
+    <string name="feature_orders_whose_message">Ընտրեք, թե ում հաշվին է այս աշխատանքն ու գումարը։</string>
+    <string name="feature_orders_whose_theirs">Կատարված %1$s-ի համար</string>
+    <string name="feature_orders_whose_theirs_hint">Հաճախորդը վճարում է %1$s-ին։ Ձեզ համար սա միայն պատմություն է։</string>
+    <string name="feature_orders_whose_mine">Իմ պատվերն է · %1$s</string>
+    <string name="feature_orders_whose_mine_hint">Հաճախորդը պարտք է Ձեր ընկերությանը։ %1$s-ը միայն կիմանա, որ կատարված է։</string>
+    <string name="feature_orders_decline">Մերժել</string>
+    <string name="feature_orders_decline_title">Մերժե՞լ պատվերը</string>
+    <string name="feature_orders_decline_message">Այն կվերադառնա %1$s-ին, որ տա ուրիշին։</string>
+    <string name="feature_orders_decline_reason">Պատճառը (նրանք կտեսնեն)</string>
+    <string name="feature_orders_from_company">%1$s-ից (սեփականատեր՝ %2$s)։ Տեսնում եք հաճախորդի կոնտակտներն ու տպիչները, ոչ թե պարտքը։</string>
+    <string name="feature_orders_declined_note">%1$s-ը մերժեց՝ %2$s։ Խմբագրեք պատվերը՝ ուրիշին տալու կամ ինքներդ կատարելու համար։</string>
+    <string name="feature_orders_taken_from_note">Վերցված է %1$s-ից որպես Ձեր պատվեր։</string>
+    <string name="feature_orders_taken_note">%1$s-ը կատարեց որպես իր պատվեր։ Այստեղ այն չի հաշվվում։</string>
 </resources>

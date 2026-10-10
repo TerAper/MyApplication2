@@ -32,6 +32,9 @@ data class AppProfile(
     val defaultCompanyId: Long,
 )
 
+/** OWN = the user's company; ATTACHED = another owner's company whose orders the user does. */
+enum class CompanyKind { OWN, ATTACHED }
+
 /**
  * A company money goes through: invoices are issued by it and bank transfers come to it.
  * Shown as [initials] on a color from a fixed palette ([colorIndex]).
@@ -42,12 +45,34 @@ data class Company(
     val taxId: String? = null,
     val bankAccounts: List<String> = emptyList(),
     val colorIndex: Int = 0,
+    val kind: CompanyKind = CompanyKind.OWN,
+    /** OWN: the code attached masters entered; null until the first invite. */
+    val joinCode: String? = null,
+    /** ATTACHED: the owner who gave the code. */
+    val ownerName: String = "",
+    /** ATTACHED: false once the user left it (its old orders stay as history). */
+    val isShared: Boolean = false,
 ) {
     val initials: String get() = CompanyNames.initials(name)
+    val isAttached: Boolean get() = kind == CompanyKind.ATTACHED
 }
 
-/** A person doing the work. In MASTER mode there is one: the user. */
-data class Master(val id: Long, val name: String, val phone: String = "")
+/**
+ * A person doing the work. Without [email] it's just a name the user assigns orders to;
+ * with it, an attached master who uses PrintMaster and joined with a code of the companies [companyIds].
+ */
+data class Master(
+    val id: Long,
+    val name: String,
+    val phone: String = "",
+    val email: String? = null,
+    val companyIds: Set<Long> = emptySet(),
+) {
+    val isAttached: Boolean get() = email != null
+
+    /** May get orders of company [companyId]: a master without the app, or one attached to it. */
+    fun canWorkFor(companyId: Long): Boolean = !isAttached || companyId in companyIds
+}
 
 object CompanyNames {
     private val LEGAL_FORMS = setOf("սպը", "փբը", "բբը", "աձ", "llc", "cjsc", "ojsc", "ie")
