@@ -3,7 +3,6 @@
     <string name="feature_settings_back">Հետ</string>
     <string name="feature_settings_ok">Լավ</string>
     <string name="feature_settings_cancel">Չեղարկել</string>
-    <string name="feature_settings_soon">Շուտով</string>
 
     <string name="feature_settings_title">Կարգավորումներ</string>
     <string name="feature_settings_section_language">ԼԵԶՈՒ</string>
@@ -47,4 +46,18 @@
     <string name="feature_settings_restore_money">Պարտքեր, վճարումներ</string>
     <string name="feature_settings_restore_last_change">Վերջին գրառում</string>
     <string name="feature_settings_restore_confirm">Փոխարինել</string>
+    <string name="feature_settings_columns_intro">Ներմուծումը յուրաքանչյուր արժեք գտնում է սյունակի վերնագրով։ Եթե բանկը կամ հարկային համակարգը փոխի սյունակի անունը, ավելացրեք նոր անունն այստեղ։ Սյունակը կարող է ունենալ մի քանի անուն՝ օգտագործվում է ֆայլում գտնված առաջինը։</string>
+    <string name="feature_settings_columns_invoices">ՀԱՇԻՎ-ԱՊՐԱՆՔԱԳՐԵՐԻ ՖԱՅԼ (ՀԱՐԿԱՅԻՆ)</string>
+    <string name="feature_settings_columns_bank">ԲԱՆԿԱՅԻՆ ՔԱՂՎԱԾՔ</string>
+    <string name="feature_settings_columns_reset">Վերադարձնել սկզբնականը</string>
+    <string name="feature_settings_columns_reset_title">Վերադարձնե՞լ սկզբնական անունները</string>
+    <string name="feature_settings_columns_reset_message">Այս ֆայլի համար ձեր փոփոխությունները կջնջվեն։ Կօգտագործվեն այսօրվա ֆայլերի անունները։</string>
+    <string name="feature_settings_columns_needed">Պարտադիր</string>
+    <string name="feature_settings_columns_changed">Փոխված</string>
+    <string name="feature_settings_columns_edit">Փոխել</string>
+    <string name="feature_settings_columns_edit_hint">Գրեք սյունակի անունը ինչպես ֆայլում է, ամեն մեկը նոր տողում։ Վերջում * դնելով՝ կհամապատասխանի այդպես սկսվող ցանկացած անվան, օրինակ՝ «Վճարող*»։</string>
+    <string name="feature_settings_columns_titles">Սյունակի անուններ</string>
+    <string name="feature_settings_columns_default">Սկզբնական՝ %1$s</string>
+    <string name="feature_settings_columns_use_default">Օգտագործել սկզբնականը</string>
+    <string name="feature_settings_columns_save">Պահել</string>
 </resources>

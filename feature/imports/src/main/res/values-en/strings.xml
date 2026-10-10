@@ -82,4 +82,9 @@
     <string name="feature_imports_undo">Undo</string>
     <string name="feature_imports_undo_title">Undo this import?</string>
     <string name="feature_imports_undo_message">Everything added from %1$s (%2$d rows) is removed. Clients it created stay.</string>
+    <string name="feature_imports_missing_invoices">It looks like an invoice export, but some needed columns were not found. The tax system may have renamed them.</string>
+    <string name="feature_imports_missing_bank">It looks like a bank statement, but some needed columns were not found. The bank may have renamed them.</string>
+    <string name="feature_imports_missing_list">Not found:</string>
+    <string name="feature_imports_missing_hint">Open the file in Excel, see what these columns are called now, and add the new titles in Settings → Excel columns. Then import the file again.</string>
+    <string name="feature_imports_open_columns">Excel columns settings</string>
 </resources>

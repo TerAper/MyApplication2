@@ -4,6 +4,7 @@ import android.app.Activity
 import android.content.Context
 import android.content.ContextWrapper
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -15,6 +16,7 @@ import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.RadioButtonDefaults
@@ -33,15 +35,14 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.teraper.printmaster.core.designsystem.component.PmCard
-import com.teraper.printmaster.core.designsystem.component.PmTag
 import com.teraper.printmaster.core.designsystem.component.PmTopBar
-import com.teraper.printmaster.core.designsystem.component.TagTone
+import com.teraper.printmaster.core.designsystem.icon.PmIcons
 import com.teraper.printmaster.core.designsystem.theme.PmTheme
 import com.teraper.printmaster.core.model.AppLanguage
 import com.teraper.printmaster.feature.settings.R
 
 @Composable
-internal fun SettingsRoute(onBack: () -> Unit, viewModel: SettingsViewModel = hiltViewModel()) {
+internal fun SettingsRoute(onBack: () -> Unit, onOpenColumns: () -> Unit, viewModel: SettingsViewModel = hiltViewModel()) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val version = remember(context) { context.versionName() }
@@ -52,7 +53,7 @@ internal fun SettingsRoute(onBack: () -> Unit, viewModel: SettingsViewModel = hi
             }
         }
     }
-    SettingsScreen(state = state, version = version, onBack = onBack, onLanguageClick = viewModel::onLanguageClick)
+    SettingsScreen(state = state, version = version, onBack = onBack, onLanguageClick = viewModel::onLanguageClick, onOpenColumns = onOpenColumns)
 }
 
 @Composable
@@ -61,6 +62,7 @@ internal fun SettingsScreen(
     version: String,
     onBack: () -> Unit,
     onLanguageClick: (AppLanguage) -> Unit,
+    onOpenColumns: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     Column(modifier.fillMaxSize().background(PmTheme.colors.background)) {
@@ -85,12 +87,14 @@ internal fun SettingsScreen(
 
             SectionTitle(stringResource(R.string.feature_settings_section_import))
             PmCard(Modifier.fillMaxWidth()) {
-                Row(Modifier.padding(horizontal = 14.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+                Row(
+                    Modifier.fillMaxWidth().clickable(onClick = onOpenColumns).padding(horizontal = 14.dp, vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
                     Column(Modifier.weight(1f).padding(end = 12.dp)) {
                         Text(
                             stringResource(R.string.feature_settings_excel_columns),
                             style = MaterialTheme.typography.titleSmall,
-                            color = PmTheme.colors.inkMuted,
                         )
                         Text(
                             stringResource(R.string.feature_settings_excel_columns_sub),
@@ -98,7 +102,7 @@ internal fun SettingsScreen(
                             color = PmTheme.colors.inkMuted,
                         )
                     }
-                    PmTag(stringResource(R.string.feature_settings_soon), TagTone.Neutral)
+                    Icon(PmIcons.Chevron, contentDescription = null, tint = PmTheme.colors.outlineStrong)
                 }
             }
 

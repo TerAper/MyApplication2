@@ -56,29 +56,48 @@ sealed interface ImportFile {
     ) : ImportFile
 }
 
-/** Recognises the two Excel files by their column titles and reads them. */
+/** A file that wasn't recognised: the closest kind and the needed columns it lacks. */
+data class MissingColumns(val kind: ImportKind, val missing: List<ImportColumn>)
+
+/** Recognises the two Excel files by their column titles (see [ImportColumns]) and reads them. */
 object ImportFiles {
 
-    fun parse(rows: List<List<String?>>): ImportFile? = parseInvoices(rows) ?: parseBank(rows)
+    fun parse(rows: List<List<String?>>, columns: ImportColumns = ImportColumns.DEFAULT): ImportFile? =
+        parseInvoices(rows, columns) ?: parseBank(rows, columns)
+
+    /** The header row: the first row that has every needed column of [kind]. */
+    private fun headerIndex(rows: List<List<String?>>, columns: ImportColumns, kind: ImportKind): Int {
+        val needed = ImportColumn.of(kind).filter { it.required && !it.isRowTitle }
+        return rows.indexOfFirst { row -> val header = row.map { it.cell() }; needed.all { columns.find(it, header) >= 0 } }
+    }
+
+    /** For a file [parse] didn't recognise: the row that looks most like a header, and what it lacks. */
+    fun missingColumns(rows: List<List<String?>>, columns: ImportColumns = ImportColumns.DEFAULT): MissingColumns? =
+        ImportKind.entries.flatMap { kind ->
+            val needed = ImportColumn.of(kind).filter { it.required && !it.isRowTitle }
+            rows.take(60).map { row ->
+                val header = row.map { it.cell() }
+                val (found, missing) = needed.partition { columns.find(it, header) >= 0 }
+                Triple(kind, found.size, missing)
+            }
+        }.filter { it.second > 0 && it.third.isNotEmpty() }.maxByOrNull { it.second }?.let { MissingColumns(it.first, it.third) }
 
     // Invoice export of the tax system (Armenian titles).
 
-    private fun parseInvoices(rows: List<List<String?>>): ImportFile.Invoices? {
-        val headerIndex = rows.indexOfFirst { row -> row.any { it.cell() == "Սերիա և համար" } && row.any { it.cell() == "Ստացողի ՀՎՀՀ" } }
+    private fun parseInvoices(rows: List<List<String?>>, columns: ImportColumns): ImportFile.Invoices? {
+        val headerIndex = headerIndex(rows, columns, ImportKind.INVOICES)
         if (headerIndex < 0) return null
         val header = rows[headerIndex].map { it.cell() }
-        fun col(title: String) = header.indexOfFirst { it == title }
-        fun colStarting(title: String) = header.indexOfFirst { it.startsWith(title) }
-        val serial = col("Սերիա և համար")
-        val taxId = col("Ստացողի ՀՎՀՀ")
-        val personId = colStarting("Ստացողի անձը")
-        val name = col("Ստացողի անվանում")
-        val status = col("Կարգավիճակ")
-        val issued = colStarting("Դուրս գրման ա")
-        val amount = col("Արժեք")
-        val issuerTaxId = col("Դուրս գրողի ՀՎՀՀ")
-        val issuerName = col("Դուրս գրողի անվանում")
-        if (serial < 0 || name < 0 || issued < 0 || amount < 0) return null
+        fun col(column: ImportColumn) = columns.find(column, header)
+        val serial = col(ImportColumn.INVOICE_NUMBER)
+        val taxId = col(ImportColumn.INVOICE_CLIENT_TAX_ID)
+        val personId = col(ImportColumn.INVOICE_CLIENT_PERSON_ID)
+        val name = col(ImportColumn.INVOICE_CLIENT_NAME)
+        val status = col(ImportColumn.INVOICE_STATUS)
+        val issued = col(ImportColumn.INVOICE_DATE)
+        val amount = col(ImportColumn.INVOICE_AMOUNT)
+        val issuerTaxId = col(ImportColumn.INVOICE_ISSUER_TAX_ID)
+        val issuerName = col(ImportColumn.INVOICE_ISSUER_NAME)
 
         val invoices = rows.drop(headerIndex + 1).mapNotNull { row ->
             val number = row.at(serial)?.trim()?.ifEmpty { null } ?: return@mapNotNull null
@@ -91,7 +110,7 @@ object ImportFiles {
                 amount = parseAmount(row.at(amount)) ?: return@mapNotNull null,
                 confirmedByBuyer = "Հաստատված" in statusText,
                 cancelled = "Չեղարկ" in statusText || "Անվավեր" in statusText,
-                fields = fields(rows[headerIndex], row),
+                fields = fields(rows[headerIndex], row, setOf(issued)),
             )
         }
         val first = rows.drop(headerIndex + 1).firstOrNull { it.at(serial) != null }
@@ -104,22 +123,21 @@ object ImportFiles {
 
     // Bank account statement: a few "title | value" rows, then the table.
 
-    private fun parseBank(rows: List<List<String?>>): ImportFile.BankStatement? {
-        val headerIndex = rows.indexOfFirst { row -> row.any { it.cell() == "Ամսաթիվ" } && row.any { it.cell() == "Մուտք" } }
+    private fun parseBank(rows: List<List<String?>>, columns: ImportColumns): ImportFile.BankStatement? {
+        val headerIndex = headerIndex(rows, columns, ImportKind.BANK_STATEMENT)
         if (headerIndex < 0) return null
         val header = rows[headerIndex].map { it.cell() }
-        fun col(vararg titles: String) = header.indexOfFirst { it in titles }
-        val date = col("Ամսաթիվ")
-        val document = col("Փաստ.N", "Փաստ. N", "Փաստաթղթի N")
-        val type = col("ԳՏ")
-        val account = col("Հաշիվ")
-        val purpose = col("Նպատակ")
-        val incoming = col("Մուտք")
-        val payer = col("Վճարող/Շահառու", "Վճարող")
-        if (date < 0 || incoming < 0 || payer < 0) return null
+        fun col(column: ImportColumn) = columns.find(column, header)
+        val date = col(ImportColumn.BANK_DATE)
+        val document = col(ImportColumn.BANK_DOCUMENT)
+        val type = col(ImportColumn.BANK_TYPE)
+        val account = col(ImportColumn.BANK_PAYER_ACCOUNT)
+        val purpose = col(ImportColumn.BANK_PURPOSE)
+        val incoming = col(ImportColumn.BANK_INCOMING)
+        val payer = col(ImportColumn.BANK_PAYER)
 
         val top = rows.take(headerIndex)
-        fun field(title: String) = top.firstOrNull { it.firstOrNull().cell() == title }
+        fun field(column: ImportColumn) = top.firstOrNull { columns.find(column, listOf(it.firstOrNull().cell())) == 0 }
         var skipped = 0
         val payments = rows.drop(headerIndex + 1).mapNotNull { row ->
             val day = parseDate(row.at(date)) ?: return@mapNotNull null
@@ -137,14 +155,14 @@ object ImportFiles {
                 purpose = row.at(purpose)?.trim().orEmpty(),
                 amount = amount,
                 payerName = payerName,
-                fields = fields(rows[headerIndex], row),
+                fields = fields(rows[headerIndex], row, setOf(date)),
             )
         }
-        val accountRow = field("Հաշիվ N")
+        val accountRow = field(ImportColumn.BANK_OWN_ACCOUNT)
         return ImportFile.BankStatement(
             account = accountRow?.at(1)?.filter { it.isDigit() }?.ifEmpty { null },
             ownerName = accountRow?.at(2)?.trim(),
-            ownerTaxId = field("ՀՎՀՀ")?.at(1)?.filter { it.isDigit() }?.ifEmpty { null },
+            ownerTaxId = field(ImportColumn.BANK_OWN_TAX_ID)?.at(1)?.filter { it.isDigit() }?.ifEmpty { null },
             payments = payments,
             skipped = skipped,
         )
@@ -154,11 +172,11 @@ object ImportFiles {
     private val DATE_OUT: DateTimeFormatter = DateTimeFormatter.ofPattern("dd.MM.yyyy")
 
     /** Title → value of every filled cell; Excel day numbers in date columns become dates. */
-    private fun fields(header: List<String?>, row: List<String?>): List<Pair<String, String>> =
+    private fun fields(header: List<String?>, row: List<String?>, dateColumns: Set<Int>): List<Pair<String, String>> =
         header.mapIndexedNotNull { index, rawTitle ->
             val title = rawTitle.cell().ifEmpty { return@mapIndexedNotNull null }
             val value = row.at(index)?.trim() ?: return@mapIndexedNotNull null
-            val isDateColumn = "ա/թ" in title || "Ամսաթիվ" in title
+            val isDateColumn = index in dateColumns || "ա/թ" in title || "Ամսաթիվ" in title
             val shown: String = (if (isDateColumn) excelDateText(value) else null) ?: value
             title to shown
         }
@@ -209,7 +227,7 @@ object ImportFiles {
         return digest.take(12).joinToString("") { "%02x".format(it) }
     }
 
-    private fun String?.cell(): String = this?.trim()?.replace(Regex("""\s+"""), " ").orEmpty()
+    private fun String?.cell(): String = ImportColumns.normalize(this)
 
     private fun List<String?>.at(index: Int): String? = if (index < 0) null else getOrNull(index)?.takeIf { it.isNotBlank() }
 }

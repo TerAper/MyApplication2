@@ -7,6 +7,7 @@ import com.teraper.printmaster.core.model.CompanyCheck
 import com.teraper.printmaster.core.model.ImportPreview
 import com.teraper.printmaster.core.model.ImportPreviewResult
 import com.teraper.printmaster.core.model.ImportResult
+import com.teraper.printmaster.core.model.MissingColumns
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -31,7 +32,8 @@ sealed interface ImportUiState {
         val hasSomethingNew: Boolean get() = preview.newRows > 0 || preview.changed > 0
     }
     data class Done(val preview: ImportPreview, val result: ImportResult) : ImportUiState
-    data class Failed(val error: ImportError) : ImportUiState
+    /** [missing]: the file looks like one of the two, but lacks these needed columns. */
+    data class Failed(val error: ImportError, val missing: MissingColumns? = null) : ImportUiState
 }
 
 @HiltViewModel
@@ -48,7 +50,7 @@ class ImportViewModel @Inject constructor(private val repository: ImportReposito
             _uiState.value = when (val result = repository.preview(uri, fileName)) {
                 is ImportPreviewResult.Ready -> ImportUiState.Previewing(result.preview)
                 ImportPreviewResult.NotExcel -> ImportUiState.Failed(ImportError.NOT_EXCEL)
-                ImportPreviewResult.UnknownLayout -> ImportUiState.Failed(ImportError.UNKNOWN_LAYOUT)
+                is ImportPreviewResult.UnknownLayout -> ImportUiState.Failed(ImportError.UNKNOWN_LAYOUT, result.missing)
                 ImportPreviewResult.NoCompany -> ImportUiState.Failed(ImportError.NO_COMPANY)
             }
         }

@@ -69,7 +69,7 @@ class ImportViewModelsTest {
         vm.onImportClick()
         assertEquals(listOf(false), repo.imported)
 
-        repo.previewResult = ImportPreviewResult.UnknownLayout
+        repo.previewResult = ImportPreviewResult.UnknownLayout()
         vm.onStartOver()
         vm.onFilePicked("content://g", "x.xlsx")
         assertEquals(ImportUiState.Failed(ImportError.UNKNOWN_LAYOUT), vm.uiState.value)

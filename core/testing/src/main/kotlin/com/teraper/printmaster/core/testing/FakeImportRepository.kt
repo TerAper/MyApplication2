@@ -12,7 +12,7 @@ import kotlinx.coroutines.flow.map
 
 /** [previewResult] is what any file turns out to be; calls are recorded. */
 class FakeImportRepository(
-    var previewResult: ImportPreviewResult = ImportPreviewResult.UnknownLayout,
+    var previewResult: ImportPreviewResult = ImportPreviewResult.UnknownLayout(),
     var importResult: ImportResult? = ImportResult(1, added = 3, updated = 0, createdClients = 1, pending = 0),
 ) : ImportRepository {
     val batches = MutableStateFlow<List<ImportBatch>>(emptyList())

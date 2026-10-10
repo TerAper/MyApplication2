@@ -82,4 +82,9 @@
     <string name="feature_imports_undo">Չեղարկել</string>
     <string name="feature_imports_undo_title">Չեղարկե՞լ այս ներմուծումը</string>
     <string name="feature_imports_undo_message">%1$s-ից ավելացվածը (%2$d տող) կհեռացվի։ Ստեղծված հաճախորդները կմնան։</string>
+    <string name="feature_imports_missing_invoices">Սա նման է հաշիվ-ապրանքագրերի ցուցակի, բայց որոշ պարտադիր սյունակներ չգտնվեցին։ Հնարավոր է՝ հարկային համակարգը փոխել է դրանց անունները։</string>
+    <string name="feature_imports_missing_bank">Սա նման է բանկային քաղվածքի, բայց որոշ պարտադիր սյունակներ չգտնվեցին։ Հնարավոր է՝ բանկը փոխել է դրանց անունները։</string>
+    <string name="feature_imports_missing_list">Չգտնվեց՝</string>
+    <string name="feature_imports_missing_hint">Բացեք ֆայլը Excel-ում, տեսեք՝ ինչպես են հիմա կոչվում այս սյունակները, և ավելացրեք նոր անունները Կարգավորումներ → Excel սյունակներ բաժնում։ Հետո նորից ներմուծեք ֆայլը։</string>
+    <string name="feature_imports_open_columns">Excel սյունակների կարգավորումներ</string>
 </resources>

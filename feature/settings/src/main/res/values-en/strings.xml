@@ -3,7 +3,6 @@
     <string name="feature_settings_back">Back</string>
     <string name="feature_settings_ok">OK</string>
     <string name="feature_settings_cancel">Cancel</string>
-    <string name="feature_settings_soon">Soon</string>
 
     <string name="feature_settings_title">Settings</string>
     <string name="feature_settings_section_language">LANGUAGE</string>
@@ -47,4 +46,18 @@
     <string name="feature_settings_restore_money">Charges, payments</string>
     <string name="feature_settings_restore_last_change">Last entry</string>
     <string name="feature_settings_restore_confirm">Replace</string>
+    <string name="feature_settings_columns_intro">The import finds each value by its column title. If the bank or the tax system renames a column, add the new title here. A column can have several titles: the first one found in the file is used.</string>
+    <string name="feature_settings_columns_invoices">INVOICE FILE (TAX SYSTEM)</string>
+    <string name="feature_settings_columns_bank">BANK STATEMENT</string>
+    <string name="feature_settings_columns_reset">Reset to default</string>
+    <string name="feature_settings_columns_reset_title">Back to the default titles?</string>
+    <string name="feature_settings_columns_reset_message">Your changes for this file are removed. The titles of today\'s files are used again.</string>
+    <string name="feature_settings_columns_needed">Needed</string>
+    <string name="feature_settings_columns_changed">Changed</string>
+    <string name="feature_settings_columns_edit">Edit</string>
+    <string name="feature_settings_columns_edit_hint">Write the column title as in the file, one per line. End it with * to match every title starting so, for example «Payer*».</string>
+    <string name="feature_settings_columns_titles">Column titles</string>
+    <string name="feature_settings_columns_default">Default: %1$s</string>
+    <string name="feature_settings_columns_use_default">Use default</string>
+    <string name="feature_settings_columns_save">Save</string>
 </resources>

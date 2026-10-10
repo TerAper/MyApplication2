@@ -46,6 +46,7 @@ import com.teraper.printmaster.feature.reports.navigation.navigateToDebtExport
 import com.teraper.printmaster.feature.reports.navigation.navigateToReports
 import com.teraper.printmaster.feature.reports.navigation.reportsScreens
 import com.teraper.printmaster.feature.settings.navigation.navigateToBackup
+import com.teraper.printmaster.feature.settings.navigation.navigateToExcelColumns
 import com.teraper.printmaster.feature.settings.navigation.navigateToSettings
 import com.teraper.printmaster.feature.settings.navigation.settingsScreens
 import com.teraper.printmaster.feature.team.navigation.navigateToTeam
@@ -88,7 +89,7 @@ fun PrintMasterNavHost(navController: NavHostController, modifier: Modifier = Mo
             onImport = navController::navigateToImport,
             onReviewPayments = navController::navigateToReviewPayments,
         ) {
-            importScreens(navController)
+            importScreens(navController, onOpenColumns = navController::navigateToExcelColumns)
         }
         moreGraph(
             actions = MoreActions(

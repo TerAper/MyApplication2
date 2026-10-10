@@ -3,6 +3,7 @@ package com.teraper.printmaster.core.data
 import androidx.test.core.app.ApplicationProvider
 import com.teraper.printmaster.core.data.analytics.NoAnalytics
 import com.teraper.printmaster.core.data.repository.CatalogWriter
+import com.teraper.printmaster.core.data.repository.ImportColumnsRepository
 import com.teraper.printmaster.core.data.repository.OfflineBackupRepository
 import com.teraper.printmaster.core.data.repository.OfflineCallRecordingsRepository
 import com.teraper.printmaster.core.data.repository.OfflineReportsRepository
@@ -21,9 +22,13 @@ import com.teraper.printmaster.core.data.sync.SyncEngine
 import com.teraper.printmaster.core.database.PrintMasterDatabase
 import com.teraper.printmaster.core.model.AccountMode
 import com.teraper.printmaster.core.model.CompanyDraft
+import com.teraper.printmaster.core.model.ImportColumn
+import com.teraper.printmaster.core.model.ImportColumns
+import com.teraper.printmaster.core.model.ImportKind
 import java.time.Clock
 import java.time.Instant
 import java.time.ZoneOffset
+import kotlinx.coroutines.flow.flowOf
 
 /** Real repositories over an in-memory database, wired like the app does. */
 internal class TestRepos(clock: Clock = Clock.fixed(Instant.parse("2026-10-07T10:00:00Z"), ZoneOffset.UTC)) {
@@ -38,7 +43,7 @@ internal class TestRepos(clock: Clock = Clock.fixed(Instant.parse("2026-10-07T10
     val reports = OfflineReportsRepository(db.reportDao(), db.expenseDao(), companies)
     val expenses = com.teraper.printmaster.core.data.repository.OfflineExpensesRepository(db.expenseDao(), companies, clock)
     val calls = OfflineCallRecordingsRepository(ApplicationProvider.getApplicationContext(), db, db.callRecordingDao(), clock)
-    val imports = OfflineImportRepository(ApplicationProvider.getApplicationContext(), db, db.importDao(), db.companyDao(), companies, clock, NoAnalytics)
+    val imports = OfflineImportRepository(ApplicationProvider.getApplicationContext(), db, db.importDao(), db.companyDao(), companies, clock, NoAnalytics, DefaultImportColumns)
     val photos = OfflinePhotoRepository(ApplicationProvider.getApplicationContext(), db.photoDao(), clock)
     val backup = OfflineBackupRepository(ApplicationProvider.getApplicationContext(), db, clock, NoAnalytics)
 
@@ -60,4 +65,11 @@ internal class TestRepos(clock: Clock = Clock.fixed(Instant.parse("2026-10-07T10
 
     fun count(table: String): Int =
         db.openHelper.readableDatabase.query("SELECT COUNT(*) FROM $table").use { it.moveToFirst(); it.getInt(0) }
+}
+
+/** The default column titles, as on a fresh install. */
+internal object DefaultImportColumns : ImportColumnsRepository {
+    override fun observeColumns() = flowOf(ImportColumns.DEFAULT)
+    override suspend fun setTitles(column: ImportColumn, titles: List<String>) = Unit
+    override suspend fun reset(kind: ImportKind) = Unit
 }

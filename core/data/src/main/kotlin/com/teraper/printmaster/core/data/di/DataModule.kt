@@ -15,6 +15,8 @@ import com.teraper.printmaster.core.data.repository.OfflineReportsRepository
 import com.teraper.printmaster.core.data.repository.OfflineOrdersRepository
 import com.teraper.printmaster.core.data.repository.OrdersRepository
 import com.teraper.printmaster.core.data.repository.LanguageRepository
+import com.teraper.printmaster.core.data.repository.ImportColumnsRepository
+import com.teraper.printmaster.core.data.repository.PrefsImportColumnsRepository
 import com.teraper.printmaster.core.data.repository.OfflineBackupRepository
 import com.teraper.printmaster.core.data.repository.OfflineCallRecordingsRepository
 import com.teraper.printmaster.core.data.repository.OfflineCatalogRepository
@@ -84,6 +86,9 @@ internal abstract class DataModule {
 
     @Binds
     abstract fun bindLanguageRepository(impl: AndroidLanguageRepository): LanguageRepository
+
+    @Binds
+    abstract fun bindImportColumnsRepository(impl: PrefsImportColumnsRepository): ImportColumnsRepository
 
     @Binds
     abstract fun bindCallRecordingsRepository(impl: OfflineCallRecordingsRepository): CallRecordingsRepository

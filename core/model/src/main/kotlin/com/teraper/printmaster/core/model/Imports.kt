@@ -53,7 +53,8 @@ data class ImportPreview(
 sealed interface ImportPreviewResult {
     data class Ready(val preview: ImportPreview) : ImportPreviewResult
     data object NotExcel : ImportPreviewResult
-    data object UnknownLayout : ImportPreviewResult
+    /** [missing]: when the file looks like one of the two, the needed columns it lacks. */
+    data class UnknownLayout(val missing: MissingColumns? = null) : ImportPreviewResult
     data object NoCompany : ImportPreviewResult
 }
 

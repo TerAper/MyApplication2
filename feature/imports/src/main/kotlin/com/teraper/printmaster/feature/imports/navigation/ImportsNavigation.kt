@@ -24,12 +24,13 @@ fun NavController.navigateToReviewPayments() = navigate(ReviewPaymentsDestinatio
 fun NavController.navigateToImportHistory() = navigate(ImportHistoryDestination)
 
 /** Import, review and history; the app puts them inside the Payments tab. */
-fun NavGraphBuilder.importScreens(navController: NavController) {
+fun NavGraphBuilder.importScreens(navController: NavController, onOpenColumns: () -> Unit = {}) {
     composable<ImportDestination> {
         ImportRoute(
             onBack = navController::popBackStack,
             onReviewPayments = navController::navigateToReviewPayments,
             onOpenHistory = navController::navigateToImportHistory,
+            onOpenColumns = onOpenColumns,
         )
     }
     composable<ReviewPaymentsDestination> {

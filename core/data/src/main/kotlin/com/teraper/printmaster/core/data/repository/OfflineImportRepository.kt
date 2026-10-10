@@ -64,6 +64,7 @@ internal class OfflineImportRepository @Inject constructor(
     private val companies: CompaniesRepository,
     private val clock: Clock,
     private val analytics: AppAnalytics,
+    private val columnsRepository: ImportColumnsRepository,
 ) : ImportRepository {
 
     /** The file shown in the last preview, waiting for "Import". */
@@ -83,7 +84,8 @@ internal class OfflineImportRepository @Inject constructor(
 
     /** [preview] after reading the file; separate so tests can give rows directly. */
     internal suspend fun previewRows(rows: List<List<String?>>, fileName: String): ImportPreviewResult {
-        val file = ImportFiles.parse(rows) ?: return ImportPreviewResult.UnknownLayout
+        val columns = columnsRepository.observeColumns().first()
+        val file = ImportFiles.parse(rows, columns) ?: return ImportPreviewResult.UnknownLayout(ImportFiles.missingColumns(rows, columns))
         val company = companies.observeActiveCompany().first() ?: return ImportPreviewResult.NoCompany
         val all = companies.observeCompanies().first()
         val preview = when (file) {

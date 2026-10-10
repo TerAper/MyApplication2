@@ -46,12 +46,14 @@ import com.teraper.printmaster.core.designsystem.component.PmPrimaryButton
 import com.teraper.printmaster.core.designsystem.component.PmSecondaryButton
 import com.teraper.printmaster.core.designsystem.component.PmTopBar
 import com.teraper.printmaster.core.designsystem.component.formatShort
+import com.teraper.printmaster.core.designsystem.component.label
 import com.teraper.printmaster.core.designsystem.icon.PmIcons
 import com.teraper.printmaster.core.designsystem.theme.PmTheme
 import com.teraper.printmaster.core.model.Company
 import com.teraper.printmaster.core.model.CompanyCheck
 import com.teraper.printmaster.core.model.ImportKind
 import com.teraper.printmaster.core.model.ImportPreview
+import com.teraper.printmaster.core.model.MissingColumns
 import com.teraper.printmaster.core.model.Money
 import com.teraper.printmaster.feature.imports.R
 import java.time.LocalDate
@@ -68,6 +70,7 @@ internal fun ImportRoute(
     onBack: () -> Unit,
     onReviewPayments: () -> Unit,
     onOpenHistory: () -> Unit,
+    onOpenColumns: () -> Unit,
     viewModel: ImportViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -87,6 +90,7 @@ internal fun ImportRoute(
             onStartOver = viewModel::onStartOver,
             onReviewPayments = onReviewPayments,
             onOpenHistory = onOpenHistory,
+            onOpenColumns = onOpenColumns,
         ),
     )
 }
@@ -101,6 +105,7 @@ internal data class ImportActions(
     val onStartOver: () -> Unit = {},
     val onReviewPayments: () -> Unit = {},
     val onOpenHistory: () -> Unit = {},
+    val onOpenColumns: () -> Unit = {},
 )
 
 @Composable
@@ -125,7 +130,9 @@ internal fun ImportScreen(state: ImportUiState, actions: ImportActions, modifier
                 ImportUiState.Reading -> Busy(stringResource(R.string.feature_imports_reading))
                 is ImportUiState.Previewing -> PreviewContent(state, actions)
                 is ImportUiState.Done -> DoneContent(state, actions)
-                is ImportUiState.Failed -> {
+                is ImportUiState.Failed -> if (state.missing != null) {
+                    MissingColumnsContent(state.missing, actions)
+                } else {
                     PmEmptyState(
                         icon = PmIcons.Warning,
                         title = stringResource(R.string.feature_imports_failed_title),
@@ -154,6 +161,29 @@ internal fun ImportScreen(state: ImportUiState, actions: ImportActions, modifier
             destructive = true,
         )
     }
+}
+
+/** The file looks like an invoice export or a bank statement, but needed columns weren't found. */
+@Composable
+private fun MissingColumnsContent(missing: MissingColumns, actions: ImportActions) {
+    PmEmptyState(
+        icon = PmIcons.Warning,
+        title = stringResource(R.string.feature_imports_failed_title),
+        message = stringResource(
+            if (missing.kind == ImportKind.INVOICES) R.string.feature_imports_missing_invoices else R.string.feature_imports_missing_bank,
+        ),
+    )
+    PmCard(Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Text(stringResource(R.string.feature_imports_missing_list), style = MaterialTheme.typography.titleSmall)
+            missing.missing.forEach { column ->
+                Text("• " + column.label(), style = MaterialTheme.typography.bodyMedium)
+            }
+            Text(stringResource(R.string.feature_imports_missing_hint), style = MaterialTheme.typography.bodySmall, color = PmTheme.colors.inkMuted)
+        }
+    }
+    PmPrimaryButton(stringResource(R.string.feature_imports_open_columns), actions.onOpenColumns, Modifier.fillMaxWidth(), icon = PmIcons.Settings)
+    PmSecondaryButton(stringResource(R.string.feature_imports_pick_other), actions.onPickFile, Modifier.fillMaxWidth(), icon = PmIcons.ImportExcel)
 }
 
 @Composable
