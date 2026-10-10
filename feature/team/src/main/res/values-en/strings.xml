@@ -49,4 +49,10 @@
     <string name="feature_team_error_code_short">The code has 8 letters and digits</string>
     <string name="feature_team_error_wrong_code">No company has this code. Check it, or ask for a new one.</string>
     <string name="feature_team_error_join">Couldn\'t join. Check the internet and try again.</string>
+    <string name="feature_team_start_title">PrintMaster</string>
+    <string name="feature_team_start_message">Sign in with your Google account to start. You need internet only this once; then the app works offline.</string>
+    <string name="feature_team_start_backup">Backups go to your own Google Drive, so a lost phone doesn\'t lose your data.</string>
+    <string name="feature_team_start_share">Attach masters who use PrintMaster too, and give them orders.</string>
+    <string name="feature_team_start_private">Clients, debts and payments stay on your phone. Masters see only the orders you give them.</string>
+    <string name="feature_team_start_skip_test">Skip (test build on emulator)</string>
 </resources>

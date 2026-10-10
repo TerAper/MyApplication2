@@ -3,7 +3,6 @@ package com.teraper.printmaster.ui
 import android.Manifest
 import android.content.pm.PackageManager
 import android.os.Build
-import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
@@ -38,7 +37,7 @@ import com.teraper.printmaster.core.designsystem.theme.PmTheme
 import com.teraper.printmaster.core.model.AccountMode
 import com.teraper.printmaster.feature.account.navigation.navigateToCompanies
 import com.teraper.printmaster.feature.account.onboarding.OnboardingRoute
-import com.teraper.printmaster.feature.team.join.JoinCompanyRoute
+import com.teraper.printmaster.feature.team.signin.SignInRoute
 import com.teraper.printmaster.navigation.PrintMasterNavHost
 import com.teraper.printmaster.navigation.TopLevelDestination
 import com.teraper.printmaster.navigation.currentTab
@@ -50,11 +49,8 @@ fun PrintMasterApp(viewModel: AppViewModel = hiltViewModel()) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     when (val current = state) {
         AppUiState.Loading -> Box(Modifier.fillMaxSize().background(PmTheme.colors.background))
-        AppUiState.NeedsRegistration -> {
-            var joining by rememberSaveable { mutableStateOf(false) }
-            BackHandler(enabled = joining) { joining = false }
-            if (joining) JoinCompanyRoute(onBack = { joining = false }) else OnboardingRoute(onJoinCompany = { joining = true })
-        }
+        is AppUiState.NeedsSignIn -> SignInRoute(onSkip = if (current.canSkipForTest) viewModel::onSkipSignInForTest else null)
+        AppUiState.NeedsRegistration -> OnboardingRoute()
         is AppUiState.Ready -> MainApp(current, onCompanySelected = viewModel::onCompanySelected)
     }
 }

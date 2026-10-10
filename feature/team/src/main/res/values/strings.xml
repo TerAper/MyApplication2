@@ -49,4 +49,10 @@
     <string name="feature_team_error_code_short">Կոդն ունի 8 տառ և թիվ</string>
     <string name="feature_team_error_wrong_code">Այս կոդով ընկերություն չկա։ Ստուգեք կամ խնդրեք նորը։</string>
     <string name="feature_team_error_join">Չհաջողվեց միանալ։ Ստուգեք ինտերնետը և փորձեք նորից։</string>
+    <string name="feature_team_start_title">PrintMaster</string>
+    <string name="feature_team_start_message">Սկսելու համար մուտք գործեք Ձեր Google հաշվով։ Ինտերնետ պետք է միայն այս անգամ, հետո հավելվածն աշխատում է առանց ինտերնետի։</string>
+    <string name="feature_team_start_backup">Պահուստային պատճենները պահվում են Ձեր Google Drive-ում, և հեռախոսը կորցնելիս տվյալները չեն կորչի։</string>
+    <string name="feature_team_start_share">Կցեք վարպետներ, ովքեր նույնպես օգտվում են PrintMaster-ից, և տվեք նրանց պատվերներ։</string>
+    <string name="feature_team_start_private">Հաճախորդները, պարտքերն ու վճարումները մնում են Ձեր հեռախոսում։ Վարպետները տեսնում են միայն իրենց տրված պատվերները։</string>
+    <string name="feature_team_start_skip_test">Բաց թողնել (փորձնական տարբերակ էմուլյատորում)</string>
 </resources>

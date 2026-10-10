@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="feature_account_welcome">Welcome to PrintMaster</string>
-    <string name="feature_account_welcome_message">Who will use the app? You choose this once.</string>
+    <string name="feature_account_welcome_message">Add your company. You can add more companies later, do the work yourself, or attach masters who use PrintMaster too.</string>
     <string name="feature_account_mode_master">Master</string>
     <string name="feature_account_mode_master_message">I work through one or more companies.</string>
     <string name="feature_account_mode_company">Company</string>
@@ -14,7 +14,7 @@
     <string name="feature_account_your_name">Your name</string>
     <string name="feature_account_error_your_name">Enter your name</string>
     <string name="feature_account_first_company">FIRST COMPANY</string>
-    <string name="feature_account_first_company_message">This will be the default one. Add other companies later in More.</string>
+    <string name="feature_account_first_company_message">It will be the main one. Add other companies later in More.</string>
     <string name="feature_account_your_company">COMPANY</string>
     <string name="feature_account_start">Start</string>
     <string name="feature_account_company_name">Company name</string>
@@ -53,4 +53,5 @@
     <string name="feature_account_master_phone">Phone</string>
     <string name="feature_account_mode_joined">I work for a company</string>
     <string name="feature_account_mode_joined_message">My company uses PrintMaster and gave me a code. I see the orders it gives me.</string>
+    <string name="feature_account_signed_in_as">Signed in as %1$s</string>
 </resources>

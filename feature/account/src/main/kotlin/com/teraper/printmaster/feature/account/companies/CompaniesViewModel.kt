@@ -3,7 +3,6 @@ package com.teraper.printmaster.feature.account.companies
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.teraper.printmaster.core.data.repository.CompaniesRepository
-import com.teraper.printmaster.core.model.AccountMode
 import com.teraper.printmaster.core.model.Company
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.SharingStarted
@@ -36,7 +35,7 @@ class CompaniesViewModel @Inject constructor(
             companies = companies,
             defaultCompanyId = profile?.defaultCompanyId ?: 0,
             activeCompanyId = active?.id ?: 0,
-            canAdd = profile?.mode == AccountMode.MASTER,
+            canAdd = profile?.mode?.isOwner == true,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), CompaniesUiState())
 }

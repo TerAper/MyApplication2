@@ -6,6 +6,8 @@ data class TeamState(
     val available: Boolean = false,
     /** Signed-in Google account, or null. */
     val email: String? = null,
+    /** The Google account's name, to suggest as the user's name. */
+    val displayName: String? = null,
     val space: TeamSpace? = null,
     /** Owner only: masters who joined. */
     val members: List<TeamMember> = emptyList(),

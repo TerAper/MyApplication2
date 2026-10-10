@@ -76,28 +76,21 @@ internal fun MoreRoute(actions: MoreActions, modifier: Modifier = Modifier, view
 internal fun MoreScreen(state: MoreUiState, actions: MoreActions, modifier: Modifier = Modifier) {
     val onOpenCatalog = actions.onOpenCatalog
     val account = when (state.mode) {
-        AccountMode.MASTER -> listOf(
+        // A joined master's company is managed by the company: only the sharing screen (account, sign out).
+        AccountMode.JOINED -> listOf(
+            MoreItem(PmIcons.Share, R.string.feature_more_team, R.string.feature_more_team_sub, actions.onOpenTeam, subtitleText = state.defaultCompany?.name),
+        )
+        null -> emptyList()
+        // Everyone else owns companies: add more, attach masters, keep masters without the app.
+        else -> listOf(
             MoreItem(PmIcons.Share, R.string.feature_more_team, R.string.feature_more_team_sub, actions.onOpenTeam),
             MoreItem(
                 PmIcons.Company, R.string.feature_more_companies, R.string.feature_more_companies_sub, actions.onOpenCompanies,
                 subtitleText = pluralStringResource(R.plurals.feature_more_company_count, state.companies.size, state.companies.size) +
                     (state.defaultCompany?.let { " · " + stringResource(R.string.feature_more_default_company, it.name) } ?: ""),
             ),
-        )
-        AccountMode.COMPANY -> listOf(
-            MoreItem(PmIcons.Share, R.string.feature_more_team, R.string.feature_more_team_sub, actions.onOpenTeam),
-            MoreItem(
-                PmIcons.Company, R.string.feature_more_company, R.string.feature_more_company_sub,
-                { state.defaultCompany?.let { actions.onOpenCompany(it.id) } },
-                subtitleText = state.defaultCompany?.name,
-            ),
             MoreItem(PmIcons.Master, R.string.feature_more_masters, R.string.feature_more_masters_sub, actions.onOpenMasters),
         )
-        // A joined master's company is managed by the company: only the sharing screen (account, sign out).
-        AccountMode.JOINED -> listOf(
-            MoreItem(PmIcons.Share, R.string.feature_more_team, R.string.feature_more_team_sub, actions.onOpenTeam, subtitleText = state.defaultCompany?.name),
-        )
-        null -> emptyList()
     }
     val sections = listOfNotNull(
         account.takeIf { it.isNotEmpty() }?.let { MoreSection(R.string.feature_more_section_account, it) },

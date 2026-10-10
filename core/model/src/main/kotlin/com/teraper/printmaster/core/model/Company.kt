@@ -2,16 +2,26 @@ package com.teraper.printmaster.core.model
 
 import java.util.Locale
 
-/** Chosen once, on first launch. */
+/**
+ * Kind of registration. Everyone registers as [OWNER] now: one or more own companies, doing the
+ * work themselves or attaching masters. [MASTER] and [COMPANY] are older registrations, treated
+ * the same as [OWNER].
+ */
 enum class AccountMode {
-    /** One master who works through one or more companies. */
+    /** Older: one master who works through one or more companies. */
     MASTER,
 
-    /** One company with one or more masters. */
+    /** Older: one company with one or more masters. */
     COMPANY,
 
     /** A master who joined a company's shared space: sees and finishes the orders it sends. */
     JOINED,
+
+    OWNER,
+    ;
+
+    /** Has own companies with money (everyone except an older joined-only master). */
+    val isOwner: Boolean get() = this != JOINED
 }
 
 /** Who uses the app; null in the repository until registration is done. */

@@ -6,6 +6,7 @@ import com.teraper.printmaster.core.model.Company
 import com.teraper.printmaster.core.model.CompanyDraft
 import com.teraper.printmaster.core.model.CompanyDraftError
 import com.teraper.printmaster.core.testing.FakeCompaniesRepository
+import com.teraper.printmaster.core.testing.FakeTeamRepository
 import com.teraper.printmaster.core.testing.MainDispatcherRule
 import com.teraper.printmaster.feature.account.companies.CompanyEditDialog
 import com.teraper.printmaster.feature.account.companies.CompanyEditEvent
@@ -30,34 +31,27 @@ class AccountViewModelsTest {
     @get:Rule val mainRule = MainDispatcherRule()
 
     @Test
-    fun masterRegistrationNeedsNameAndCompany() = runTest {
+    fun registrationSuggestsTheGoogleNameAndNeedsNameAndCompany() = runTest {
         val repo = FakeCompaniesRepository(registered = false)
-        val vm = OnboardingViewModel(repo)
-        vm.onModeSelected(AccountMode.MASTER)
-        vm.onRegister()
+        val team = FakeTeamRepository().apply { signIn("token") }
+        val vm = OnboardingViewModel(repo, team)
+        assertEquals("Armen Petrosyan", vm.uiState.value.ownerName)
+        assertEquals("me@gmail.com", vm.uiState.value.email)
 
+        vm.onOwnerNameChange(" ")
+        vm.onRegister()
         assertTrue(vm.uiState.value.ownerNameMissing)
         assertEquals(setOf(CompanyDraftError.NAME_REQUIRED), vm.uiState.value.errors)
         assertTrue(repo.registrations.isEmpty())
 
-        vm.onOwnerNameChange("Aram")
-        vm.onCompanyChange(CompanyDraft(name = "Alfa", colorIndex = 2))
+        vm.onOwnerNameChange("Armen")
+        vm.onCompanyChange(CompanyDraft(name = "Delta", colorIndex = 2))
         assertFalse(vm.uiState.value.ownerNameMissing)
         assertTrue(vm.uiState.value.errors.isEmpty())
         vm.onRegister()
 
-        assertEquals(AccountMode.MASTER, repo.registrations.single().first)
-        assertEquals("Aram", repo.profile.value!!.ownerName)
-    }
-
-    @Test
-    fun companyRegistrationDoesNotAskForOwnerName() = runTest {
-        val repo = FakeCompaniesRepository(registered = false)
-        val vm = OnboardingViewModel(repo)
-        vm.onModeSelected(AccountMode.COMPANY)
-        vm.onCompanyChange(CompanyDraft(name = "Service"))
-        vm.onRegister()
-        assertEquals(AccountMode.COMPANY, repo.profile.value!!.mode)
+        assertEquals(AccountMode.OWNER, repo.registrations.single().first)
+        assertEquals("Armen", repo.profile.value!!.ownerName)
     }
 
     @Test

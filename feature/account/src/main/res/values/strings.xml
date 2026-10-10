@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <string name="feature_account_welcome">Բարի գալուստ PrintMaster</string>
-    <string name="feature_account_welcome_message">Ո՞վ է օգտագործելու հավելվածը։ Սա ընտրվում է մեկ անգամ։</string>
+    <string name="feature_account_welcome_message">Ավելացրեք Ձեր ընկերությունը։ Հետո կարող եք ավելացնել այլ ընկերություններ, աշխատանքը կատարել ինքներդ կամ կցել վարպետներ, որոնք նույնպես օգտվում են PrintMaster-ից։</string>
     <string name="feature_account_mode_master">Վարպետ</string>
     <string name="feature_account_mode_master_message">Ես աշխատում եմ մեկ կամ մի քանի ընկերության միջոցով։</string>
     <string name="feature_account_mode_company">Ընկերություն</string>
@@ -53,4 +53,5 @@
     <string name="feature_account_master_phone">Հեռախոս</string>
     <string name="feature_account_mode_joined">Աշխատում եմ ընկերությունում</string>
     <string name="feature_account_mode_joined_message">Իմ ընկերությունն օգտագործում է PrintMaster և տվել է ինձ կոդ։ Տեսնում եմ ինձ տրված պատվերները։</string>
+    <string name="feature_account_signed_in_as">Մուտք եք գործել՝ %1$s</string>
 </resources>

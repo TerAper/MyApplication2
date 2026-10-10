@@ -56,7 +56,10 @@ internal class FirebaseTeamRepository @Inject constructor(
 
     private val prefs = context.getSharedPreferences("team", Context.MODE_PRIVATE)
     private val space = MutableStateFlow(loadSpace())
-    private val email = MutableStateFlow(if (available) FirebaseAuth.getInstance().currentUser?.email else null)
+    private val account = MutableStateFlow(currentAccount())
+
+    private fun currentAccount(): Pair<String, String?>? =
+        if (available) FirebaseAuth.getInstance().currentUser?.let { user -> user.email.orEmpty() to user.displayName } else null
 
     val currentSpace: TeamSpace? get() = space.value
     val spaceFlow: kotlinx.coroutines.flow.StateFlow<TeamSpace?> get() = space
@@ -70,10 +73,11 @@ internal class FirebaseTeamRepository @Inject constructor(
     override fun observeState(): Flow<TeamState> {
         if (!available) return flowOf(TeamState(available = false))
         val members = space.flatMapLatest { s -> if (s?.isOwner == true) membersOf(s.id) else flowOf(emptyList()) }
-        return combine(email, space, members, companyDao.observeMasters()) { email, space, members, masters ->
+        return combine(account, space, members, companyDao.observeMasters()) { account, space, members, masters ->
             TeamState(
                 available = true,
-                email = email,
+                email = account?.first,
+                displayName = account?.second,
                 space = space,
                 members = members.map { m -> m.copy(masterId = masters.firstOrNull { it.memberUid == m.uid }?.id) },
             )
@@ -90,14 +94,14 @@ internal class FirebaseTeamRepository @Inject constructor(
 
     override suspend fun signIn(idToken: String): Boolean = attempt {
         FirebaseAuth.getInstance().signInWithCredential(GoogleAuthProvider.getCredential(idToken, null)).await()
-        email.value = FirebaseAuth.getInstance().currentUser?.email
+        account.value = currentAccount()
         analytics.log("sign_in")
     }
 
     override suspend fun signOut() {
         if (!available) return
         FirebaseAuth.getInstance().signOut()
-        email.value = null
+        account.value = null
     }
 
     override suspend fun createSpace(): Boolean = attempt {

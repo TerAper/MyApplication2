@@ -29,7 +29,7 @@ class FakeTeamRepository(
 
     override suspend fun signIn(idToken: String): Boolean {
         if (!signInWorks) return false
-        state.value = state.value.copy(email = "me@gmail.com")
+        state.value = state.value.copy(email = "me@gmail.com", displayName = "Armen Petrosyan")
         return true
     }
 
