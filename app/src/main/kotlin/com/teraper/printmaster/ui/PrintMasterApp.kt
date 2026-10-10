@@ -18,6 +18,7 @@ import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -32,6 +33,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.teraper.printmaster.core.designsystem.component.LocalShowMoney
 import com.teraper.printmaster.core.designsystem.theme.PmTheme
 import com.teraper.printmaster.core.model.AccountMode
 import com.teraper.printmaster.feature.account.navigation.navigateToCompanies
@@ -70,7 +72,11 @@ private fun MainApp(
     // A master who joined a company is told about new orders: ask once for notifications.
     if (state.mode == AccountMode.JOINED) AskForNotifications()
     val fullScreen = currentDestination.isFullScreen()
+    val showMoney = state.mode != AccountMode.JOINED
+    // A joined master has no money to manage: no Payments tab.
+    val tabs = TopLevelDestination.entries.filter { showMoney || it != TopLevelDestination.PAYMENTS }
 
+    CompositionLocalProvider(LocalShowMoney provides showMoney) {
     Scaffold(
         containerColor = PmTheme.colors.background,
         topBar = {
@@ -82,6 +88,7 @@ private fun MainApp(
         bottomBar = {
             if (!fullScreen) {
                 PrintMasterBottomBar(
+                    tabs = tabs,
                     currentTab = backStack.currentTab(),
                     onTabSelected = { navController.navigateToTab(it) },
                 )
@@ -89,6 +96,7 @@ private fun MainApp(
         },
     ) { padding ->
         PrintMasterNavHost(navController = navController, modifier = Modifier.padding(padding))
+    }
     }
 
     if (showSwitch) {
@@ -111,11 +119,12 @@ private fun MainApp(
 
 @Composable
 private fun PrintMasterBottomBar(
+    tabs: List<TopLevelDestination>,
     currentTab: TopLevelDestination?,
     onTabSelected: (TopLevelDestination) -> Unit,
 ) {
     NavigationBar(containerColor = PmTheme.colors.surface) {
-        TopLevelDestination.entries.forEach { tab ->
+        tabs.forEach { tab ->
             val selected = tab == currentTab
             NavigationBarItem(
                 selected = selected,

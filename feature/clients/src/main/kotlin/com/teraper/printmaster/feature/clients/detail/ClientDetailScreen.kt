@@ -34,6 +34,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.teraper.printmaster.core.designsystem.component.AmountText
 import com.teraper.printmaster.core.designsystem.component.AmountTone
+import com.teraper.printmaster.core.designsystem.component.LocalShowMoney
 import com.teraper.printmaster.core.designsystem.component.PmCard
 import com.teraper.printmaster.core.designsystem.component.PmConfirmDialog
 import com.teraper.printmaster.core.designsystem.component.PmEmptyState
@@ -225,6 +226,7 @@ private fun ClientDetailContent(
     onNewOrder: () -> Unit,
     onOrderClick: (Long) -> Unit,
 ) {
+    val showMoney = LocalShowMoney.current
     val summary = state.summary
     val client = summary.client
     Column(
@@ -262,22 +264,25 @@ private fun ClientDetailContent(
                     enabled = true,
                     onClick = onNewOrder,
                 )
-                QuickAction(
-                    icon = PmIcons.Payments,
-                    label = stringResource(R.string.feature_clients_action_cash),
-                    enabled = true,
-                    onClick = onRecordPayment,
-                )
+                if (showMoney) {
+                    QuickAction(
+                        icon = PmIcons.Payments,
+                        label = stringResource(R.string.feature_clients_action_cash),
+                        enabled = true,
+                        onClick = onRecordPayment,
+                    )
+                }
             }
-            BalanceBanner(summary.balance)
+            if (showMoney) BalanceBanner(summary.balance)
         }
 
+        val tabs = ClientTab.entries.filter { showMoney || it != ClientTab.FINANCE }
         SecondaryTabRow(
-            selectedTabIndex = state.tab.ordinal,
+            selectedTabIndex = tabs.indexOf(state.tab).coerceAtLeast(0),
             containerColor = PmTheme.colors.surface,
             contentColor = PmTheme.colors.primary,
         ) {
-            ClientTab.entries.forEach { tab ->
+            tabs.forEach { tab ->
                 Tab(
                     selected = tab == state.tab,
                     onClick = { onTabSelected(tab) },

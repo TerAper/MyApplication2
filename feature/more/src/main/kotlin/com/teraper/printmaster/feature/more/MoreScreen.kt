@@ -92,8 +92,11 @@ internal fun MoreScreen(state: MoreUiState, actions: MoreActions, modifier: Modi
             ),
             MoreItem(PmIcons.Master, R.string.feature_more_masters, R.string.feature_more_masters_sub, actions.onOpenMasters),
         )
-        // A joined master's company is managed by the company itself.
-        AccountMode.JOINED, null -> emptyList()
+        // A joined master's company is managed by the company: only the sharing screen (account, sign out).
+        AccountMode.JOINED -> listOf(
+            MoreItem(PmIcons.Share, R.string.feature_more_team, R.string.feature_more_team_sub, actions.onOpenTeam, subtitleText = state.defaultCompany?.name),
+        )
+        null -> emptyList()
     }
     val sections = listOfNotNull(
         account.takeIf { it.isNotEmpty() }?.let { MoreSection(R.string.feature_more_section_account, it) },
@@ -105,7 +108,8 @@ internal fun MoreScreen(state: MoreUiState, actions: MoreActions, modifier: Modi
                 MoreItem(PmIcons.Recording, R.string.feature_more_calls, R.string.feature_more_calls_sub, actions.onOpenCalls),
             ),
         ),
-        MoreSection(
+        // Money, imports and backups are the company's; a joined master's phone holds a copy.
+        if (state.mode == AccountMode.JOINED) null else MoreSection(
             R.string.feature_more_section_money,
             listOf(
                 MoreItem(PmIcons.Reports, R.string.feature_more_reports, R.string.feature_more_reports_sub, actions.onOpenReports),
@@ -115,8 +119,8 @@ internal fun MoreScreen(state: MoreUiState, actions: MoreActions, modifier: Modi
         ),
         MoreSection(
             R.string.feature_more_section_data,
-            listOf(
-                MoreItem(
+            listOfNotNull(
+                if (state.mode == AccountMode.JOINED) null else MoreItem(
                     PmIcons.Backup, R.string.feature_more_backup, R.string.feature_more_backup_sub, actions.onOpenBackup,
                     subtitleText = state.lastBackup?.let { stringResource(R.string.feature_more_backup_last, it.formatShort()) }
                         ?: stringResource(R.string.feature_more_backup_never),

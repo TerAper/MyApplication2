@@ -33,6 +33,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.teraper.printmaster.core.designsystem.component.AmountText
 import com.teraper.printmaster.core.designsystem.component.AmountTone
+import com.teraper.printmaster.core.designsystem.component.LocalShowMoney
 import com.teraper.printmaster.core.designsystem.component.PmEmptyState
 import com.teraper.printmaster.core.designsystem.component.PmFilterChip
 import com.teraper.printmaster.core.designsystem.component.PmScreenTitle
@@ -135,7 +136,8 @@ private fun FilterRow(selected: ClientFilter, totalCount: Int, onSelect: (Client
         modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
     ) {
-        ClientFilter.entries.forEach { filter ->
+        val showMoney = LocalShowMoney.current
+        ClientFilter.entries.filter { showMoney || it != ClientFilter.IN_DEBT }.forEach { filter ->
             val label = when (filter) {
                 ClientFilter.ALL -> stringResource(R.string.feature_clients_filter_all, totalCount)
                 ClientFilter.FIRMS -> stringResource(R.string.feature_clients_filter_firms)
@@ -175,7 +177,7 @@ private fun ClientRow(summary: ClientSummary, onClick: () -> Unit) {
                 overflow = TextOverflow.Ellipsis,
             )
         }
-        BalanceAmount(summary.balance)
+        if (LocalShowMoney.current) BalanceAmount(summary.balance)
     }
 }
 

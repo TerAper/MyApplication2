@@ -25,6 +25,7 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.teraper.printmaster.core.designsystem.component.AmountText
 import com.teraper.printmaster.core.designsystem.component.AmountTone
+import com.teraper.printmaster.core.designsystem.component.LocalShowMoney
 import com.teraper.printmaster.core.designsystem.component.PmCard
 import com.teraper.printmaster.core.designsystem.component.PmOrderCard
 import com.teraper.printmaster.core.designsystem.component.PmPrimaryButton
@@ -57,6 +58,7 @@ internal fun TodayRoute(actions: TodayActions, viewModel: TodayViewModel = hiltV
 
 @Composable
 internal fun TodayScreen(state: TodayUiState, actions: TodayActions, modifier: Modifier = Modifier) {
+    val showMoney = LocalShowMoney.current
     LazyColumn(
         modifier.fillMaxSize().background(PmTheme.colors.background),
         contentPadding = PaddingValues(bottom = 24.dp),
@@ -73,12 +75,12 @@ internal fun TodayScreen(state: TodayUiState, actions: TodayActions, modifier: M
         }
         if (state.isLoading) return@LazyColumn
 
-        item { MoneyCard(state, actions, Modifier.padding(horizontal = 16.dp)) }
+        if (showMoney) item { MoneyCard(state, actions, Modifier.padding(horizontal = 16.dp)) }
 
         item {
             Row(Modifier.padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 PmPrimaryButton(stringResource(R.string.feature_today_new_order), actions.onNewOrder, Modifier.weight(1f), icon = PmIcons.Add)
-                PmSecondaryButton(stringResource(R.string.feature_today_cash), actions.onCashPayment, Modifier.weight(1f), icon = PmIcons.Payments)
+                if (showMoney) PmSecondaryButton(stringResource(R.string.feature_today_cash), actions.onCashPayment, Modifier.weight(1f), icon = PmIcons.Payments)
             }
         }
 
