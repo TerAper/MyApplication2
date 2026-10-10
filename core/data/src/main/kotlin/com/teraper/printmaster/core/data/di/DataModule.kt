@@ -34,6 +34,8 @@ import com.teraper.printmaster.core.data.sync.FirebaseSyncBackend
 import com.teraper.printmaster.core.data.sync.SyncBackend
 import com.teraper.printmaster.core.data.team.FirebaseTeamRepository
 import com.teraper.printmaster.core.data.team.TeamRepository
+import com.teraper.printmaster.core.data.repository.OfflinePhotoRepository
+import com.teraper.printmaster.core.data.repository.PhotoRepository
 import dagger.Binds
 import dagger.Module
 import dagger.Provides
@@ -98,6 +100,9 @@ internal abstract class DataModule {
 
     @Binds
     abstract fun bindSyncController(impl: com.teraper.printmaster.core.data.sync.SyncRunner): com.teraper.printmaster.core.data.sync.SyncController
+
+    @Binds
+    abstract fun bindPhotoRepository(impl: OfflinePhotoRepository): PhotoRepository
 
     companion object {
         @Provides

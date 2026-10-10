@@ -121,6 +121,8 @@ data class ClientPrinterEntity(
     /** Where the printer stands, e.g. "Accounting room". */
     val location: String = "",
     val note: String = "",
+    /** Same printer on every phone of the company; a client can have two of one model. */
+    @ColumnInfo(name = "sync_id") val syncId: String? = null,
 )
 
 /** A cartridge attached to one of the client's printers. */

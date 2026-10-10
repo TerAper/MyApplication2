@@ -17,8 +17,11 @@ data class RepairLine(
 
 /** What was worked on: a client's printer, or one of its cartridges. */
 data class RepairDevice(val printer: ClientPrinter, val cartridge: ClientPrinterCartridge? = null) {
-    /** "CF283A · HP LaserJet M125" or "HP LaserJet M125". */
-    val name: String get() = cartridge?.let { "${it.cartridge.name} · ${printer.model.fullName}" } ?: printer.model.fullName
+    /** "CF283A · HP LaserJet M125", or "… (Office)" so two printers of one model read differently. */
+    val name: String get() {
+        val model = printer.model.fullName + if (printer.location.isBlank()) "" else " (${printer.location})"
+        return cartridge?.let { "${it.cartridge.name} · $model" } ?: model
+    }
 }
 
 /** The work done during a visit on one device ([device] null = not a listed device). */

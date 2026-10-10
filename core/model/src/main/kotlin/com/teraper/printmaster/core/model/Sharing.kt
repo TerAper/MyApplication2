@@ -30,6 +30,8 @@ data class SharedPrinter(
     val colorType: ColorType,
     val cartridges: List<String> = emptyList(),
     val location: String = "",
+    /** The client's printer itself: a client can have two of one model. */
+    val id: String = "",
 )
 
 /** An order and, once done, the work and how it was paid. */
@@ -52,7 +54,14 @@ data class SharedOrder(
 )
 
 /** Work on one device: "CF283A · HP M125", or null when no device was chosen. */
-data class SharedRepair(val id: String, val device: String?, val note: String, val lines: List<SharedLine>)
+data class SharedRepair(
+    val id: String,
+    val device: String?,
+    val note: String,
+    val lines: List<SharedLine>,
+    /** Which of the client's printers ([SharedPrinter.id]); [device] says which cartridge. */
+    val printerId: String? = null,
+)
 
 /** A price-list item ([itemId]) or a custom line; prices only, never costs. */
 data class SharedLine(val itemId: String?, val name: String, val priceMinor: Long, val quantity: Int)

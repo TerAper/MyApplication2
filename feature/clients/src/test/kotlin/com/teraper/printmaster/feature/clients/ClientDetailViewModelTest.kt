@@ -1,15 +1,24 @@
 package com.teraper.printmaster.feature.clients
 
 import androidx.lifecycle.SavedStateHandle
+import com.teraper.printmaster.core.model.CallRecording
 import com.teraper.printmaster.core.model.ChargeSource
 import com.teraper.printmaster.core.model.LedgerEntry
 import com.teraper.printmaster.core.model.Money
 import com.teraper.printmaster.core.model.PaymentMethod
+import com.teraper.printmaster.core.model.RecordingClient
+import com.teraper.printmaster.core.testing.FakeCallRecordingsRepository
+import com.teraper.printmaster.core.testing.FakeOrdersRepository
+import com.teraper.printmaster.core.testing.FakePhotoRepository
+import com.teraper.printmaster.core.testing.FakePrintersRepository
 import com.teraper.printmaster.feature.clients.detail.ClientDetailDialog
 import com.teraper.printmaster.feature.clients.detail.ClientDetailEvent
 import com.teraper.printmaster.feature.clients.detail.ClientDetailUiState
 import com.teraper.printmaster.feature.clients.detail.ClientDetailViewModel
 import com.teraper.printmaster.feature.clients.detail.ClientTab
+import java.time.Clock
+import java.time.LocalDate
+import java.time.LocalDateTime
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -18,17 +27,9 @@ import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
-import org.junit.Rule
 import org.junit.Assert.assertTrue
+import org.junit.Rule
 import org.junit.Test
-import com.teraper.printmaster.core.model.CallRecording
-import com.teraper.printmaster.core.model.RecordingClient
-import com.teraper.printmaster.core.testing.FakeCallRecordingsRepository
-import java.time.LocalDateTime
-import com.teraper.printmaster.core.testing.FakeOrdersRepository
-import com.teraper.printmaster.core.testing.FakePrintersRepository
-import java.time.Clock
-import java.time.LocalDate
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ClientDetailViewModelTest {
@@ -43,7 +44,7 @@ class ClientDetailViewModelTest {
     private val invoice = LedgerEntry.Charge(12, day, Money.ofDram(20_000), "", 3, ChargeSource.INVOICE_IMPORT, "0451")
 
     private fun TestScope.vm(id: Long) = ClientDetailViewModel(
-        SavedStateHandle(mapOf("clientId" to id)), repo, payments, FakePrintersRepository(), FakeOrdersRepository(), calls, Clock.systemUTC(),
+        SavedStateHandle(mapOf("clientId" to id)), repo, payments, FakePrintersRepository(), FakeOrdersRepository(), calls, FakePhotoRepository(), Clock.systemUTC(),
     ).also { vm ->
         backgroundScope.launch(UnconfinedTestDispatcher()) { vm.uiState.collect {} }
     }

@@ -19,6 +19,7 @@ import com.teraper.printmaster.core.model.RecordingClient
 import com.teraper.printmaster.core.testing.FakeCallRecordingsRepository
 import com.teraper.printmaster.core.testing.FakeCompaniesRepository
 import com.teraper.printmaster.core.testing.FakeOrdersRepository
+import com.teraper.printmaster.core.testing.FakePhotoRepository
 import com.teraper.printmaster.core.testing.FakeRepairsRepository
 import com.teraper.printmaster.core.testing.MainDispatcherRule
 import com.teraper.printmaster.feature.orders.detail.OrderDetailDialog
@@ -27,6 +28,11 @@ import com.teraper.printmaster.feature.orders.detail.OrderDetailViewModel
 import com.teraper.printmaster.feature.orders.edit.OrderEditEvent
 import com.teraper.printmaster.feature.orders.edit.OrderEditViewModel
 import com.teraper.printmaster.feature.orders.list.OrdersViewModel
+import java.time.Clock
+import java.time.Instant
+import java.time.LocalDate
+import java.time.LocalTime
+import java.time.ZoneOffset
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -43,11 +49,6 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
-import java.time.Clock
-import java.time.Instant
-import java.time.LocalDate
-import java.time.LocalTime
-import java.time.ZoneOffset
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class OrdersViewModelsTest {
@@ -148,7 +149,7 @@ class OrdersViewModelsTest {
     fun detailChangesStatusAsksBeforeCancellingAndBlocksDelete() = runTest {
         val orders = FakeOrdersRepository(listOf(order(1, today, 10)))
         orders.blockedIds = setOf(1)
-        val vm = OrderDetailViewModel(SavedStateHandle(mapOf("orderId" to 1L)), orders, FakeRepairsRepository(), FakeCallRecordingsRepository(), clock)
+        val vm = OrderDetailViewModel(SavedStateHandle(mapOf("orderId" to 1L)), orders, FakeRepairsRepository(), FakeCallRecordingsRepository(), FakePhotoRepository(), clock)
         collect(vm.uiState)
         val loaded = { vm.uiState.value as OrderDetailUiState.Loaded }
 
@@ -173,7 +174,7 @@ class OrdersViewModelsTest {
         fun call(id: Long, day: LocalDate, clientId: Long) =
             CallRecording(id, "u$id", "f$id.m4a", "Firm", day.atTime(9, 0), 1_000, listOf(RecordingClient(clientId, "Firm")))
         val calls = FakeCallRecordingsRepository(listOf(call(1, today, 1), call(2, today.minusDays(1), 1), call(3, today, 2)))
-        val vm = OrderDetailViewModel(SavedStateHandle(mapOf("orderId" to 1L)), orders, FakeRepairsRepository(), calls, clock)
+        val vm = OrderDetailViewModel(SavedStateHandle(mapOf("orderId" to 1L)), orders, FakeRepairsRepository(), calls, FakePhotoRepository(), clock)
         collect(vm.uiState)
 
         assertEquals(listOf(1L), (vm.uiState.value as OrderDetailUiState.Loaded).calls.map { it.id })

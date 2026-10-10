@@ -160,4 +160,9 @@
     <string name="feature_clients_entry_entered">Մուտքագրվել է՝ %1$s</string>
     <string name="feature_clients_entry_open_order">Բացել պատվերը</string>
     <string name="feature_clients_entry_repair_note">Այս գումարը պատվերի աշխատանքից է։ Փոխելու համար վերաբացեք պատվերը և խմբագրեք աշխատանքը։</string>
+    <string name="feature_clients_photo_add">Ավելացնել լուսանկար</string>
+    <string name="feature_clients_photo_camera">Տեսախցիկ</string>
+    <string name="feature_clients_photo_gallery">Պատկերասրահ</string>
+    <string name="feature_clients_photo_delete">Ջնջել լուսանկարը</string>
+    <string name="feature_clients_photo_close">Փակել</string>
 </resources>

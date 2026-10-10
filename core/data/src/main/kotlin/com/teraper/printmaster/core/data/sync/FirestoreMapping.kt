@@ -25,7 +25,7 @@ internal object FirestoreMapping {
         "printers" to printers.map {
             mapOf(
                 "brand" to it.brand, "model" to it.model, "printType" to it.printType.name, "colorType" to it.colorType.name,
-                "cartridges" to it.cartridges, "location" to it.location,
+                "cartridges" to it.cartridges, "location" to it.location, "id" to it.id,
             )
         },
         "createdByMaster" to createdByMaster,
@@ -47,6 +47,7 @@ internal object FirestoreMapping {
                 colorType = enumOr(it["colorType"], ColorType.MONO),
                 cartridges = (it["cartridges"] as? List<*>).orEmpty().filterIsInstance<String>(),
                 location = it.string("location"),
+                id = it.string("id"),
             )
         },
         createdByMaster = d["createdByMaster"] == true,
@@ -65,7 +66,7 @@ internal object FirestoreMapping {
         "paidCash" to paidCash,
         "work" to work.map { r ->
             mapOf(
-                "id" to r.id, "device" to r.device, "note" to r.note,
+                "id" to r.id, "device" to r.device, "note" to r.note, "printerId" to r.printerId,
                 "lines" to r.lines.map { mapOf("itemId" to it.itemId, "name" to it.name, "priceMinor" to it.priceMinor, "quantity" to it.quantity) },
             )
         },
@@ -89,6 +90,7 @@ internal object FirestoreMapping {
                 device = r["device"] as? String,
                 note = r.string("note"),
                 lines = r.list("lines").map { SharedLine(it["itemId"] as? String, it.string("name"), it.long("priceMinor") ?: 0, (it.long("quantity") ?: 1).toInt()) },
+                printerId = r["printerId"] as? String,
             )
         },
         createdByMaster = d["createdByMaster"] == true,

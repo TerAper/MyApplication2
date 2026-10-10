@@ -89,6 +89,12 @@ interface SyncDao {
     @Query("SELECT id FROM client_printers WHERE client_id = :clientId")
     suspend fun getClientPrinterIds(clientId: Long): List<Long>
 
+    @Query("UPDATE client_printers SET sync_id = :syncId WHERE id = :id")
+    suspend fun setClientPrinterSyncId(id: Long, syncId: String)
+
+    @Query("UPDATE client_printers SET location = :location WHERE id = :id")
+    suspend fun setClientPrinterLocation(id: Long, location: String)
+
     @Query("DELETE FROM client_printers WHERE client_id = :clientId")
     suspend fun deleteClientPrinters(clientId: Long)
 

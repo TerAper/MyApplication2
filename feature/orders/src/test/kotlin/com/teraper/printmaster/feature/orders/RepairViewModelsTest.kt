@@ -15,11 +15,12 @@ import com.teraper.printmaster.core.model.Repair
 import com.teraper.printmaster.core.model.RepairCategory
 import com.teraper.printmaster.core.model.RepairDraftError
 import com.teraper.printmaster.core.model.RepairLine
+import com.teraper.printmaster.core.testing.FakeCallRecordingsRepository
 import com.teraper.printmaster.core.testing.FakeOrdersRepository
+import com.teraper.printmaster.core.testing.FakePhotoRepository
 import com.teraper.printmaster.core.testing.FakePriceListRepository
 import com.teraper.printmaster.core.testing.FakePrintersRepository
 import com.teraper.printmaster.core.testing.FakeRepairsRepository
-import com.teraper.printmaster.core.testing.FakeCallRecordingsRepository
 import com.teraper.printmaster.core.testing.MainDispatcherRule
 import com.teraper.printmaster.feature.orders.detail.OrderDetailDialog
 import com.teraper.printmaster.feature.orders.detail.OrderDetailUiState
@@ -27,6 +28,10 @@ import com.teraper.printmaster.feature.orders.detail.OrderDetailViewModel
 import com.teraper.printmaster.feature.orders.repair.RepairEditDialog
 import com.teraper.printmaster.feature.orders.repair.RepairEditEvent
 import com.teraper.printmaster.feature.orders.repair.RepairEditViewModel
+import java.time.Clock
+import java.time.Instant
+import java.time.LocalDateTime
+import java.time.ZoneOffset
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -38,10 +43,6 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
-import java.time.Clock
-import java.time.Instant
-import java.time.LocalDateTime
-import java.time.ZoneOffset
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class RepairViewModelsTest {
@@ -127,7 +128,7 @@ class RepairViewModelsTest {
     @Test
     fun detailFinishesWithWorkAndAsksBeforeReopening() = runTest {
         repairs.repairs.value = listOf(Repair(3, 1, lines = listOf(RepairLine(1, "Refill", Money.ofDram(3_000), quantity = 2))))
-        val vm = OrderDetailViewModel(SavedStateHandle(mapOf("orderId" to 1L)), orders, repairs, FakeCallRecordingsRepository(), clock)
+        val vm = OrderDetailViewModel(SavedStateHandle(mapOf("orderId" to 1L)), orders, repairs, FakeCallRecordingsRepository(), FakePhotoRepository(), clock)
         backgroundScope.launch(UnconfinedTestDispatcher()) { vm.uiState.collect {} }
         val loaded = { vm.uiState.value as OrderDetailUiState.Loaded }
         assertTrue(loaded().canFinishWithWork)

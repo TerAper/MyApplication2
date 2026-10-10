@@ -7,6 +7,7 @@ import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.rounded.ReceiptLong
 import androidx.compose.material.icons.rounded.AccountBalanceWallet
 import androidx.compose.material.icons.rounded.Add
+import androidx.compose.material.icons.rounded.AddAPhoto
 import androidx.compose.material.icons.rounded.BarChart
 import androidx.compose.material.icons.rounded.Build
 import androidx.compose.material.icons.rounded.Business
@@ -30,6 +31,8 @@ import androidx.compose.material.icons.rounded.Language
 import androidx.compose.material.icons.rounded.Link
 import androidx.compose.material.icons.rounded.Mic
 import androidx.compose.material.icons.rounded.Pause
+import androidx.compose.material.icons.rounded.PhotoCamera
+import androidx.compose.material.icons.rounded.PhotoLibrary
 import androidx.compose.material.icons.rounded.Place
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.Print
@@ -89,4 +92,7 @@ object PmIcons {
     val Contacts: ImageVector = Icons.Rounded.Contacts
     val Folder: ImageVector = Icons.Rounded.Folder
     val Link: ImageVector = Icons.Rounded.Link
+    val Camera: ImageVector = Icons.Rounded.PhotoCamera
+    val Gallery: ImageVector = Icons.Rounded.PhotoLibrary
+    val AddPhoto: ImageVector = Icons.Rounded.AddAPhoto
 }

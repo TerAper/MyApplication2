@@ -13,6 +13,7 @@ dependencies {
     implementation(libs.room.ktx)
     implementation(libs.kotlinx.coroutines.core)
     implementation(libs.androidx.work.runtime)
+    implementation(libs.androidx.exifinterface)
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.auth)
     implementation(libs.firebase.firestore)

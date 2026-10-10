@@ -111,8 +111,10 @@ internal class OfflinePrintersRepository @Inject constructor(
                     ClientPrinterEntity(clientId = draft.clientId, modelId = modelId, location = location, note = note),
                 )
             } else {
+                // Keep the shared id, so masters' phones see the same printer, not a new one.
+                val syncId = dao.getClientPrinter(draft.id)?.printer?.syncId
                 dao.updateClientPrinter(
-                    ClientPrinterEntity(id = draft.id, clientId = draft.clientId, modelId = modelId, location = location, note = note),
+                    ClientPrinterEntity(id = draft.id, clientId = draft.clientId, modelId = modelId, location = location, note = note, syncId = syncId),
                 )
                 draft.id
             }

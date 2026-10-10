@@ -97,4 +97,10 @@
     <string name="feature_orders_call_play">Play</string>
     <string name="feature_orders_call_pause">Pause</string>
     <string name="feature_orders_done_at">Done %1$s at %2$s</string>
+    <string name="feature_orders_photos">PHOTOS · %1$d</string>
+    <string name="feature_orders_photo_add">Add photo</string>
+    <string name="feature_orders_photo_camera">Camera</string>
+    <string name="feature_orders_photo_gallery">Gallery</string>
+    <string name="feature_orders_photo_delete">Delete photo</string>
+    <string name="feature_orders_photo_close">Close</string>
 </resources>

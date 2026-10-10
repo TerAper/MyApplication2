@@ -16,6 +16,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.withContext
 import java.io.File
+import java.util.zip.ZipEntry
+import java.util.zip.ZipInputStream
+import java.util.zip.ZipOutputStream
 import java.time.Clock
 import java.time.Instant
 import java.time.LocalDate
@@ -38,7 +41,8 @@ internal class OfflineBackupRepository @Inject constructor(
 
     override fun observeLastBackup(): Flow<Instant?> = lastBackup.asStateFlow()
 
-    override fun suggestedFileName(): String = "PrintMaster-${LocalDate.now(clock)}.db"
+    /** A zip: the database and the photos folder. Older plain .db backups still restore. */
+    override fun suggestedFileName(): String = "PrintMaster-${LocalDate.now(clock)}.zip"
 
     override suspend fun saveBackup(uri: String): Boolean = withContext(Dispatchers.IO) {
         val copy = File(context.cacheDir, "backup.db")
@@ -47,7 +51,17 @@ internal class OfflineBackupRepository @Inject constructor(
             // A consistent copy while the app keeps running; also drops free pages.
             db.openHelper.writableDatabase.execSQL("VACUUM INTO ?", arrayOf<Any>(copy.path))
             val out = context.contentResolver.openOutputStream(Uri.parse(uri), "wt") ?: return@withContext false
-            out.use { stream -> copy.inputStream().use { it.copyTo(stream) } }
+            ZipOutputStream(out).use { zip ->
+                zip.putNextEntry(ZipEntry(DB_ENTRY))
+                copy.inputStream().use { it.copyTo(zip) }
+                zip.closeEntry()
+                // Photos are already compressed: stored as they are, not squeezed again.
+                photosFolder().listFiles().orEmpty().filter { it.isFile }.forEach { photo ->
+                    zip.putNextEntry(ZipEntry("${PhotoFiles.FOLDER}/${photo.name}"))
+                    photo.inputStream().use { it.copyTo(zip) }
+                    zip.closeEntry()
+                }
+            }
             val now = clock.instant()
             prefs.edit().putLong(KEY_LAST_BACKUP, now.toEpochMilli()).apply()
             lastBackup.value = now
@@ -65,9 +79,11 @@ internal class OfflineBackupRepository @Inject constructor(
     override suspend fun checkBackup(uri: String): BackupCheck = withContext(Dispatchers.IO) {
         val file = checkedFile
         file.delete()
+        checkedPhotos.deleteRecursively()
         try {
             val input = context.contentResolver.openInputStream(Uri.parse(uri)) ?: return@withContext BackupCheck.NotABackup
             input.use { stream -> file.outputStream().use { stream.copyTo(it) } }
+            if (file.isZip()) unzipBackup(file)
             if (!file.hasSqliteHeader()) return@withContext BackupCheck.NotABackup.also { file.delete() }
             val result = SQLiteDatabase.openDatabase(file.path, null, SQLiteDatabase.OPEN_READWRITE).use { backup ->
                 val version = backup.version
@@ -105,11 +121,19 @@ internal class OfflineBackupRepository @Inject constructor(
         listOf("-wal", "-shm", "-journal").forEach { File(target.path + it).delete() }
         val swapped = incoming.renameTo(target)
         checked.delete()
+        // A zip backup brings its photos; an old .db backup leaves the phone's photos alone.
+        if (swapped && checkedPhotos.exists()) {
+            photosFolder().deleteRecursively()
+            checkedPhotos.renameTo(photosFolder())
+        }
         swapped
     }
 
     override suspend fun discardCheckedBackup() {
-        withContext(Dispatchers.IO) { checkedFile.delete() }
+        withContext(Dispatchers.IO) {
+            checkedFile.delete()
+            checkedPhotos.deleteRecursively()
+        }
     }
 
     private fun currentIdentityHash(): String? = identityHash { db.openHelper.readableDatabase.query(it) }
@@ -141,6 +165,37 @@ internal class OfflineBackupRepository @Inject constructor(
         )
     }
 
+    private val checkedPhotos get() = File(context.cacheDir, "restore-photos")
+
+    private fun photosFolder() = File(context.filesDir, PhotoFiles.FOLDER)
+
+    private fun File.isZip(): Boolean {
+        val header = ByteArray(2)
+        val read = inputStream().use { it.read(header) }
+        return read == 2 && header[0] == 'P'.code.toByte() && header[1] == 'K'.code.toByte()
+    }
+
+    /** Takes the database out of the zip into the checked file, and the photos aside until restore. */
+    private fun unzipBackup(file: File) {
+        val dbFile = File(context.cacheDir, "restore-from-zip.db")
+        dbFile.delete()
+        checkedPhotos.mkdirs()
+        ZipInputStream(file.inputStream()).use { zip ->
+            while (true) {
+                val entry = zip.nextEntry ?: break
+                val name = entry.name
+                when {
+                    name == DB_ENTRY -> dbFile.outputStream().use { zip.copyTo(it) }
+                    // Only plain file names inside photos/: nothing can be written outside the folder.
+                    name.startsWith("${PhotoFiles.FOLDER}/") && !name.contains("..") && name.count { it == '/' } == 1 ->
+                        File(checkedPhotos, name.substringAfter('/')).outputStream().use { zip.copyTo(it) }
+                }
+            }
+        }
+        file.delete()
+        if (dbFile.exists()) dbFile.renameTo(file)
+    }
+
     private fun File.hasSqliteHeader(): Boolean {
         val header = ByteArray(SQLITE_HEADER.size)
         val read = inputStream().use { it.read(header) }
@@ -150,6 +205,7 @@ internal class OfflineBackupRepository @Inject constructor(
     private companion object {
         const val PREFS = "backup"
         const val KEY_LAST_BACKUP = "last_backup"
+        const val DB_ENTRY = "printmaster.db"
         val SQLITE_HEADER = "SQLite format 3\u0000".toByteArray(Charsets.US_ASCII)
     }
 }

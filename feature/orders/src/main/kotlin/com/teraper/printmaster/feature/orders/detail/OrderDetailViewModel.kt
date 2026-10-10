@@ -6,13 +6,19 @@ import androidx.lifecycle.viewModelScope
 import com.teraper.printmaster.core.data.repository.CallRecordingsRepository
 import com.teraper.printmaster.core.data.repository.DeleteOrderResult
 import com.teraper.printmaster.core.data.repository.OrdersRepository
+import com.teraper.printmaster.core.data.repository.PhotoRepository
 import com.teraper.printmaster.core.data.repository.RepairsRepository
 import com.teraper.printmaster.core.model.CallRecording
 import com.teraper.printmaster.core.model.Order
 import com.teraper.printmaster.core.model.OrderStatus
 import com.teraper.printmaster.core.model.OrderWork
+import com.teraper.printmaster.core.model.Photo
+import com.teraper.printmaster.core.model.PhotoOwner
 import com.teraper.printmaster.feature.orders.navigation.ORDER_ID_ARG
 import dagger.hilt.android.lifecycle.HiltViewModel
+import java.time.Clock
+import java.time.LocalDate
+import javax.inject.Inject
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
@@ -28,9 +34,6 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import java.time.Clock
-import java.time.LocalDate
-import javax.inject.Inject
 
 enum class OrderDetailDialog { CONFIRM_DELETE, DELETE_BLOCKED, CONFIRM_CANCEL, CONFIRM_REOPEN }
 
@@ -45,6 +48,7 @@ sealed interface OrderDetailUiState {
         /** Recorded calls with the client on the order's day. */
         val calls: List<CallRecording> = emptyList(),
         val playing: CallRecording? = null,
+        val photos: List<Photo> = emptyList(),
     ) : OrderDetailUiState {
         /** Work can be added or changed only while the order is open. */
         val canEditWork: Boolean get() = order.isOpen && !work.isBilled
@@ -65,6 +69,7 @@ class OrderDetailViewModel @Inject constructor(
     private val ordersRepository: OrdersRepository,
     private val repairsRepository: RepairsRepository,
     callRecordingsRepository: CallRecordingsRepository,
+    private val photoRepository: PhotoRepository,
     clock: Clock,
 ) : ViewModel() {
 
@@ -87,16 +92,20 @@ class OrderDetailViewModel @Inject constructor(
         }
     }
 
-    private val view = combine(dialog, deleting, playing) { dialog, deleting, playing -> Triple(dialog, deleting, playing) }
+    private val view = combine(dialog, deleting, playing, photoRepository.observePhotos(PhotoOwner.ORDER, listOf(orderId))) { dialog, deleting, playing, photos ->
+        ViewState(dialog, deleting, playing, photos)
+    }
+
+    private data class ViewState(val dialog: OrderDetailDialog?, val deleting: Boolean, val playing: CallRecording?, val photos: List<Photo>)
 
     val uiState: StateFlow<OrderDetailUiState> = combine(
         order,
         repairsRepository.observeOrderWork(orderId),
         calls,
         view,
-    ) { order, work, calls, (dialog, deleting, playing) ->
+    ) { order, work, calls, (dialog, deleting, playing, photos) ->
         when {
-            order != null -> OrderDetailUiState.Loaded(order, today, work, dialog, calls, playing)
+            order != null -> OrderDetailUiState.Loaded(order, today, work, dialog, calls, playing, photos)
             deleting -> OrderDetailUiState.Loading
             else -> OrderDetailUiState.NotFound
         }
@@ -133,6 +142,14 @@ class OrderDetailViewModel @Inject constructor(
     fun onPlayCall(recording: CallRecording) = playing.update { recording }
 
     fun onStopCall() = playing.update { null }
+
+    fun onAddPhoto(uri: String) {
+        viewModelScope.launch { photoRepository.add(PhotoOwner.ORDER, orderId, uri) }
+    }
+
+    fun onDeletePhoto(photo: Photo) {
+        viewModelScope.launch { photoRepository.delete(photo.id) }
+    }
 
     fun onConfirmDelete() {
         dialog.value = null

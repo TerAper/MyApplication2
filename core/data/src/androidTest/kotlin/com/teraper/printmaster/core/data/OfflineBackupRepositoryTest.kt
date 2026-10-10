@@ -49,7 +49,7 @@ class OfflineBackupRepositoryTest {
     @Test
     fun savedBackupIsCheckedAndSummarized() = runTest {
         val file = savedBackup()
-        assertEquals("PrintMaster-2026-10-07.db", file.name)
+        assertEquals("PrintMaster-2026-10-07.zip", file.name)
         assertEquals(Instant.parse("2026-10-07T10:00:00Z"), backup.observeLastBackup().first())
 
         val check = backup.checkBackup(uri(file)) as BackupCheck.Ready
@@ -86,5 +86,32 @@ class OfflineBackupRepositoryTest {
         }
         // The checked copy is used up.
         assertFalse(backup.restoreCheckedBackup())
+    }
+
+    @Test
+    fun photosTravelInTheBackupAndOldDbBackupsStillWork() = runTest {
+        val photos = File(context.filesDir, "photos").apply { deleteRecursively(); mkdirs() }
+        File(photos, "abc.webp").writeText("full")
+        File(photos, "abc_t.webp").writeText("thumb")
+        val file = savedBackup()
+
+        // Photos changed after the backup: restoring brings back the backed-up ones.
+        File(photos, "abc.webp").delete()
+        File(photos, "new.webp").writeText("later")
+        assertTrue(backup.checkBackup(uri(file)) is BackupCheck.Ready)
+        assertTrue(backup.restoreCheckedBackup())
+        assertEquals(setOf("abc.webp", "abc_t.webp"), photos.listFiles()!!.map { it.name }.toSet())
+        assertEquals("full", File(photos, "abc.webp").readText())
+
+        // A plain .db file from before photos existed is still accepted.
+        val plainDb = File(dir, "old.db")
+        java.util.zip.ZipInputStream(file.inputStream()).use { zip ->
+            while (true) {
+                val entry = zip.nextEntry ?: break
+                if (entry.name == "printmaster.db") plainDb.outputStream().use { zip.copyTo(it) }
+            }
+        }
+        assertTrue(backup.checkBackup(uri(plainDb)) is BackupCheck.Ready)
+        photos.deleteRecursively()
     }
 }

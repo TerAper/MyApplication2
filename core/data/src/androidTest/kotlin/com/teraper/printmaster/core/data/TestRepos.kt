@@ -8,6 +8,7 @@ import com.teraper.printmaster.core.data.repository.OfflineCallRecordingsReposit
 import com.teraper.printmaster.core.data.repository.OfflineReportsRepository
 import com.teraper.printmaster.core.data.repository.OfflineClientsRepository
 import com.teraper.printmaster.core.data.repository.OfflineImportRepository
+import com.teraper.printmaster.core.data.repository.OfflinePhotoRepository
 import com.teraper.printmaster.core.data.repository.OfflineCompaniesRepository
 import com.teraper.printmaster.core.data.repository.OfflinePaymentsRepository
 import com.teraper.printmaster.core.data.repository.OfflineOrdersRepository
@@ -37,6 +38,7 @@ internal class TestRepos(clock: Clock = Clock.fixed(Instant.parse("2026-10-07T10
     val reports = OfflineReportsRepository(db.reportDao(), companies)
     val calls = OfflineCallRecordingsRepository(ApplicationProvider.getApplicationContext(), db, db.callRecordingDao(), clock)
     val imports = OfflineImportRepository(ApplicationProvider.getApplicationContext(), db, db.importDao(), db.companyDao(), companies, clock, NoAnalytics)
+    val photos = OfflinePhotoRepository(ApplicationProvider.getApplicationContext(), db.photoDao(), clock)
     val backup = OfflineBackupRepository(ApplicationProvider.getApplicationContext(), db, clock, NoAnalytics)
 
     private val testClock = clock

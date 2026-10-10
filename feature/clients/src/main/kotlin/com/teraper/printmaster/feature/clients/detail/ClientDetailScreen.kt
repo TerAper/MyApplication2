@@ -56,6 +56,8 @@ import com.teraper.printmaster.core.model.ClientType
 import com.teraper.printmaster.core.model.LedgerEntry
 import com.teraper.printmaster.core.model.Money
 import com.teraper.printmaster.core.model.PaymentMethod
+import com.teraper.printmaster.core.model.Photo
+import com.teraper.printmaster.core.model.PhotoOwner
 import com.teraper.printmaster.feature.clients.R
 import com.teraper.printmaster.feature.clients.common.dial
 import com.teraper.printmaster.feature.clients.common.label
@@ -97,6 +99,7 @@ internal fun ClientDetailRoute(
         onOpenMap = { context.openMap(it) },
         onTabSelected = viewModel::onTabSelected,
         callActions = CallActions(viewModel::onPlayCall, viewModel::onStopCall, viewModel::onShowAllCalls),
+        photoActions = PhotoActions(viewModel::onAddPhoto, viewModel::onDeletePhoto),
         onRecordPayment = onRecordPayment,
         onAddCharge = onAddCharge,
         // Every row opens its own page: full note, file data, move or delete there.
@@ -120,6 +123,7 @@ internal fun ClientDetailScreen(
     onOpenMap: (String) -> Unit,
     onTabSelected: (ClientTab) -> Unit = {},
     callActions: CallActions = CallActions(),
+    photoActions: PhotoActions = PhotoActions(),
     onRecordPayment: (Long) -> Unit = {},
     onAddCharge: (Long) -> Unit = {},
     onEntryClick: (LedgerEntry) -> Unit = {},
@@ -160,6 +164,7 @@ internal fun ClientDetailScreen(
                 onOpenMap = onOpenMap,
                 onTabSelected = onTabSelected,
                 callActions = callActions,
+                photoActions = photoActions,
                 onRecordPayment = { onRecordPayment(state.summary.client.id) },
                 onAddCharge = { onAddCharge(state.summary.client.id) },
                 onEntryClick = onEntryClick,
@@ -209,6 +214,12 @@ internal data class CallActions(
     val onShowAll: () -> Unit = {},
 )
 
+/** Adding and removing photos of printers and cartridges. */
+internal data class PhotoActions(
+    val onAdd: (PhotoOwner, Long, String) -> Unit = { _, _, _ -> },
+    val onDelete: (Photo) -> Unit = {},
+)
+
 private const val CALLS_SHOWN = 3
 
 @Composable
@@ -218,6 +229,7 @@ private fun ClientDetailContent(
     onOpenMap: (String) -> Unit,
     onTabSelected: (ClientTab) -> Unit,
     callActions: CallActions,
+    photoActions: PhotoActions,
     onRecordPayment: () -> Unit,
     onAddCharge: () -> Unit,
     onEntryClick: (LedgerEntry) -> Unit,
@@ -311,7 +323,7 @@ private fun ClientDetailContent(
         if (state.tab == ClientTab.FINANCE) {
             FinanceSection(summary, state.ledger, onRecordPayment, onAddCharge, onEntryClick)
         } else if (state.tab == ClientTab.PRINTERS) {
-            PrintersSection(state.printers, onAddPrinter, onPrinterClick)
+            PrintersSection(state.printers, onAddPrinter, onPrinterClick, state.printerPhotos, state.cartridgePhotos, photoActions)
         } else if (state.tab == ClientTab.ORDERS) {
             OrdersSection(state.orders, state.today, onNewOrder, onOrderClick)
         } else {

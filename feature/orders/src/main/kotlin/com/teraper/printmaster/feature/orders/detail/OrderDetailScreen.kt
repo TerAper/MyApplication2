@@ -31,10 +31,12 @@ import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.teraper.printmaster.core.designsystem.component.PhotoStripLabels
 import com.teraper.printmaster.core.designsystem.component.PmCard
 import com.teraper.printmaster.core.designsystem.component.PmConfirmDialog
 import com.teraper.printmaster.core.designsystem.component.PmEmptyState
 import com.teraper.printmaster.core.designsystem.component.PmMessageDialog
+import com.teraper.printmaster.core.designsystem.component.PmPhotoStrip
 import com.teraper.printmaster.core.designsystem.component.PmPrimaryButton
 import com.teraper.printmaster.core.designsystem.component.PmRecordingPlayerSheet
 import com.teraper.printmaster.core.designsystem.component.PmRecordingRow
@@ -50,6 +52,7 @@ import com.teraper.printmaster.core.designsystem.theme.PmTheme
 import com.teraper.printmaster.core.model.CallRecording
 import com.teraper.printmaster.core.model.Order
 import com.teraper.printmaster.core.model.OrderStatus
+import com.teraper.printmaster.core.model.Photo
 import com.teraper.printmaster.core.model.nextActions
 import com.teraper.printmaster.feature.orders.R
 import java.time.LocalDate
@@ -93,6 +96,8 @@ internal fun OrderDetailRoute(
             onDismissDialog = viewModel::onDismissDialog,
             onPlayCall = viewModel::onPlayCall,
             onStopCall = viewModel::onStopCall,
+            onAddPhoto = viewModel::onAddPhoto,
+            onDeletePhoto = viewModel::onDeletePhoto,
         ),
     )
 }
@@ -122,6 +127,8 @@ internal data class OrderDetailActions(
     val onDismissDialog: () -> Unit = {},
     val onPlayCall: (CallRecording) -> Unit = {},
     val onStopCall: () -> Unit = {},
+    val onAddPhoto: (String) -> Unit = {},
+    val onDeletePhoto: (Photo) -> Unit = {},
 )
 
 @Composable
@@ -239,6 +246,25 @@ private fun OrderContent(state: OrderDetailUiState.Loaded, actions: OrderDetailA
                     onOpenRepair = { actions.onOpenRepair(order.id, it) },
                 )
             }
+
+            Text(
+                stringResource(R.string.feature_orders_photos, state.photos.size),
+                modifier = Modifier.padding(start = 2.dp, top = 8.dp),
+                style = MaterialTheme.typography.labelSmall,
+                color = PmTheme.colors.inkMuted,
+            )
+            PmPhotoStrip(
+                photos = state.photos,
+                labels = PhotoStripLabels(
+                    add = stringResource(R.string.feature_orders_photo_add),
+                    camera = stringResource(R.string.feature_orders_photo_camera),
+                    gallery = stringResource(R.string.feature_orders_photo_gallery),
+                    delete = stringResource(R.string.feature_orders_photo_delete),
+                    close = stringResource(R.string.feature_orders_photo_close),
+                ),
+                onAdd = actions.onAddPhoto,
+                onDelete = actions.onDeletePhoto,
+            )
 
             if (state.calls.isNotEmpty()) {
                 Text(

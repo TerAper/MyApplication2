@@ -8,6 +8,7 @@ import com.teraper.printmaster.core.database.dao.CompanyDao
 import com.teraper.printmaster.core.database.dao.ImportDao
 import com.teraper.printmaster.core.database.dao.LedgerDao
 import com.teraper.printmaster.core.database.dao.OrderDao
+import com.teraper.printmaster.core.database.dao.PhotoDao
 import com.teraper.printmaster.core.database.dao.PriceListDao
 import com.teraper.printmaster.core.database.dao.RepairDao
 import com.teraper.printmaster.core.database.dao.ReportDao
@@ -52,4 +53,7 @@ internal object DaosModule {
 
     @Provides
     fun provideSyncDao(database: PrintMasterDatabase): SyncDao = database.syncDao()
+
+    @Provides
+    fun providePhotoDao(database: PrintMasterDatabase): PhotoDao = database.photoDao()
 }

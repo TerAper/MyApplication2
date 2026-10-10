@@ -138,4 +138,34 @@ class SyncEngineTest {
         assertNotNull(order.masterName)
         assertEquals("Armen", order.masterName)
     }
+
+    @Test
+    fun twoPrintersOfOneModelStayTwoAndWorkGoesToTheRightOne() = runTest {
+        val clientId = companySetup()
+        val model = PrinterModelDraft(brand = "HP", name = "M125", cartridges = listOf(CartridgeDraft("CF283A")))
+        company.printers.savePrinter(ClientPrinterDraft(clientId = clientId, model = model, selectedCartridges = setOf(model.cartridges.single().key), location = "Accounting"))
+        masterSetup()
+        companyEngine.sync()
+        masterEngine.sync()
+
+        val masterClient = master.clients.observeClientSummaries().first().single().client
+        val masterPrinters = master.printers.observeClientPrinters(masterClient.id).first()
+        assertEquals(2, masterPrinters.size)
+        val accounting = masterPrinters.single { it.location == "Accounting" }
+        val order = master.orders.observeClientOrders(masterClient.id).first().single()
+        val refill = master.priceList.observeItems().first().single()
+        master.repairs.saveRepair(RepairDraft(orderId = order.id).withDevice(accounting.id, accounting.cartridges.single().id).plus(refill))
+        master.repairs.finishOrder(order.id, paidInCash = false)
+        masterEngine.sync()
+        // A second pull must not merge or duplicate the printers.
+        masterEngine.sync()
+        assertEquals(2, master.printers.observeClientPrinters(masterClient.id).first().size)
+
+        companyEngine.sync()
+        val companyOrder = company.orders.observeClientOrders(clientId).first().first { it.description == "Refill two cartridges" }
+        val device = company.repairs.observeOrderWork(companyOrder.id).first().repairs.single().device!!
+        assertEquals("Accounting", device.printer.location)
+        assertEquals("CF283A · HP M125 (Accounting)", device.name)
+        assertEquals(2, company.printers.observeClientPrinters(clientId).first().size)
+    }
 }

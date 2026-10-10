@@ -13,6 +13,7 @@ import com.teraper.printmaster.core.database.dao.CompanyDao
 import com.teraper.printmaster.core.database.dao.ImportDao
 import com.teraper.printmaster.core.database.dao.LedgerDao
 import com.teraper.printmaster.core.database.dao.OrderDao
+import com.teraper.printmaster.core.database.dao.PhotoDao
 import com.teraper.printmaster.core.database.dao.PriceListDao
 import com.teraper.printmaster.core.database.dao.RepairDao
 import com.teraper.printmaster.core.database.dao.ReportDao
@@ -38,6 +39,7 @@ import com.teraper.printmaster.core.database.entity.ModelCartridgeCrossRef
 import com.teraper.printmaster.core.database.entity.OrderEntity
 import com.teraper.printmaster.core.database.entity.MatchRejectionEntity
 import com.teraper.printmaster.core.database.entity.PayerAccountEntity
+import com.teraper.printmaster.core.database.entity.PhotoEntity
 import com.teraper.printmaster.core.database.entity.PaymentEntity
 import com.teraper.printmaster.core.database.entity.PrinterModelEntity
 import com.teraper.printmaster.core.database.entity.RepairEntity
@@ -76,6 +78,7 @@ import com.teraper.printmaster.core.database.entity.SyncStateEntity
         MatchRejectionEntity::class,
         SyncOutboxEntity::class,
         SyncStateEntity::class,
+        PhotoEntity::class,
     ],
     version = PrintMasterDatabase.VERSION,
     exportSchema = true,
@@ -90,6 +93,8 @@ import com.teraper.printmaster.core.database.entity.SyncStateEntity
         AutoMigration(from = 5, to = 6),
         // 7: sharing with masters (sync ids, outbox, done time).
         AutoMigration(from = 6, to = 7),
+        // 8: photos; ids on client printers (two of one model).
+        AutoMigration(from = 7, to = 8),
     ],
 )
 abstract class PrintMasterDatabase : RoomDatabase() {
@@ -104,9 +109,10 @@ abstract class PrintMasterDatabase : RoomDatabase() {
     abstract fun callRecordingDao(): CallRecordingDao
     abstract fun importDao(): ImportDao
     abstract fun syncDao(): SyncDao
+    abstract fun photoDao(): PhotoDao
 
     companion object {
-        const val VERSION = 7
+        const val VERSION = 8
 
         /** Oldest version a backup file may have; older ones only existed on development phones. */
         const val OLDEST_RESTORABLE_VERSION = 2

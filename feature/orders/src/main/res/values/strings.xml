@@ -97,4 +97,10 @@
     <string name="feature_orders_call_play">Նվագարկել</string>
     <string name="feature_orders_call_pause">Դադար</string>
     <string name="feature_orders_done_at">Ավարտված է %1$s, ժ. %2$s</string>
+    <string name="feature_orders_photos">ԼՈՒՍԱՆԿԱՐՆԵՐ · %1$d</string>
+    <string name="feature_orders_photo_add">Ավելացնել լուսանկար</string>
+    <string name="feature_orders_photo_camera">Տեսախցիկ</string>
+    <string name="feature_orders_photo_gallery">Պատկերասրահ</string>
+    <string name="feature_orders_photo_delete">Ջնջել լուսանկարը</string>
+    <string name="feature_orders_photo_close">Փակել</string>
 </resources>

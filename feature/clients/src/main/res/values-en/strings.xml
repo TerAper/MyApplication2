@@ -160,4 +160,9 @@
     <string name="feature_clients_entry_entered">Entered %1$s</string>
     <string name="feature_clients_entry_open_order">Open the order</string>
     <string name="feature_clients_entry_repair_note">This charge comes from the order\'s work. To change it, reopen the order and edit the work.</string>
+    <string name="feature_clients_photo_add">Add photo</string>
+    <string name="feature_clients_photo_camera">Camera</string>
+    <string name="feature_clients_photo_gallery">Gallery</string>
+    <string name="feature_clients_photo_delete">Delete photo</string>
+    <string name="feature_clients_photo_close">Close</string>
 </resources>

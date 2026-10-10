@@ -51,8 +51,8 @@ import java.time.LocalDate
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
-/** Backup files are plain SQLite; any type lets the user pick them from Drive, Telegram, etc. */
-private const val BACKUP_MIME = "application/octet-stream"
+/** Backups are zips (database + photos); restore accepts any file type, for older .db backups too. */
+private const val BACKUP_MIME = "application/zip"
 
 @Composable
 internal fun BackupRoute(onBack: () -> Unit, viewModel: BackupViewModel = hiltViewModel()) {

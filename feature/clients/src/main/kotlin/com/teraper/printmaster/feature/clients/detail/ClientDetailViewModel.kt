@@ -6,29 +6,34 @@ import androidx.lifecycle.viewModelScope
 import com.teraper.printmaster.core.data.repository.CallRecordingsRepository
 import com.teraper.printmaster.core.data.repository.ClientsRepository
 import com.teraper.printmaster.core.data.repository.DeleteClientResult
-import com.teraper.printmaster.core.data.repository.PaymentsRepository
 import com.teraper.printmaster.core.data.repository.OrdersRepository
+import com.teraper.printmaster.core.data.repository.PaymentsRepository
+import com.teraper.printmaster.core.data.repository.PhotoRepository
 import com.teraper.printmaster.core.data.repository.PrintersRepository
 import com.teraper.printmaster.core.model.CallRecording
 import com.teraper.printmaster.core.model.ClientPrinter
 import com.teraper.printmaster.core.model.ClientSummary
 import com.teraper.printmaster.core.model.LedgerEntry
 import com.teraper.printmaster.core.model.Order
+import com.teraper.printmaster.core.model.Photo
+import com.teraper.printmaster.core.model.PhotoOwner
 import com.teraper.printmaster.feature.clients.navigation.CLIENT_ID_ARG
 import dagger.hilt.android.lifecycle.HiltViewModel
+import java.time.Clock
+import java.time.LocalDate
+import javax.inject.Inject
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import java.time.Clock
-import java.time.LocalDate
-import javax.inject.Inject
 
 enum class ClientTab { INFO, PRINTERS, ORDERS, FINANCE }
 
@@ -47,6 +52,9 @@ sealed interface ClientDetailUiState {
         val calls: List<CallRecording> = emptyList(),
         val showAllCalls: Boolean = false,
         val playing: CallRecording? = null,
+        /** Photos by printer id and by client-printer-cartridge id. */
+        val printerPhotos: Map<Long, List<Photo>> = emptyMap(),
+        val cartridgePhotos: Map<Long, List<Photo>> = emptyMap(),
     ) : ClientDetailUiState
 }
 
@@ -59,6 +67,7 @@ sealed interface ClientDetailEvent {
     data object Deleted : ClientDetailEvent
 }
 
+@OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class ClientDetailViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
@@ -67,6 +76,7 @@ class ClientDetailViewModel @Inject constructor(
     printersRepository: PrintersRepository,
     ordersRepository: OrdersRepository,
     callRecordingsRepository: CallRecordingsRepository,
+    private val photoRepository: PhotoRepository,
     clock: Clock,
 ) : ViewModel() {
 
@@ -99,7 +109,14 @@ class ClientDetailViewModel @Inject constructor(
         ::Records,
     )
 
-    private val callsView = combine(showAllCalls, playing) { all, playing -> all to playing }
+    private val photos = printersRepository.observeClientPrinters(clientId).flatMapLatest { printers ->
+        combine(
+            photoRepository.observePhotos(PhotoOwner.PRINTER, printers.map { it.id }),
+            photoRepository.observePhotos(PhotoOwner.CARTRIDGE, printers.flatMap { p -> p.cartridges.map { it.id } }),
+        ) { printer, cartridge -> printer.groupBy { it.ownerId } to cartridge.groupBy { it.ownerId } }
+    }
+
+    private val callsView = combine(showAllCalls, playing, photos) { all, playing, photos -> Triple(all, playing, photos) }
 
 
     val uiState: StateFlow<ClientDetailUiState> = combine(
@@ -108,12 +125,13 @@ class ClientDetailViewModel @Inject constructor(
         dialog,
         deleting,
         callsView,
-    ) { records, tab, dialog, deleting, (showAll, playing) ->
+    ) { records, tab, dialog, deleting, (showAll, playing, photos) ->
         val summary = records.summary
         when {
             summary != null -> ClientDetailUiState.Loaded(
                 summary, records.ledger, records.printers, records.orders, today, tab, dialog,
                 calls = records.calls, showAllCalls = showAll, playing = playing,
+                printerPhotos = photos.first, cartridgePhotos = photos.second,
             )
             // Just deleted: keep showing Loading for the moment before the screen closes.
             deleting -> ClientDetailUiState.Loading
@@ -128,6 +146,14 @@ class ClientDetailViewModel @Inject constructor(
     fun onPlayCall(recording: CallRecording) = playing.update { recording }
 
     fun onStopCall() = playing.update { null }
+
+    fun onAddPhoto(owner: PhotoOwner, ownerId: Long, uri: String) {
+        viewModelScope.launch { photoRepository.add(owner, ownerId, uri) }
+    }
+
+    fun onDeletePhoto(photo: Photo) {
+        viewModelScope.launch { photoRepository.delete(photo.id) }
+    }
 
     fun onDeleteClick() = dialog.update { ClientDetailDialog.ConfirmDelete }
 
