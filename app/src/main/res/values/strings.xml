@@ -12,4 +12,18 @@
     <string name="manage_companies">Կառավարել ընկերությունները</string>
     <string name="share_place_label">PrintMaster՝ հաճախորդի հասցե</string>
     <string name="share_place_not_waiting">Վայրն օգտագործելու համար նախ բացեք հաճախորդի ձևը PrintMaster-ում և սեղմեք «Ընտրել քարտեզում»։</string>
+    <string name="notify_channel">Պատվերներ վարպետներից</string>
+    <string name="notify_open">Բացել PrintMaster</string>
+    <plurals name="notify_orders_finished">
+        <item quantity="one">Վարպետն ավարտեց %1$d պատվեր</item>
+        <item quantity="other">Վարպետներն ավարտեցին %1$d պատվեր</item>
+    </plurals>
+    <plurals name="notify_orders_new">
+        <item quantity="one">%1$d նոր պատվեր</item>
+        <item quantity="other">%1$d նոր պատվեր</item>
+    </plurals>
+    <plurals name="notify_clients_new">
+        <item quantity="one">%1$d նոր հաճախորդ ստուգելու</item>
+        <item quantity="other">%1$d նոր հաճախորդ ստուգելու</item>
+    </plurals>
 </resources>

@@ -4,6 +4,8 @@
 
     <!-- Turns a contact name in a recording's file name into a phone number. -->
     <uses-permission android:name="android.permission.READ_CONTACTS" />
+    <!-- "Master finished 2 orders" (Android 13+ asks the user). -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <application
         android:name=".PrintMasterApplication"

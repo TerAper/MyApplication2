@@ -1,6 +1,7 @@
 package com.teraper.printmaster.core.data.repository
 
 import androidx.room.withTransaction
+import com.teraper.printmaster.core.data.analytics.AppAnalytics
 import com.teraper.printmaster.core.database.PrintMasterDatabase
 import com.teraper.printmaster.core.database.dao.LedgerDao
 import com.teraper.printmaster.core.database.dao.OrderDao
@@ -43,6 +44,7 @@ internal class OfflineRepairsRepository @Inject constructor(
     private val ledgerDao: LedgerDao,
     private val printers: PrintersRepository,
     private val clock: Clock,
+    private val analytics: AppAnalytics,
 ) : RepairsRepository {
 
     /** The client's printers, to show which device each repair was on. */
@@ -116,7 +118,9 @@ internal class OfflineRepairsRepository @Inject constructor(
         // Device names for the charge notes, read before the transaction (it only reads them).
         val clientId = orderDao.getOrder(orderId)?.clientId ?: return FinishOrderResult.NOT_FOUND
         val clientPrinters = printers.observeClientPrinters(clientId).first()
-        return db.withTransaction { finish(orderId, paidInCash, clientPrinters, finishedAt ?: clock.instant()) }
+        val result = db.withTransaction { finish(orderId, paidInCash, clientPrinters, finishedAt ?: clock.instant()) }
+        if (result == FinishOrderResult.FINISHED) analytics.log("order_finished", mapOf("cash" to paidInCash, "from_master" to (finishedAt != null)))
+        return result
     }
 
     private suspend fun finish(orderId: Long, paidInCash: Boolean, clientPrinters: List<ClientPrinter>, finishedAt: Instant): FinishOrderResult {

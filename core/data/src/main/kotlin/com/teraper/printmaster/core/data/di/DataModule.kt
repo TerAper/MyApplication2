@@ -28,6 +28,12 @@ import com.teraper.printmaster.core.data.repository.PriceListRepository
 import com.teraper.printmaster.core.data.repository.PrintersRepository
 import com.teraper.printmaster.core.data.repository.RepairsRepository
 import com.teraper.printmaster.core.data.repository.ReportsRepository
+import com.teraper.printmaster.core.data.analytics.AppAnalytics
+import com.teraper.printmaster.core.data.analytics.FirebaseAppAnalytics
+import com.teraper.printmaster.core.data.sync.FirebaseSyncBackend
+import com.teraper.printmaster.core.data.sync.SyncBackend
+import com.teraper.printmaster.core.data.team.FirebaseTeamRepository
+import com.teraper.printmaster.core.data.team.TeamRepository
 import dagger.Binds
 import dagger.Module
 import dagger.Provides
@@ -80,6 +86,18 @@ internal abstract class DataModule {
 
     @Binds
     abstract fun bindImportRepository(impl: OfflineImportRepository): ImportRepository
+
+    @Binds
+    abstract fun bindTeamRepository(impl: FirebaseTeamRepository): TeamRepository
+
+    @Binds
+    abstract fun bindSyncBackend(impl: FirebaseSyncBackend): SyncBackend
+
+    @Binds
+    abstract fun bindAnalytics(impl: FirebaseAppAnalytics): AppAnalytics
+
+    @Binds
+    abstract fun bindSyncController(impl: com.teraper.printmaster.core.data.sync.SyncRunner): com.teraper.printmaster.core.data.sync.SyncController
 
     companion object {
         @Provides

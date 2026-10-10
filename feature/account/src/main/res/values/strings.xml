@@ -51,4 +51,6 @@
     <string name="feature_account_master">Վարպետ</string>
     <string name="feature_account_master_name">Անուն</string>
     <string name="feature_account_master_phone">Հեռախոս</string>
+    <string name="feature_account_mode_joined">Աշխատում եմ ընկերությունում</string>
+    <string name="feature_account_mode_joined_message">Իմ ընկերությունն օգտագործում է PrintMaster և տվել է ինձ կոդ։ Տեսնում եմ ինձ տրված պատվերները։</string>
 </resources>

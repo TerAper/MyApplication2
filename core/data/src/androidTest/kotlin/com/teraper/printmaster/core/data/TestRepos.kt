@@ -1,6 +1,7 @@
 package com.teraper.printmaster.core.data
 
 import androidx.test.core.app.ApplicationProvider
+import com.teraper.printmaster.core.data.analytics.NoAnalytics
 import com.teraper.printmaster.core.data.repository.CatalogWriter
 import com.teraper.printmaster.core.data.repository.OfflineBackupRepository
 import com.teraper.printmaster.core.data.repository.OfflineCallRecordingsRepository
@@ -32,11 +33,11 @@ internal class TestRepos(clock: Clock = Clock.fixed(Instant.parse("2026-10-07T10
     val priceList = OfflinePriceListRepository(db, db.priceListDao())
     val printers = OfflinePrintersRepository(db, db.catalogDao(), CatalogWriter(db.catalogDao()))
     val orders = OfflineOrdersRepository(db.orderDao(), db.clientDao(), companies, clock)
-    val repairs = OfflineRepairsRepository(db, db.repairDao(), db.orderDao(), db.ledgerDao(), printers, clock)
+    val repairs = OfflineRepairsRepository(db, db.repairDao(), db.orderDao(), db.ledgerDao(), printers, clock, NoAnalytics)
     val reports = OfflineReportsRepository(db.reportDao(), companies)
     val calls = OfflineCallRecordingsRepository(ApplicationProvider.getApplicationContext(), db, db.callRecordingDao(), clock)
-    val imports = OfflineImportRepository(ApplicationProvider.getApplicationContext(), db, db.importDao(), db.companyDao(), companies, clock)
-    val backup = OfflineBackupRepository(ApplicationProvider.getApplicationContext(), db, clock)
+    val imports = OfflineImportRepository(ApplicationProvider.getApplicationContext(), db, db.importDao(), db.companyDao(), companies, clock, NoAnalytics)
+    val backup = OfflineBackupRepository(ApplicationProvider.getApplicationContext(), db, clock, NoAnalytics)
 
     private val testClock = clock
 

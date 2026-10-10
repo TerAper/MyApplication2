@@ -41,12 +41,14 @@ import com.teraper.printmaster.feature.account.R
 import com.teraper.printmaster.feature.account.common.CompanyFields
 
 @Composable
-fun OnboardingRoute(viewModel: OnboardingViewModel = hiltViewModel()) {
+/** [onJoinCompany]: "I work for a company" opens the join screen (another feature). */
+fun OnboardingRoute(onJoinCompany: () -> Unit, viewModel: OnboardingViewModel = hiltViewModel()) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     BackHandler(enabled = state.mode != null, onBack = viewModel::onBackToModes)
     OnboardingScreen(
         state = state,
         onModeSelected = viewModel::onModeSelected,
+        onJoinCompany = onJoinCompany,
         onBackToModes = viewModel::onBackToModes,
         onOwnerNameChange = viewModel::onOwnerNameChange,
         onCompanyChange = viewModel::onCompanyChange,
@@ -63,15 +65,16 @@ internal fun OnboardingScreen(
     onCompanyChange: (CompanyDraft) -> Unit,
     onRegister: () -> Unit,
     modifier: Modifier = Modifier,
+    onJoinCompany: () -> Unit = {},
 ) {
     val mode = state.mode
     Box(modifier.fillMaxSize().background(PmTheme.colors.background)) {
-        if (mode == null) ModeChoice(onModeSelected) else RegistrationForm(state, mode, onBackToModes, onOwnerNameChange, onCompanyChange, onRegister)
+        if (mode == null) ModeChoice(onModeSelected, onJoinCompany) else RegistrationForm(state, mode, onBackToModes, onOwnerNameChange, onCompanyChange, onRegister)
     }
 }
 
 @Composable
-private fun ModeChoice(onModeSelected: (AccountMode) -> Unit) {
+private fun ModeChoice(onModeSelected: (AccountMode) -> Unit, onJoinCompany: () -> Unit = {}) {
     Column(
         Modifier.fillMaxSize().statusBarsPadding().verticalScroll(rememberScrollState()).padding(24.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -98,6 +101,12 @@ private fun ModeChoice(onModeSelected: (AccountMode) -> Unit) {
             title = stringResource(R.string.feature_account_mode_company),
             message = stringResource(R.string.feature_account_mode_company_message),
             onClick = { onModeSelected(AccountMode.COMPANY) },
+        )
+        ModeCard(
+            icon = PmIcons.Clients,
+            title = stringResource(R.string.feature_account_mode_joined),
+            message = stringResource(R.string.feature_account_mode_joined_message),
+            onClick = onJoinCompany,
         )
     }
 }

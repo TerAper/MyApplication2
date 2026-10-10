@@ -51,4 +51,6 @@
     <string name="feature_account_master">Master</string>
     <string name="feature_account_master_name">Name</string>
     <string name="feature_account_master_phone">Phone</string>
+    <string name="feature_account_mode_joined">I work for a company</string>
+    <string name="feature_account_mode_joined_message">My company uses PrintMaster and gave me a code. I see the orders it gives me.</string>
 </resources>

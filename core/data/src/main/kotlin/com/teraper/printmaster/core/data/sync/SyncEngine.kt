@@ -150,6 +150,7 @@ class SyncEngine @Inject internal constructor(
             addresses = row.addresses.sortedBy { it.id }.map { SharedContact(it.address, it.label, it.mapLink) },
             printers = printers,
             createdByMaster = createdHere,
+            visibleTo = if (isMember) listOfNotNull(backend.myUid) else sync.getMemberUidsOfClient(clientId),
         )
     }
 

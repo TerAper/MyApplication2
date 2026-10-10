@@ -45,6 +45,8 @@ import com.teraper.printmaster.feature.reports.navigation.reportsScreens
 import com.teraper.printmaster.feature.settings.navigation.navigateToBackup
 import com.teraper.printmaster.feature.settings.navigation.navigateToSettings
 import com.teraper.printmaster.feature.settings.navigation.settingsScreens
+import com.teraper.printmaster.feature.team.navigation.navigateToTeam
+import com.teraper.printmaster.feature.team.navigation.teamScreens
 import com.teraper.printmaster.feature.today.TodayActions
 import com.teraper.printmaster.feature.today.navigation.TodayDestination
 import com.teraper.printmaster.feature.today.navigation.todayScreen
@@ -97,6 +99,7 @@ fun PrintMasterNavHost(navController: NavHostController, modifier: Modifier = Mo
                 onOpenDebtExport = navController::navigateToDebtExport,
                 onOpenSettings = navController::navigateToSettings,
                 onOpenCalls = navController::navigateToCalls,
+                onOpenTeam = navController::navigateToTeam,
                 onOpenImportHistory = {
                     navController.navigateToTab(TopLevelDestination.PAYMENTS)
                     navController.navigateToImportHistory()
@@ -109,6 +112,7 @@ fun PrintMasterNavHost(navController: NavHostController, modifier: Modifier = Mo
             settingsScreens(navController)
             reportsScreens(navController, onOpenClient = navController::openClientFromOtherTab)
             callsScreens(navController, onOpenClient = navController::openClientFromOtherTab)
+            teamScreens(navController)
         }
     }
 }

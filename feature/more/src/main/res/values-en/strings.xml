@@ -35,4 +35,6 @@
         <item quantity="one">%1$d company</item>
         <item quantity="other">%1$d companies</item>
     </plurals>
+    <string name="feature_more_team">Masters &amp; sharing</string>
+    <string name="feature_more_team_sub">Send orders to masters\' phones</string>
 </resources>

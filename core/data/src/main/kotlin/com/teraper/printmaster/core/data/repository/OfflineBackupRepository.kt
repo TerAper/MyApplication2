@@ -4,6 +4,7 @@ import android.content.Context
 import android.database.Cursor
 import android.database.sqlite.SQLiteDatabase
 import android.net.Uri
+import com.teraper.printmaster.core.data.analytics.AppAnalytics
 import com.teraper.printmaster.core.database.PrintMasterDatabase
 import com.teraper.printmaster.core.model.BackupCheck
 import com.teraper.printmaster.core.model.BackupSummary
@@ -26,6 +27,7 @@ internal class OfflineBackupRepository @Inject constructor(
     @ApplicationContext private val context: Context,
     private val db: PrintMasterDatabase,
     private val clock: Clock,
+    private val analytics: AppAnalytics,
 ) : BackupRepository {
 
     // Kept outside the database on purpose: restoring an old backup must not reset it.
@@ -49,6 +51,7 @@ internal class OfflineBackupRepository @Inject constructor(
             val now = clock.instant()
             prefs.edit().putLong(KEY_LAST_BACKUP, now.toEpochMilli()).apply()
             lastBackup.value = now
+            analytics.log("backup_saved")
             true
         } catch (e: CancellationException) {
             throw e

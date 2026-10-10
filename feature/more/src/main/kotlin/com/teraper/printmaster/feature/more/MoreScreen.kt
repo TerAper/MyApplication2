@@ -61,6 +61,7 @@ data class MoreActions(
     val onOpenDebtExport: () -> Unit = {},
     val onOpenSettings: () -> Unit = {},
     val onOpenCalls: () -> Unit = {},
+    val onOpenTeam: () -> Unit = {},
     val onOpenImportHistory: () -> Unit = {},
 )
 
@@ -75,6 +76,7 @@ internal fun MoreScreen(state: MoreUiState, actions: MoreActions, modifier: Modi
     val onOpenCatalog = actions.onOpenCatalog
     val account = when (state.mode) {
         AccountMode.MASTER -> listOf(
+            MoreItem(PmIcons.Share, R.string.feature_more_team, R.string.feature_more_team_sub, actions.onOpenTeam),
             MoreItem(
                 PmIcons.Company, R.string.feature_more_companies, R.string.feature_more_companies_sub, actions.onOpenCompanies,
                 subtitleText = pluralStringResource(R.plurals.feature_more_company_count, state.companies.size, state.companies.size) +
@@ -82,6 +84,7 @@ internal fun MoreScreen(state: MoreUiState, actions: MoreActions, modifier: Modi
             ),
         )
         AccountMode.COMPANY -> listOf(
+            MoreItem(PmIcons.Share, R.string.feature_more_team, R.string.feature_more_team_sub, actions.onOpenTeam),
             MoreItem(
                 PmIcons.Company, R.string.feature_more_company, R.string.feature_more_company_sub,
                 { state.defaultCompany?.let { actions.onOpenCompany(it.id) } },

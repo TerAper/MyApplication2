@@ -1,0 +1,58 @@
+rules_version = '2';
+
+// PrintMaster shared space. Paste into Firebase console → Firestore Database → Rules → Publish.
+// The company (owner) sees and writes everything of its space; a master who joined with the
+// join code sees only orders assigned to him, the clients of those orders and the price list.
+// Debts and payments never leave the company's phone, so there is nothing about money here.
+service cloud.firestore {
+  match /databases/{db}/documents {
+
+    function signedIn() { return request.auth != null; }
+    function space(w) { return get(/databases/$(db)/documents/workspaces/$(w)).data; }
+    function isOwner(w) { return signedIn() && space(w).ownerUid == request.auth.uid; }
+    function isMember(w) { return signedIn() && exists(/databases/$(db)/documents/workspaces/$(w)/members/$(request.auth.uid)); }
+    function mine() { return request.resource.data.author == request.auth.uid; }
+
+    // A code can be looked up only by its exact value, never listed.
+    match /joinCodes/{code} {
+      allow get: if signedIn();
+      allow create, update: if signedIn() && isOwner(request.resource.data.workspaceId);
+      allow delete: if signedIn() && isOwner(resource.data.workspaceId);
+    }
+
+    match /workspaces/{w} {
+      allow create: if signedIn() && request.resource.data.ownerUid == request.auth.uid;
+      allow get: if isOwner(w) || isMember(w);
+      allow update: if isOwner(w) && request.resource.data.ownerUid == resource.data.ownerUid;
+
+      // Joining: only yourself, and only with the space's current code.
+      match /members/{uid} {
+        allow read: if isOwner(w) || (signedIn() && request.auth.uid == uid);
+        allow create: if signedIn() && request.auth.uid == uid && request.resource.data.joinCode == space(w).joinCode;
+        allow delete: if isOwner(w) || (signedIn() && request.auth.uid == uid);
+      }
+
+      match /orders/{id} {
+        allow read: if isOwner(w) || (isMember(w) && resource.data.masterUid == request.auth.uid);
+        allow create: if (isOwner(w) || (isMember(w) && request.resource.data.masterUid == request.auth.uid)) && mine();
+        allow update: if (isOwner(w) || (isMember(w) && resource.data.masterUid == request.auth.uid
+                                          && request.resource.data.masterUid == request.auth.uid)) && mine();
+      }
+
+      match /clients/{id} {
+        allow read: if isOwner(w) || (isMember(w) && request.auth.uid in resource.data.visibleTo);
+        // A master may add a client (the company reviews it) and keep editing only that one.
+        allow create: if (isOwner(w) || (isMember(w) && request.resource.data.createdByMaster == true
+                                          && request.resource.data.visibleTo == [request.auth.uid])) && mine();
+        allow update: if (isOwner(w) || (isMember(w) && resource.data.createdByMaster == true
+                                          && request.auth.uid in resource.data.visibleTo
+                                          && request.resource.data.visibleTo == resource.data.visibleTo)) && mine();
+      }
+
+      match /prices/{id} {
+        allow read: if isOwner(w) || isMember(w);
+        allow write: if isOwner(w) && mine();
+      }
+    }
+  }
+}

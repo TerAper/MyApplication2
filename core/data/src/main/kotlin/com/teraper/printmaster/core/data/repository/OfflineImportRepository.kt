@@ -3,6 +3,7 @@ package com.teraper.printmaster.core.data.repository
 import android.content.Context
 import android.net.Uri
 import androidx.room.withTransaction
+import com.teraper.printmaster.core.data.analytics.AppAnalytics
 import com.teraper.printmaster.core.data.excel.XlsxReader
 import com.teraper.printmaster.core.database.PrintMasterDatabase
 import com.teraper.printmaster.core.database.dao.CompanyDao
@@ -62,6 +63,7 @@ internal class OfflineImportRepository @Inject constructor(
     private val companyDao: CompanyDao,
     private val companies: CompaniesRepository,
     private val clock: Clock,
+    private val analytics: AppAnalytics,
 ) : ImportRepository {
 
     /** The file shown in the last preview, waiting for "Import". */
@@ -118,6 +120,7 @@ internal class OfflineImportRepository @Inject constructor(
             dao.updateBatchCounts(batchId, result.added, preview.rows - result.added - result.updated)
             // New invoices and clients can tell who earlier unmatched payments were from.
             rematchPending(companyId)
+            analytics.log("excel_import", mapOf("kind" to preview.kind.name, "added" to result.added))
             result.copy(pending = dao.getPending(companyId).size)
         }
     }

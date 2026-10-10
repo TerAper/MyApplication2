@@ -15,3 +15,6 @@ build/
 local.properties
 
 /.kotlin
+
+# Firebase project config (per install of the project; the app builds without it)
+app/google-services.json

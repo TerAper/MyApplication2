@@ -35,4 +35,6 @@
         <item quantity="one">%1$d ընկերություն</item>
         <item quantity="other">%1$d ընկերություն</item>
     </plurals>
+    <string name="feature_more_team">Վարպետներ և համօգտագործում</string>
+    <string name="feature_more_team_sub">Պատվերներ վարպետների հեռախոսներին</string>
 </resources>

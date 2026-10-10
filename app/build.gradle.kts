@@ -5,6 +5,12 @@ plugins {
     alias(libs.plugins.kotlin.serialization)
 }
 
+// Firebase (sharing with masters, analytics) needs the project's google-services.json.
+// Without it the app still builds; sharing then says it isn't set up.
+if (file("google-services.json").exists()) {
+    apply(plugin = libs.plugins.google.services.get().pluginId)
+}
+
 android {
     namespace = "com.teraper.printmaster"
 
@@ -40,6 +46,7 @@ dependencies {
     implementation(projects.feature.reports)
     implementation(projects.feature.calls)
     implementation(projects.feature.imports)
+    implementation(projects.feature.team)
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.activity.compose)

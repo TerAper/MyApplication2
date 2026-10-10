@@ -20,6 +20,9 @@ interface SyncDao {
     @Query("SELECT * FROM sync_outbox")
     suspend fun getOutbox(): List<SyncOutboxEntity>
 
+    @Query("SELECT COUNT(*) FROM sync_outbox")
+    fun observeOutboxCount(): kotlinx.coroutines.flow.Flow<Int>
+
     @Query("DELETE FROM sync_outbox WHERE entity = :entity AND row_id = :rowId")
     suspend fun deleteOutbox(entity: String, rowId: Long)
 
@@ -79,6 +82,9 @@ interface SyncDao {
         """,
     )
     suspend fun countSharedOrders(clientId: Long): Int
+
+    @Query("SELECT DISTINCT m.member_uid FROM orders o JOIN masters m ON m.id = o.master_id WHERE o.client_id = :clientId AND m.member_uid IS NOT NULL")
+    suspend fun getMemberUidsOfClient(clientId: Long): List<String>
 
     @Query("SELECT id FROM client_printers WHERE client_id = :clientId")
     suspend fun getClientPrinterIds(clientId: Long): List<Long>

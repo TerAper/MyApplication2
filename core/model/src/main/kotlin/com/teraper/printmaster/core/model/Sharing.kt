@@ -17,6 +17,8 @@ data class SharedClient(
     val printers: List<SharedPrinter> = emptyList(),
     /** Added by a master in the field; the company reviews it. */
     val createdByMaster: Boolean = false,
+    /** Masters (account ids) allowed to see this client: those with an order for it. */
+    val visibleTo: List<String> = emptyList(),
 )
 
 data class SharedContact(val value: String, val label: String = "", val mapLink: String? = null)
