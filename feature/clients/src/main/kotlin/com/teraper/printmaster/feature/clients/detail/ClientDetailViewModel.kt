@@ -92,6 +92,11 @@ class ClientDetailViewModel @Inject constructor(
     private val _events = Channel<ClientDetailEvent>(Channel.BUFFERED)
     val events: Flow<ClientDetailEvent> = _events.receiveAsFlow()
 
+    init {
+        // Calls recorded since the last look show up on the page without waiting for the background check.
+        viewModelScope.launch { callRecordingsRepository.refresh() }
+    }
+
     private class Records(
         val summary: ClientSummary?,
         val ledger: List<LedgerEntry>,

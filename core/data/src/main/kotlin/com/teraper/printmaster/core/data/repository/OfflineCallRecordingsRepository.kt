@@ -17,10 +17,16 @@ import com.teraper.printmaster.core.database.entity.CallRecordingClientEntity
 import com.teraper.printmaster.core.database.entity.CallRecordingEntity
 import com.teraper.printmaster.core.model.CallFolderStatus
 import com.teraper.printmaster.core.model.CallRecording
-import com.teraper.printmaster.core.model.ClientSearch
 import com.teraper.printmaster.core.model.RecordingClient
 import com.teraper.printmaster.core.model.RecordingNames
+import com.teraper.printmaster.core.model.RecordingMatcher
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -34,6 +40,7 @@ import java.time.Instant
 import javax.inject.Inject
 import javax.inject.Singleton
 
+@OptIn(FlowPreview::class)
 @Singleton
 internal class OfflineCallRecordingsRepository @Inject constructor(
     @ApplicationContext private val context: Context,
@@ -82,13 +89,28 @@ internal class OfflineCallRecordingsRepository @Inject constructor(
     }
 
     override fun onContactsPermissionChanged() {
-        contactsAllowed.value = hasContactsPermission()
+        val allowed = hasContactsPermission()
+        val newlyAllowed = allowed && !contactsAllowed.value
+        contactsAllowed.value = allowed
+        // Recordings named after contacts can be matched now.
+        if (newlyAllowed) CallRecordingsSync.schedule(context)
     }
 
-    override suspend fun scan(): ScanResult = scanLock.withLock {
+    override suspend fun scan(): ScanResult = read(sinceMillis = null)
+
+    override suspend fun refresh(): ScanResult {
+        val last = prefs.getLong(KEY_LAST_LOOK, 0L)
+        if (clock.millis() - last < REFRESH_PAUSE_MS) return ScanResult()
+        // A file can show up a little after its time (it's written while the call goes on).
+        return read(sinceMillis = (last - LOOK_MARGIN_MS).takeIf { last > 0 })
+    }
+
+    /** [sinceMillis] null = the whole folder (and forget deleted files); else only files changed after it. */
+    private suspend fun read(sinceMillis: Long?): ScanResult = scanLock.withLock {
         withContext(Dispatchers.IO) {
             contactsAllowed.value = hasContactsPermission()
             val tree = folder.value ?: return@withContext ScanResult()
+            val startedAt = clock.millis()
             val files = try {
                 listFolder(Uri.parse(tree))
             } catch (e: CancellationException) {
@@ -97,12 +119,25 @@ internal class OfflineCallRecordingsRepository @Inject constructor(
                 // Permission taken back, or the folder was removed.
                 return@withContext ScanResult(folderMissing = true)
             }
-            importFiles(files)
+            val result = if (sinceMillis == null) importFiles(files) else importFiles(files.filter { it.modifiedAt > sinceMillis }, forgetMissing = false)
+            prefs.edit().putLong(KEY_LAST_LOOK, startedAt).apply()
+            result
         }
     }
 
-    /** Adds recordings not seen before, forgets deleted ones, then matches. [files] = the whole folder. */
-    internal suspend fun importFiles(files: List<FolderFile>): ScanResult {
+    override fun startWatching(scope: CoroutineScope) {
+        scope.launch {
+            // A number or name added to a client: its older recordings are found at once.
+            combine(dao.observeClientPhones(), dao.observeClientNames(), ::Pair)
+                .distinctUntilChanged()
+                .drop(1)
+                .debounce(1_000)
+                .collect { scanLock.withLock { rematch() } }
+        }
+    }
+
+    /** Adds recordings not seen before, forgets deleted ones ([forgetMissing], when [files] is the whole folder), then matches. */
+    internal suspend fun importFiles(files: List<FolderFile>, forgetMissing: Boolean = true): ScanResult {
         val prefixes = RecordingNames.KNOWN_PREFIXES + listOfNotNull(
             RecordingNames.learnPrefix(files.map { it.name })
                 .takeIf { files.none { file -> RecordingNames.KNOWN_PREFIXES.any { file.name.startsWith("$it ", ignoreCase = true) } } },
@@ -125,59 +160,73 @@ internal class OfflineCallRecordingsRepository @Inject constructor(
             )
             if (id > 0) added++
         }
-        val listed = files.mapTo(HashSet()) { it.uri }
-        (known - listed).chunked(500).forEach { dao.deleteByUris(it) }
-
-        return ScanResult(added = added, matched = matchUnmatched())
-    }
-
-    /** Matches every recording without a client: by its number, or by the contact's numbers, or by the client's name. */
-    private suspend fun matchUnmatched(): Int {
-        val unmatched = dao.getUnmatched()
-        if (unmatched.isEmpty()) return 0
-        val clientsByPhone = dao.getClientPhones().groupBy({ ClientSearch.normalizePhone(it.number) }, { it.clientId })
-        val clientsByName = dao.getClientNames().groupBy({ ClientSearch.normalizeText(it.number) }, { it.clientId })
-        val contacts = if (contactsAllowed.value) contactNumbers() else emptyMap()
-
-        val links = unmatched.flatMap { recording ->
-            val caller = ClientSearch.normalizeText(recording.caller)
-            val phones = RecordingNames.phoneOf(recording.caller)?.let(::listOf) ?: contacts[caller].orEmpty()
-            val clientIds = phones.flatMap { clientsByPhone[it].orEmpty() }.toSet()
-                .ifEmpty { clientsByName[caller].orEmpty().toSet() }
-            clientIds.map { CallRecordingClientEntity(recording.id, it, manual = false) }
+        if (forgetMissing) {
+            val listed = files.mapTo(HashSet()) { it.uri }
+            (known - listed).chunked(500).forEach { dao.deleteByUris(it) }
         }
-        db.withTransaction { dao.insertLinks(links) }
-        return links.distinctBy { it.recordingId }.size
+        return ScanResult(added = added, matched = rematch())
     }
 
-    /** Phone-book names (normalized) → their numbers (normalized). */
-    private fun contactNumbers(): Map<String, List<String>> = try {
+    /**
+     * Matches every recording again (not only new ones): a client may have got a number since,
+     * or a contact was saved. What the user attached or took off by hand stays as they left it.
+     * Returns how many recordings have a client now.
+     */
+    private suspend fun rematch(): Int {
+        val recordings = dao.getMatchable()
+        val matcher = RecordingMatcher(
+            clientPhones = dao.getClientPhones().map { it.clientId to it.number },
+            clientNames = dao.getClientNames().map { it.clientId to it.number },
+            contacts = if (contactsAllowed.value) contacts() else emptyList(),
+        )
+        val links = dao.getAllLinks().groupBy { it.recordingId }
+        val add = ArrayList<CallRecordingClientEntity>()
+        val remove = ArrayList<CallRecordingClientEntity>()
+        for (recording in recordings) {
+            val existing = links[recording.id].orEmpty()
+            val wanted = matcher.clientsOf(recording.caller)
+            // Automatic links that no longer fit (a number moved to another client) go; the user's stay.
+            remove += existing.filter { !it.manual && !it.rejected && it.clientId !in wanted }
+            add += wanted.filter { id -> existing.none { it.clientId == id } }.map { CallRecordingClientEntity(recording.id, it, manual = false) }
+        }
+        db.withTransaction {
+            remove.forEach { dao.deleteLink(it.recordingId, it.clientId) }
+            dao.insertLinks(add)
+        }
+        val linked = dao.getAllLinks().filterNot { it.rejected }.mapTo(HashSet()) { it.recordingId }
+        return recordings.count { it.id in linked }
+    }
+
+    /** Phone book: (name, number) of every contact number. */
+    private fun contacts(): List<Pair<String, String>> = try {
         context.contentResolver.query(
             ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
             arrayOf(ContactsContract.CommonDataKinds.Phone.DISPLAY_NAME, ContactsContract.CommonDataKinds.Phone.NUMBER),
             null, null, null,
         )?.use { cursor ->
-            buildMap<String, MutableList<String>> {
+            buildList {
                 while (cursor.moveToNext()) {
                     val name = cursor.getString(0) ?: continue
                     val number = cursor.getString(1) ?: continue
-                    getOrPut(ClientSearch.normalizeText(name)) { mutableListOf() } += ClientSearch.normalizePhone(number)
+                    add(name to number)
                 }
             }
         }.orEmpty()
     } catch (e: SecurityException) {
-        emptyMap()
+        emptyList()
     }
 
     override suspend fun attach(recordingId: Long, clientId: Long) {
-        dao.insertLinks(listOf(CallRecordingClientEntity(recordingId, clientId, manual = true)))
+        dao.upsertLink(CallRecordingClientEntity(recordingId, clientId, manual = true))
     }
 
-    override suspend fun detach(recordingId: Long, clientId: Long) = dao.deleteLink(recordingId, clientId)
+    /** Kept as taken off, so automatic matching doesn't put it back. */
+    override suspend fun detach(recordingId: Long, clientId: Long) = dao.rejectLink(recordingId, clientId)
 
     override suspend fun setIgnored(recordingId: Long, ignored: Boolean) = dao.setIgnored(recordingId, ignored)
 
-    internal data class FolderFile(val uri: String, val name: String)
+    /** [modifiedAt]: epoch millis the file last changed (0 = unknown, read every time). */
+    internal data class FolderFile(val uri: String, val name: String, val modifiedAt: Long = Long.MAX_VALUE)
 
     private fun listFolder(tree: Uri): List<FolderFile> {
         val children = DocumentsContract.buildChildDocumentsUriUsingTree(tree, DocumentsContract.getTreeDocumentId(tree))
@@ -185,6 +234,7 @@ internal class OfflineCallRecordingsRepository @Inject constructor(
             DocumentsContract.Document.COLUMN_DOCUMENT_ID,
             DocumentsContract.Document.COLUMN_DISPLAY_NAME,
             DocumentsContract.Document.COLUMN_MIME_TYPE,
+            DocumentsContract.Document.COLUMN_LAST_MODIFIED,
         )
         val cursor = context.contentResolver.query(children, projection, null, null, null) ?: error("Folder not readable")
         return cursor.use {
@@ -192,7 +242,8 @@ internal class OfflineCallRecordingsRepository @Inject constructor(
                 while (it.moveToNext()) {
                     if (it.getString(2) == DocumentsContract.Document.MIME_TYPE_DIR) continue
                     val name = it.getString(1) ?: continue
-                    add(FolderFile(DocumentsContract.buildDocumentUriUsingTree(tree, it.getString(0)).toString(), name))
+                    val modified = if (it.isNull(3)) Long.MAX_VALUE else it.getLong(3)
+                    add(FolderFile(DocumentsContract.buildDocumentUriUsingTree(tree, it.getString(0)).toString(), name, modified))
                 }
             }
         }
@@ -234,5 +285,10 @@ internal class OfflineCallRecordingsRepository @Inject constructor(
     private companion object {
         const val PREFS = "call_recordings"
         const val KEY_FOLDER = "folder"
+        const val KEY_LAST_LOOK = "last_look"
+
+        /** Opening several client pages in a row doesn't read the folder each time. */
+        const val REFRESH_PAUSE_MS = 20_000L
+        const val LOOK_MARGIN_MS = 10 * 60_000L
     }
 }

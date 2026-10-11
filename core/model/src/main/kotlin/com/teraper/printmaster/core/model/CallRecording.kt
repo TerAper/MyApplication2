@@ -96,3 +96,44 @@ data class CallFolderStatus(
     val total: Int = 0,
     val unmatched: Int = 0,
 )
+
+/**
+ * Which clients a recording belongs to, from the caller in its file name:
+ *  - a number: clients with that number;
+ *  - a phone-book name: clients with any of that contact's numbers (Samsung names the file
+ *    after the contact once the number is saved, so older files of the same person have the number);
+ *  - otherwise a client with exactly that name.
+ * Names are compared without spaces, punctuation or case, since file names can't hold every character;
+ * a very long name may be cut in the file, so a contact whose name starts with it also counts.
+ */
+class RecordingMatcher(
+    clientPhones: List<Pair<Long, String>>,
+    clientNames: List<Pair<Long, String>>,
+    /** Phone book: contact name → its numbers, as the phone gives them. */
+    contacts: List<Pair<String, String>>,
+) {
+    private val clientsByPhone = clientPhones.groupBy({ ClientSearch.normalizePhone(it.second) }, { it.first })
+    private val clientsByName = clientNames.groupBy({ compact(it.second) }, { it.first })
+    private val contactNumbers = contacts.groupBy({ compact(it.first) }, { ClientSearch.normalizePhone(it.second) })
+
+    fun clientsOf(caller: String): Set<Long> {
+        RecordingNames.phoneOf(caller)?.let { return clientsByPhone[it].orEmpty().toSet() }
+        val key = compact(caller)
+        if (key.isEmpty()) return emptySet()
+        val numbers = contactNumbers[key] ?: if (key.length >= MIN_CUT_NAME) {
+            contactNumbers.filterKeys { it.startsWith(key) }.values.flatten()
+        } else {
+            null
+        }
+        val byPhone = numbers.orEmpty().flatMap { clientsByPhone[it].orEmpty() }.toSet()
+        return byPhone.ifEmpty { clientsByName[key].orEmpty().toSet() }
+    }
+
+    companion object {
+        /** A name shorter than this isn't trusted as the start of a longer one. */
+        private const val MIN_CUT_NAME = 12
+
+        /** Letters and digits only, lower case: "Davtashen Mankapartezi, Dimac" → "davtashenmankapartezidimac". */
+        fun compact(name: String): String = name.lowercase().filter { it.isLetterOrDigit() }
+    }
+}

@@ -37,6 +37,15 @@ class FakeCallRecordingsRepository(initial: List<CallRecording> = emptyList()) :
         return ScanResult()
     }
 
+    var refreshes = 0
+
+    override suspend fun refresh(): ScanResult {
+        refreshes++
+        return ScanResult()
+    }
+
+    override fun startWatching(scope: kotlinx.coroutines.CoroutineScope) = Unit
+
     override fun onContactsPermissionChanged() = Unit
 
     override suspend fun attach(recordingId: Long, clientId: Long) = update(recordingId) {

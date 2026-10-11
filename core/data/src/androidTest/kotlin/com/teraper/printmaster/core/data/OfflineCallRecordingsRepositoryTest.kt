@@ -88,4 +88,34 @@ class OfflineCallRecordingsRepositoryTest {
         val recording = calls.observeRecordings().first().single()
         assertTrue(recording.clients.isEmpty())
     }
+
+    @Test
+    fun aNumberAddedToAClientBringsItsOlderRecordingsAndTakenOffStaysOff() = runTest {
+        repos.register()
+        val atec = client("Atec", "091 111111")
+        val other = client("Other", "093 222222")
+        val files = listOf(file("Call recording 093222222_261008_100000.m4a"), file("Call recording 093222222_261009_110000.m4a"))
+        calls.importFiles(files)
+        assertEquals(2, calls.observeClientRecordings(other).first().size)
+
+        // The number moves to Atec: its recordings move with it.
+        repos.clients.saveClient(ClientDraft(id = atec, type = ClientType.PRIVATE, name = "Atec", phones = listOf(ContactDraft(value = "091 111111"), ContactDraft(value = "093 222222"))))
+        repos.clients.saveClient(ClientDraft(id = other, type = ClientType.PRIVATE, name = "Other"))
+        calls.importFiles(emptyList(), forgetMissing = false)
+        assertEquals(2, calls.observeClientRecordings(atec).first().size)
+        assertTrue(calls.observeClientRecordings(other).first().isEmpty())
+
+        // Taken off by hand: matching again doesn't put it back.
+        val first = calls.observeClientRecordings(atec).first().first()
+        calls.detach(first.id, atec)
+        calls.importFiles(emptyList(), forgetMissing = false)
+        assertEquals(1, calls.observeClientRecordings(atec).first().size)
+        // Attaching by hand undoes it.
+        calls.attach(first.id, atec)
+        assertEquals(2, calls.observeClientRecordings(atec).first().size)
+
+        // A quick look reads only some files and forgets nothing.
+        calls.importFiles(files.take(1), forgetMissing = false)
+        assertEquals(2, calls.observeRecordings().first().size)
+    }
 }

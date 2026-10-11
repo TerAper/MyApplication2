@@ -17,8 +17,17 @@ interface CallRecordingsRepository {
     /** Starts watching the folder the user picked (a document-tree URI). False if it can't be read. */
     suspend fun setFolder(treeUri: String): Boolean
 
-    /** Looks for new recordings and matches every unmatched one again. */
+    /** Reads the whole folder: new recordings are added, deleted ones forgotten, then all are matched again. */
     suspend fun scan(): ScanResult
+
+    /**
+     * Quick look for recordings made since the last look (e.g. when a client's page opens):
+     * only files changed after it are read. Skipped when the last look was moments ago.
+     */
+    suspend fun refresh(): ScanResult
+
+    /** Matches recordings again whenever clients' numbers or names change (a number added to a client). */
+    fun startWatching(scope: kotlinx.coroutines.CoroutineScope)
 
     /** Call after the contacts permission was granted or refused. */
     fun onContactsPermissionChanged()

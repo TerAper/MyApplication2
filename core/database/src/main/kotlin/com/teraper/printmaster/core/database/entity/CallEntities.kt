@@ -53,4 +53,6 @@ data class CallRecordingClientEntity(
     @ColumnInfo(name = "client_id") val clientId: Long,
     /** Attached by hand rather than by phone number. */
     val manual: Boolean,
+    /** The user took it off this client: automatic matching never puts it back. */
+    @ColumnInfo(defaultValue = "0") val rejected: Boolean = false,
 )
