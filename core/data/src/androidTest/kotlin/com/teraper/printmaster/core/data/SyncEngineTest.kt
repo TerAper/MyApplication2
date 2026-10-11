@@ -209,7 +209,7 @@ class SyncEngineTest {
     fun twoPrintersOfOneModelStayTwoAndWorkGoesToTheRightOne() = runTest {
         setUp()
         val model = PrinterModelDraft(brand = "HP", name = "M125", cartridges = listOf(CartridgeDraft("CF283A")))
-        apo.printers.savePrinter(ClientPrinterDraft(clientId = gamma, model = model, selectedCartridges = setOf(model.cartridges.single().key), location = "Accounting"))
+        apo.printers.savePrinter(ClientPrinterDraft(clientId = gamma, model = model, selectedCartridges = setOf(model.cartridges.single().key), location = "Accounting", serialNumber = "CNB8K12345"))
         apoEngine.sync()
         armenEngine.sync()
 
@@ -218,6 +218,9 @@ class SyncEngineTest {
         val printers = armen.printers.observeClientPrinters(client).first()
         assertEquals(2, printers.size)
         val accounting = printers.single { it.location == "Accounting" }
+        // The serial goes to the master's phone too, so he can find the printer by scanning it.
+        assertEquals("CNB8K12345", accounting.serialNumber)
+        assertEquals(listOf(accounting.id), armen.printers.findBySerial("cnb8k12345").map { it.printer.id })
         val refill = armen.priceList.observeItemsFor(armenXerox).first().single()
         armen.repairs.saveRepair(RepairDraft(orderId = orderId).withDevice(accounting.id, accounting.cartridges.single().id).plus(refill))
         armen.repairs.finishOrder(orderId, paidInCash = false)
@@ -230,5 +233,8 @@ class SyncEngineTest {
         val device = apo.repairs.observeOrderWork(apoOrder().id).first().repairs.single().device!!
         assertEquals("Accounting", device.printer.location)
         assertEquals("CF283A · HP M125 (Accounting)", device.name)
+        // On Apo's phone the serial finds the printer and the order done on it.
+        val found = apo.printers.findBySerial("CNB8K12345").single()
+        assertEquals(listOf("Refill two cartridges"), apo.orders.observePrinterOrders(found.printer.id).first().map { it.description })
     }
 }

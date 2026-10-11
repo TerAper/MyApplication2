@@ -44,6 +44,7 @@ import androidx.compose.material.icons.rounded.SettingsBackupRestore
 import androidx.compose.material.icons.rounded.Share
 import androidx.compose.material.icons.rounded.AccountCircle
 import androidx.compose.material.icons.rounded.Lock
+import androidx.compose.material.icons.rounded.QrCodeScanner
 import androidx.compose.material.icons.rounded.Star
 import androidx.compose.material.icons.rounded.UploadFile
 import androidx.compose.material.icons.rounded.WarningAmber
@@ -89,6 +90,7 @@ object PmIcons {
     val Language: ImageVector = Icons.Rounded.Language
     val Share: ImageVector = Icons.Rounded.Share
     val Lock: ImageVector = Icons.Rounded.Lock
+    val Scan: ImageVector = Icons.Rounded.QrCodeScanner
     val Google: ImageVector = Icons.Rounded.AccountCircle
     val Play: ImageVector = Icons.Rounded.PlayArrow
     val Pause: ImageVector = Icons.Rounded.Pause

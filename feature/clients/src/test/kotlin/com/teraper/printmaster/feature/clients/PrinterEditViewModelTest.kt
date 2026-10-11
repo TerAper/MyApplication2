@@ -20,6 +20,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.advanceTimeBy
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -117,5 +118,20 @@ class PrinterEditViewModelTest {
         vm.onLocationChange("x")
         vm.onCloseRequest()
         assertEquals(PrinterEditDialog.DISCARD, vm.uiState.value.form.dialog)
+    }
+
+    @Test
+    fun aScannedSerialIsCleanedAndASerialOnAnotherPrinterIsPointedOut() = runTest {
+        val vm = vm()
+        printers.serialMatches = listOf(
+            com.teraper.printmaster.core.model.SerialMatch(ClientPrinter(9, 3, m125, serialNumber = "CNB8K12345"), "Gamma", exact = true),
+        )
+        vm.onSerialScanned("S/N: CNB8K12345")
+        assertEquals("CNB8K12345", vm.uiState.value.form.draft.serialNumber)
+        advanceTimeBy(500)
+        assertEquals("Gamma · HP LaserJet M125", vm.uiState.value.form.serialTakenBy)
+
+        vm.onScanUnavailable()
+        assertTrue(vm.uiState.value.form.scanUnavailable)
     }
 }

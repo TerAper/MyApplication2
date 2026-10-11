@@ -177,4 +177,25 @@ class OfflineCatalogRepositoryTest {
         assertEquals("Office", owner.location)
         assertEquals(CatalogNames.codeKey("CF283A"), m125.cartridges.single().key)
     }
+
+    @Test
+    fun serialNumbersAreSavedCleanAndFoundHoweverTheyAreTyped() = runTest {
+        val id = (printers.savePrinter(ClientPrinterDraft(clientId = clientId, model = m125, serialNumber = "S/N: cnb8 k12345")) as SavePrinterResult.Saved).printerId
+        printers.savePrinter(ClientPrinterDraft(clientId = clientId, model = m125, serialNumber = "CNB8K99999", location = "Office"))
+        assertEquals("cnb8 k12345", printers.getPrinter(id)!!.serialNumber)
+
+        val exact = printers.findBySerial("CNB8K12345")
+        assertEquals(listOf(id), exact.map { it.printer.id })
+        assertTrue(exact.single().exact)
+        assertEquals("Firm", exact.single().clientName)
+        // Part of the label read: both printers whose serial contains it, none of them exact.
+        val partial = printers.findBySerial("cnb8k")
+        assertEquals(2, partial.size)
+        assertTrue(partial.none { it.exact })
+        assertTrue(printers.findBySerial("ZZZZ1").isEmpty())
+
+        // Cleared serial: no longer found.
+        printers.savePrinter(ClientPrinterDraft.from(printers.getPrinter(id)!!).copy(serialNumber = " "))
+        assertTrue(printers.findBySerial("CNB8K12345").isEmpty())
+    }
 }

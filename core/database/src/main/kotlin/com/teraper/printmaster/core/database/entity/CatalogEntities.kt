@@ -112,7 +112,7 @@ data class CartridgeChipCrossRef(
             onDelete = ForeignKey.RESTRICT,
         ),
     ],
-    indices = [Index(value = ["client_id"]), Index(value = ["model_id"])],
+    indices = [Index(value = ["client_id"]), Index(value = ["model_id"]), Index(value = ["serial_key"])],
 )
 data class ClientPrinterEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
@@ -123,6 +123,10 @@ data class ClientPrinterEntity(
     val note: String = "",
     /** Same printer on every phone of the company; a client can have two of one model. */
     @ColumnInfo(name = "sync_id") val syncId: String? = null,
+    /** The serial number as typed or scanned from the label; null = not known. */
+    @ColumnInfo(name = "serial_number") val serialNumber: String? = null,
+    /** [serialNumber] for searching: letters and digits only, upper case (see SerialNumbers.key). */
+    @ColumnInfo(name = "serial_key") val serialKey: String? = null,
 )
 
 /** A cartridge attached to one of the client's printers. */

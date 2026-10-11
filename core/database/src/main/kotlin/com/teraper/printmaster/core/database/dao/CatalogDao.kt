@@ -55,6 +55,17 @@ interface CatalogDao {
     @Query("SELECT * FROM client_printers WHERE id = :id")
     suspend fun getClientPrinter(id: Long): ClientPrinterWithDetails?
 
+    /** Printers whose serial is [key] exactly, or contains it when [partial] (a part of the label read). */
+    @Transaction
+    @Query(
+        """
+        SELECT * FROM client_printers WHERE serial_key = :key
+           OR (:partial AND length(:key) >= 4 AND serial_key LIKE '%' || :key || '%')
+        ORDER BY serial_key = :key DESC, id
+        """,
+    )
+    suspend fun findClientPrintersBySerial(key: String, partial: Boolean): List<ClientPrinterWithDetails>
+
     @Query("SELECT * FROM brands")
     suspend fun getBrands(): List<BrandEntity>
 

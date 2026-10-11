@@ -3,6 +3,9 @@ package com.teraper.printmaster.feature.clients.list
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.teraper.printmaster.core.data.repository.ClientsRepository
+import com.teraper.printmaster.core.data.repository.PrintersRepository
+import com.teraper.printmaster.core.model.SerialMatch
+import com.teraper.printmaster.core.model.SerialNumbers
 import com.teraper.printmaster.core.model.ClientSearch
 import com.teraper.printmaster.core.model.ClientSummary
 import com.teraper.printmaster.core.model.ClientType
@@ -12,6 +15,9 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
 import javax.inject.Inject
 
@@ -32,11 +38,15 @@ data class ClientListUiState(
     val clients: List<ClientSummary> = emptyList(),
     /** All clients, ignoring search and filter (for "All · 214" and the empty state). */
     val totalCount: Int = 0,
+    /** Printers whose serial number has what's typed: a serial can be searched like a name. */
+    val printers: List<SerialMatch> = emptyList(),
 )
 
+@OptIn(kotlinx.coroutines.FlowPreview::class)
 @HiltViewModel
 class ClientListViewModel @Inject constructor(
     clientsRepository: ClientsRepository,
+    printersRepository: PrintersRepository,
 ) : ViewModel() {
 
     // Kept outside uiState so the search field updates synchronously while typing.
@@ -45,16 +55,22 @@ class ClientListViewModel @Inject constructor(
 
     private val filter = MutableStateFlow(ClientFilter.ALL)
 
+    private val serialMatches = _query.debounce(300).map { query ->
+        if (SerialNumbers.key(query).length >= MIN_SERIAL) printersRepository.findBySerial(query) else emptyList()
+    }.onStart { emit(emptyList()) }
+
     val uiState: StateFlow<ClientListUiState> = combine(
         clientsRepository.observeClientSummaries(),
         _query,
         filter,
-    ) { all, query, filter ->
+        serialMatches,
+    ) { all, query, filter, printers ->
         ClientListUiState(
             isLoading = false,
             filter = filter,
             clients = all.filter { filter.accepts(it) && ClientSearch.matches(it.client, query) },
             totalCount = all.size,
+            printers = if (query.isBlank()) emptyList() else printers,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ClientListUiState())
 
@@ -64,5 +80,10 @@ class ClientListViewModel @Inject constructor(
 
     fun onFilterChange(filter: ClientFilter) {
         this.filter.value = filter
+    }
+
+    private companion object {
+        /** Fewer letters would find too many serials. */
+        const val MIN_SERIAL = 4
     }
 }

@@ -32,6 +32,7 @@ data class SharedPrinter(
     val location: String = "",
     /** The client's printer itself: a client can have two of one model. */
     val id: String = "",
+    val serialNumber: String = "",
 )
 
 /** An order and, once done, the work and how it was paid. */

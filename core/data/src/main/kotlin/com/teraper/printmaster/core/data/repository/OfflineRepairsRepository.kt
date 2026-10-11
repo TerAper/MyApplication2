@@ -226,7 +226,10 @@ internal class OfflineRepairsRepository @Inject constructor(
         for (printer in sync.getClientPrinterIds(order.clientId).mapNotNull { catalog.getClientPrinter(it) }) {
             val same = ownPrinters.firstOrNull { it.printer.modelId == printer.printer.modelId && it.printer.location == printer.printer.location }
             val targetId = same?.printer?.id ?: catalog.insertClientPrinter(
-                ClientPrinterEntity(clientId = clientId, modelId = printer.printer.modelId, location = printer.printer.location, note = printer.printer.note),
+                ClientPrinterEntity(
+                    clientId = clientId, modelId = printer.printer.modelId, location = printer.printer.location, note = printer.printer.note,
+                    serialNumber = printer.printer.serialNumber, serialKey = printer.printer.serialKey,
+                ),
             )
             val existing = same?.cartridges?.map { it.row }.orEmpty()
             val missing = printer.cartridges.map { it.row }.filter { c -> existing.none { it.cartridgeId == c.cartridgeId } }

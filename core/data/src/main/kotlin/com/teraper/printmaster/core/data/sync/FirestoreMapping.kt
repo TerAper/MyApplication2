@@ -25,7 +25,7 @@ internal object FirestoreMapping {
         "printers" to printers.map {
             mapOf(
                 "brand" to it.brand, "model" to it.model, "printType" to it.printType.name, "colorType" to it.colorType.name,
-                "cartridges" to it.cartridges, "location" to it.location, "id" to it.id,
+                "cartridges" to it.cartridges, "location" to it.location, "id" to it.id, "serial" to it.serialNumber,
             )
         },
         "createdByMaster" to createdByMaster,
@@ -48,6 +48,7 @@ internal object FirestoreMapping {
                 cartridges = (it["cartridges"] as? List<*>).orEmpty().filterIsInstance<String>(),
                 location = it.string("location"),
                 id = it.string("id"),
+                serialNumber = it.string("serial"),
             )
         },
         createdByMaster = d["createdByMaster"] == true,

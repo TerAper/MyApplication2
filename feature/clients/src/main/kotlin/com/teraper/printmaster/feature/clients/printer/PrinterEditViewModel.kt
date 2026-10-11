@@ -15,10 +15,13 @@ import com.teraper.printmaster.core.model.ColorType
 import com.teraper.printmaster.core.model.PrintType
 import com.teraper.printmaster.core.model.PrinterDraftError
 import com.teraper.printmaster.core.model.PrinterModel
+import com.teraper.printmaster.core.model.SerialNumbers
 import com.teraper.printmaster.feature.clients.navigation.CLIENT_ID_ARG
 import com.teraper.printmaster.feature.clients.navigation.PRINTER_ID_ARG
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -53,6 +56,10 @@ data class PrinterForm(
     val isSaving: Boolean = false,
     val hasChanges: Boolean = false,
     val dialog: PrinterEditDialog? = null,
+    /** Another printer already has this serial: "Gamma · HP LaserJet M125". */
+    val serialTakenBy: String? = null,
+    /** The phone can't scan (no Google Play services). */
+    val scanUnavailable: Boolean = false,
 )
 
 data class PrinterEditUiState(
@@ -161,6 +168,27 @@ class PrinterEditViewModel @Inject constructor(
 
     fun onNoteChange(note: String) = editDraft { it.copy(note = note) }
 
+    private var serialCheck: Job? = null
+
+    fun onSerialChange(serial: String) {
+        editDraft { it.copy(serialNumber = serial) }
+        // Is it on another printer already (a printer that moved, or a typo)? Checked once typing pauses.
+        serialCheck?.cancel()
+        serialCheck = viewModelScope.launch {
+            delay(SERIAL_CHECK_DELAY_MS)
+            val other = printersRepository.findBySerial(serial).firstOrNull { it.exact && it.printer.id != printerId }
+            form.update { it.copy(serialTakenBy = other?.let { m -> "${m.clientName} · ${CatalogNames.clean("${m.printer.model.brand} ${m.printer.model.name}")}" }) }
+        }
+    }
+
+    /** The label's barcode, without "S/N:" and the like. */
+    fun onSerialScanned(text: String) {
+        form.update { it.copy(scanUnavailable = false) }
+        onSerialChange(SerialNumbers.clean(text))
+    }
+
+    fun onScanUnavailable() = form.update { it.copy(scanUnavailable = true) }
+
     fun onSave() {
         val state = form.value
         if (state.isSaving || state.isLoading) return
@@ -221,5 +249,6 @@ class PrinterEditViewModel @Inject constructor(
 
     private companion object {
         const val MAX_SUGGESTIONS = 6
+        const val SERIAL_CHECK_DELAY_MS = 400L
     }
 }

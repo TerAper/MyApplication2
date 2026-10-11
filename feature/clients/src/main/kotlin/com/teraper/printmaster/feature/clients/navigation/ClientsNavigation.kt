@@ -10,6 +10,7 @@ import com.teraper.printmaster.feature.clients.edit.ClientEditRoute
 import com.teraper.printmaster.feature.clients.entry.EntryDetailRoute
 import com.teraper.printmaster.feature.clients.list.ClientListRoute
 import com.teraper.printmaster.feature.clients.printer.PrinterEditRoute
+import com.teraper.printmaster.feature.clients.serial.SerialSearchRoute
 import kotlinx.serialization.Serializable
 
 /** The whole Clients tab (list + card + form), so the tab stays highlighted on every screen of it. */
@@ -29,6 +30,12 @@ data class ClientEditDestination(val clientId: Long = 0)
 /** [printerId] 0 = add a printer to the client. */
 @Serializable
 data class PrinterEditDestination(val clientId: Long, val printerId: Long = 0)
+
+/** Which printer has this serial ([serial] scanned or empty to type), and its orders. */
+@Serializable
+data class SerialSearchDestination(val serial: String = "")
+
+internal const val SERIAL_ARG = "serial"
 
 /** One row of a client's money history: a charge ([isCharge]) or a payment, with all its data. */
 @Serializable
@@ -61,6 +68,7 @@ fun NavGraphBuilder.clientsGraph(
             ClientListRoute(
                 onClientClick = { navController.navigate(ClientDetailDestination(it)) },
                 onAddClient = { navController.navigate(ClientEditDestination()) },
+                onSearchSerial = { navController.navigate(SerialSearchDestination(it)) },
             )
         }
         composable<ClientDetailDestination> {
@@ -80,6 +88,13 @@ fun NavGraphBuilder.clientsGraph(
             EntryDetailRoute(
                 onBack = navController::popBackStack,
                 onOpenEntry = { isCharge, id -> navController.navigate(EntryDetailDestination(isCharge, id)) },
+                onOpenOrder = onOpenOrder,
+            )
+        }
+        composable<SerialSearchDestination> {
+            SerialSearchRoute(
+                onBack = navController::popBackStack,
+                onOpenClient = { navController.navigate(ClientDetailDestination(it)) },
                 onOpenOrder = onOpenOrder,
             )
         }

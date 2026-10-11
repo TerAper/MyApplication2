@@ -55,6 +55,8 @@ import com.teraper.printmaster.core.model.PrinterDraftError
 import com.teraper.printmaster.core.model.PrinterModel
 import com.teraper.printmaster.core.model.PrinterModelDraft
 import com.teraper.printmaster.feature.clients.R
+import com.teraper.printmaster.feature.clients.common.rememberSerialScanner
+import com.teraper.printmaster.feature.clients.common.ScanOutcome
 
 @Composable
 internal fun PrinterEditRoute(
@@ -71,6 +73,13 @@ internal fun PrinterEditRoute(
         }
     }
     BackHandler(onBack = viewModel::onCloseRequest)
+    val scanSerial = rememberSerialScanner { outcome ->
+        when (outcome) {
+            is ScanOutcome.Read -> viewModel.onSerialScanned(outcome.text)
+            ScanOutcome.Unavailable -> viewModel.onScanUnavailable()
+            ScanOutcome.Closed -> Unit
+        }
+    }
 
     PrinterEditScreen(
         state = state,
@@ -90,6 +99,8 @@ internal fun PrinterEditRoute(
             onAddCartridge = viewModel::onAddCartridge,
             onLocationChange = viewModel::onLocationChange,
             onNoteChange = viewModel::onNoteChange,
+            onSerialChange = viewModel::onSerialChange,
+            onScanSerial = scanSerial,
             onSave = viewModel::onSave,
             onConfirmDelete = viewModel::onConfirmDelete,
             onDiscardConfirmed = viewModel::onDiscardConfirmed,
@@ -110,6 +121,8 @@ internal data class PrinterEditActions(
     val onPrintTypeChange: (PrintType) -> Unit = {},
     val onColorTypeChange: (ColorType) -> Unit = {},
     val onCartridgeToggle: (String) -> Unit = {},
+    val onSerialChange: (String) -> Unit = {},
+    val onScanSerial: () -> Unit = {},
     val onNewCartridgeChange: (CartridgeDraft) -> Unit = {},
     val onAddCartridge: () -> Unit = {},
     val onLocationChange: (String) -> Unit = {},
@@ -161,6 +174,24 @@ internal fun PrinterEditScreen(
             }
 
             SectionTitle(stringResource(R.string.feature_clients_printer_section_place))
+            PmTextField(
+                value = draft.serialNumber,
+                onValueChange = actions.onSerialChange,
+                label = stringResource(R.string.feature_clients_printer_serial),
+                placeholder = stringResource(R.string.feature_clients_printer_serial_hint),
+                capitalization = KeyboardCapitalization.Characters,
+                trailingIcon = {
+                    IconButton(onClick = actions.onScanSerial) {
+                        Icon(PmIcons.Scan, contentDescription = stringResource(R.string.feature_clients_scan_serial), tint = PmTheme.colors.primary)
+                    }
+                },
+            )
+            form.serialTakenBy?.let {
+                Text(stringResource(R.string.feature_clients_printer_serial_taken, it), style = MaterialTheme.typography.bodySmall, color = PmTheme.colors.warning)
+            }
+            if (form.scanUnavailable) {
+                Text(stringResource(R.string.feature_clients_scan_unavailable), style = MaterialTheme.typography.bodySmall, color = PmTheme.colors.error)
+            }
             PmTextField(
                 value = draft.location,
                 onValueChange = actions.onLocationChange,

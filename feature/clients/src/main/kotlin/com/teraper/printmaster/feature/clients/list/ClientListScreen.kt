@@ -19,6 +19,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -41,11 +42,15 @@ import com.teraper.printmaster.core.designsystem.component.PmSearchField
 import com.teraper.printmaster.core.designsystem.icon.PmIcons
 import com.teraper.printmaster.core.designsystem.theme.PmTheme
 import com.teraper.printmaster.core.model.Client
+import com.teraper.printmaster.core.model.CatalogNames
+import com.teraper.printmaster.core.model.SerialMatch
 import com.teraper.printmaster.core.model.ClientPhone
 import com.teraper.printmaster.core.model.ClientSummary
 import com.teraper.printmaster.core.model.ClientType
 import com.teraper.printmaster.core.model.Money
 import com.teraper.printmaster.feature.clients.R
+import com.teraper.printmaster.feature.clients.common.rememberSerialScanner
+import com.teraper.printmaster.feature.clients.common.ScanOutcome
 import com.teraper.printmaster.feature.clients.common.ClientAvatar
 import com.teraper.printmaster.feature.clients.common.subtitle
 
@@ -53,10 +58,19 @@ import com.teraper.printmaster.feature.clients.common.subtitle
 internal fun ClientListRoute(
     onClientClick: (Long) -> Unit,
     onAddClient: () -> Unit,
+    onSearchSerial: (String) -> Unit,
     viewModel: ClientListViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val query by viewModel.query.collectAsStateWithLifecycle()
+    // Scan a printer's label: the serial search shows whose printer it is. No scanner = type it there.
+    val scan = rememberSerialScanner { outcome ->
+        when (outcome) {
+            is ScanOutcome.Read -> onSearchSerial(outcome.text)
+            ScanOutcome.Unavailable -> onSearchSerial("")
+            ScanOutcome.Closed -> Unit
+        }
+    }
     ClientListScreen(
         state = state,
         query = query,
@@ -64,6 +78,8 @@ internal fun ClientListRoute(
         onFilterChange = viewModel::onFilterChange,
         onClientClick = onClientClick,
         onAddClient = onAddClient,
+        onScanSerial = scan,
+        onOpenSerial = onSearchSerial,
     )
 }
 
@@ -75,6 +91,8 @@ internal fun ClientListScreen(
     onFilterChange: (ClientFilter) -> Unit,
     onClientClick: (Long) -> Unit,
     onAddClient: () -> Unit,
+    onScanSerial: () -> Unit = {},
+    onOpenSerial: (String) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     Box(modifier = modifier.fillMaxSize().background(PmTheme.colors.background)) {
@@ -90,6 +108,11 @@ internal fun ClientListScreen(
                     onQueryChange = onQueryChange,
                     placeholder = stringResource(R.string.feature_clients_search_hint),
                     clearLabel = stringResource(R.string.feature_clients_clear_search),
+                    emptyAction = {
+                        IconButton(onClick = onScanSerial) {
+                            Icon(PmIcons.Scan, contentDescription = stringResource(R.string.feature_clients_scan_serial), tint = PmTheme.colors.primary)
+                        }
+                    },
                 )
                 FilterRow(selected = state.filter, totalCount = state.totalCount, onSelect = onFilterChange)
             }
@@ -102,7 +125,7 @@ internal fun ClientListScreen(
                     title = stringResource(R.string.feature_clients_empty_title),
                     message = stringResource(R.string.feature_clients_empty_message),
                 )
-                state.clients.isEmpty() -> PmEmptyState(
+                state.clients.isEmpty() && state.printers.isEmpty() -> PmEmptyState(
                     icon = PmIcons.Search,
                     title = stringResource(R.string.feature_clients_no_results_title),
                     message = stringResource(R.string.feature_clients_no_results_message),
@@ -111,6 +134,10 @@ internal fun ClientListScreen(
                     // Room at the bottom so the last row isn't hidden by the button.
                     contentPadding = PaddingValues(bottom = 96.dp),
                 ) {
+                    items(state.printers, key = { "printer-${it.printer.id}" }) { match ->
+                        SerialRow(match, onClick = { onOpenSerial(match.printer.serialNumber) })
+                        HorizontalDivider(color = PmTheme.colors.surfaceMuted)
+                    }
                     items(state.clients, key = { it.client.id }) { summary ->
                         ClientRow(summary = summary, onClick = { onClientClick(summary.client.id) })
                         HorizontalDivider(color = PmTheme.colors.surfaceMuted)
@@ -218,5 +245,25 @@ private fun ClientListScreenPreview() {
             onClientClick = {},
             onAddClient = {},
         )
+    }
+}
+
+/** A printer whose serial number has what was typed: opens its client and orders. */
+@Composable
+private fun SerialRow(match: SerialMatch, onClick: () -> Unit) {
+    Row(
+        Modifier.fillMaxWidth().clickable(onClick = onClick).padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(14.dp),
+    ) {
+        Icon(PmIcons.Printer, contentDescription = null, tint = PmTheme.colors.primary)
+        Column(Modifier.weight(1f)) {
+            Text(match.printer.serialNumber, style = MaterialTheme.typography.titleSmall)
+            Text(
+                stringResource(R.string.feature_clients_serial_row, CatalogNames.clean("${match.printer.model.brand} ${match.printer.model.name}"), match.clientName),
+                style = MaterialTheme.typography.bodySmall,
+                color = PmTheme.colors.inkMuted,
+            )
+        }
     }
 }

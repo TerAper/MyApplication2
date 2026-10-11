@@ -3,6 +3,7 @@ package com.teraper.printmaster.core.data.repository
 import com.teraper.printmaster.core.model.CatalogModel
 import com.teraper.printmaster.core.model.ClientPrinter
 import com.teraper.printmaster.core.model.ClientPrinterDraft
+import com.teraper.printmaster.core.model.SerialMatch
 import com.teraper.printmaster.core.model.ModelOwner
 import com.teraper.printmaster.core.model.PrinterDraftError
 import com.teraper.printmaster.core.model.PrinterModel
@@ -46,6 +47,9 @@ interface PrintersRepository {
     suspend fun savePrinter(draft: ClientPrinterDraft): SavePrinterResult
 
     suspend fun deletePrinter(id: Long): Boolean
+
+    /** Printers with this serial number (exact first), or whose serial contains it. */
+    suspend fun findBySerial(serial: String): List<SerialMatch>
 }
 
 sealed interface SavePrinterResult {

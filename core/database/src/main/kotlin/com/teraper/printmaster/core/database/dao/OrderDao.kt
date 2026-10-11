@@ -31,6 +31,10 @@ interface OrderDao {
     @Query("$SELECT_ROWS WHERE o.id = :id")
     fun observeOrder(id: Long): Flow<OrderRow?>
 
+    /** Orders with work on this client printer (any company: it's the printer's history). */
+    @Query("$SELECT_ROWS WHERE o.id IN (SELECT order_id FROM repairs WHERE client_printer_id = :printerId) ORDER BY o.scheduled_at DESC")
+    fun observePrinterOrders(printerId: Long): Flow<List<OrderRow>>
+
     /** Not-cancelled order times in a range, for the per-day counts on the day strip. */
     @Query(
         "SELECT scheduled_at FROM orders o WHERE $COMPANY_OR_ATTACHED " +

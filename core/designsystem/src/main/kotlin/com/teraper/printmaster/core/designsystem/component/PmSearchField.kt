@@ -20,6 +20,8 @@ fun PmSearchField(
     placeholder: String,
     clearLabel: String,
     modifier: Modifier = Modifier,
+    /** Shown at the end while nothing is typed, e.g. a scan button. */
+    emptyAction: (@Composable () -> Unit)? = null,
 ) {
     OutlinedTextField(
         value = query,
@@ -34,7 +36,7 @@ fun PmSearchField(
                 }
             }
         } else {
-            null
+            emptyAction
         },
         singleLine = true,
         shape = PmTheme.shapes.card,

@@ -165,4 +165,17 @@
     <string name="feature_clients_photo_gallery">Gallery</string>
     <string name="feature_clients_photo_delete">Delete photo</string>
     <string name="feature_clients_photo_close">Close</string>
+    <string name="feature_clients_printer_serial">Serial number</string>
+    <string name="feature_clients_printer_serial_hint">Scan the label or type it</string>
+    <string name="feature_clients_printer_serial_taken">Already on another printer: %1$s. Check it, or save if the printer moved.</string>
+    <string name="feature_clients_scan_serial">Scan the serial number</string>
+    <string name="feature_clients_scan_unavailable">This phone can\'t scan (Google Play services missing). Type the serial number.</string>
+    <string name="feature_clients_serial_title">Find by serial number</string>
+    <string name="feature_clients_serial_none">No printer with this serial</string>
+    <string name="feature_clients_serial_none_hint">Open the client\'s printer and scan or type its serial there, so it\'s found next time.</string>
+    <string name="feature_clients_serial_partial">Partly matches</string>
+    <string name="feature_clients_serial_open_client">Open the client</string>
+    <string name="feature_clients_serial_orders">ORDERS WITH THIS PRINTER · %1$d</string>
+    <string name="feature_clients_serial_no_orders">No orders with work on this printer yet.</string>
+    <string name="feature_clients_serial_row">%1$s · %2$s</string>
 </resources>

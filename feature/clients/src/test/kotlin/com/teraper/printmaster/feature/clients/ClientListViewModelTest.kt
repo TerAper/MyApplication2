@@ -30,7 +30,7 @@ class ClientListViewModelTest {
 
     @Test
     fun filtersAndSearchCombine() = runTest {
-        val vm = ClientListViewModel(repo)
+        val vm = ClientListViewModel(repo, com.teraper.printmaster.core.testing.FakePrintersRepository())
         backgroundScope.launchCollect(vm)
 
         assertFalse(vm.uiState.value.isLoading)
@@ -50,7 +50,7 @@ class ClientListViewModelTest {
 
     @Test
     fun newClientsAppearLive() = runTest {
-        val vm = ClientListViewModel(repo)
+        val vm = ClientListViewModel(repo, com.teraper.printmaster.core.testing.FakePrintersRepository())
         backgroundScope.launchCollect(vm)
 
         repo.clients.value = repo.clients.value + summary(4, "Նոր")

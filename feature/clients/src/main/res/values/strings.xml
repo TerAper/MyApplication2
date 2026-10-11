@@ -165,4 +165,17 @@
     <string name="feature_clients_photo_gallery">Պատկերասրահ</string>
     <string name="feature_clients_photo_delete">Ջնջել լուսանկարը</string>
     <string name="feature_clients_photo_close">Փակել</string>
+    <string name="feature_clients_printer_serial">Սերիական համար</string>
+    <string name="feature_clients_printer_serial_hint">Սկանավորեք պիտակը կամ գրեք</string>
+    <string name="feature_clients_printer_serial_taken">Արդեն կա այլ տպիչի վրա՝ %1$s։ Ստուգեք, կամ պահեք, եթե տպիչը տեղափոխվել է։</string>
+    <string name="feature_clients_scan_serial">Սկանավորել սերիական համարը</string>
+    <string name="feature_clients_scan_unavailable">Այս հեռախոսը չի կարող սկանավորել (Google Play ծառայություններ չկան)։ Գրեք սերիական համարը։</string>
+    <string name="feature_clients_serial_title">Որոնում սերիական համարով</string>
+    <string name="feature_clients_serial_none">Այս սերիական համարով տպիչ չկա</string>
+    <string name="feature_clients_serial_none_hint">Բացեք հաճախորդի տպիչը և սկանավորեք կամ գրեք դրա սերիական համարը, որ հաջորդ անգամ գտնվի։</string>
+    <string name="feature_clients_serial_partial">Մասամբ համընկնում է</string>
+    <string name="feature_clients_serial_open_client">Բացել հաճախորդին</string>
+    <string name="feature_clients_serial_orders">ՊԱՏՎԵՐՆԵՐ ԱՅՍ ՏՊԻՉՈՎ · %1$d</string>
+    <string name="feature_clients_serial_no_orders">Այս տպիչով աշխատանքով պատվերներ դեռ չկան։</string>
+    <string name="feature_clients_serial_row">%1$s · %2$s</string>
 </resources>

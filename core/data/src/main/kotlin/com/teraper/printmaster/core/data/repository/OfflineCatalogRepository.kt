@@ -11,6 +11,8 @@ import com.teraper.printmaster.core.database.model.PrinterModelWithDetails
 import com.teraper.printmaster.core.model.Cartridge
 import com.teraper.printmaster.core.model.CatalogModel
 import com.teraper.printmaster.core.model.CatalogNames
+import com.teraper.printmaster.core.model.SerialNumbers
+import com.teraper.printmaster.core.model.SerialMatch
 import com.teraper.printmaster.core.model.Chip
 import com.teraper.printmaster.core.model.ClientPrinter
 import com.teraper.printmaster.core.model.ClientPrinterCartridge
@@ -99,6 +101,8 @@ internal class OfflinePrintersRepository @Inject constructor(
         val model = draft.model.normalized()
         val location = CatalogNames.clean(draft.location)
         val note = draft.note.trim()
+        val serial = SerialNumbers.clean(draft.serialNumber).ifEmpty { null }
+        val serialKey = serial?.let(SerialNumbers::key)?.ifEmpty { null }
 
         return db.withTransaction {
             val modelId = if (model.isNew) writer.findOrCreateModel(model) else model.id
@@ -108,13 +112,16 @@ internal class OfflinePrintersRepository @Inject constructor(
 
             val printerId = if (draft.isNew) {
                 dao.insertClientPrinter(
-                    ClientPrinterEntity(clientId = draft.clientId, modelId = modelId, location = location, note = note),
+                    ClientPrinterEntity(clientId = draft.clientId, modelId = modelId, location = location, note = note, serialNumber = serial, serialKey = serialKey),
                 )
             } else {
                 // Keep the shared id, so masters' phones see the same printer, not a new one.
                 val syncId = dao.getClientPrinter(draft.id)?.printer?.syncId
                 dao.updateClientPrinter(
-                    ClientPrinterEntity(id = draft.id, clientId = draft.clientId, modelId = modelId, location = location, note = note, syncId = syncId),
+                    ClientPrinterEntity(
+                        id = draft.id, clientId = draft.clientId, modelId = modelId, location = location, note = note, syncId = syncId,
+                        serialNumber = serial, serialKey = serialKey,
+                    ),
                 )
                 draft.id
             }
@@ -129,6 +136,14 @@ internal class OfflinePrintersRepository @Inject constructor(
             )
             writer.deleteUnused()
             SavePrinterResult.Saved(printerId)
+        }
+    }
+
+    override suspend fun findBySerial(serial: String): List<SerialMatch> {
+        val key = SerialNumbers.key(serial).ifEmpty { return emptyList() }
+        val clientDao = db.clientDao()
+        return dao.findClientPrintersBySerial(key, partial = true).map { row ->
+            SerialMatch(row.toClientPrinter(), clientDao.getClient(row.printer.clientId)?.name.orEmpty(), exact = row.printer.serialKey == key)
         }
     }
 
@@ -159,6 +174,7 @@ private fun ClientPrinterWithDetails.toClientPrinter() = ClientPrinter(
     model = model.toModel(),
     location = printer.location,
     note = printer.note,
+    serialNumber = printer.serialNumber.orEmpty(),
     cartridges = cartridges.map { ClientPrinterCartridge(it.row.id, it.cartridge.toCartridge()) }
         .sortedBy { CatalogNames.codeKey(it.cartridge.name) },
 )

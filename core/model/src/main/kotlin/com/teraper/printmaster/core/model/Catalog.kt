@@ -34,7 +34,25 @@ data class ClientPrinter(
     val location: String = "",
     val note: String = "",
     val cartridges: List<ClientPrinterCartridge> = emptyList(),
+    /** As on the label; empty = not known. */
+    val serialNumber: String = "",
 )
+
+/** A printer found by its serial number, with its client. [exact] false = its serial only contains what was searched. */
+data class SerialMatch(val printer: ClientPrinter, val clientName: String, val exact: Boolean)
+
+/** Serial numbers as printed, scanned or typed compare equal. */
+object SerialNumbers {
+    /** "S/N:", "SN ", "Serial No." before the number on many labels; a separator must follow, so "SN12345" stays whole. */
+    private val LABEL = Regex("""^\s*(?:s\s*/\s*n|sn|serial(?:\s*(?:no|number))?)\s*[.:#\-\s]\s*(?=\S{4,})""", RegexOption.IGNORE_CASE)
+    private val SPACES = Regex("""\s+""")
+
+    /** What is stored and shown: trimmed, the label word and extra spaces removed. */
+    fun clean(text: String): String = text.replace(LABEL, "").trim().replace(SPACES, " ")
+
+    /** For searching: letters and digits only, upper case. "cnb8 k1-2345" → "CNB8K12345". */
+    fun key(text: String): String = clean(text).uppercase().filter { it.isLetterOrDigit() }
+}
 
 /** A cartridge the client's printer uses; [id] is kept so repairs stay linked. */
 data class ClientPrinterCartridge(val id: Long, val cartridge: Cartridge)

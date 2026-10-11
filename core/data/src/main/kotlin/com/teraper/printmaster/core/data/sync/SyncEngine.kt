@@ -29,6 +29,7 @@ import com.teraper.printmaster.core.model.CartridgeDraft
 import com.teraper.printmaster.core.model.CatalogNames
 import com.teraper.printmaster.core.model.OrderStatus
 import com.teraper.printmaster.core.model.PrinterModelDraft
+import com.teraper.printmaster.core.model.SerialNumbers
 import com.teraper.printmaster.core.model.SharedChanges
 import com.teraper.printmaster.core.model.SharedClient
 import com.teraper.printmaster.core.model.SharedContact
@@ -217,6 +218,7 @@ class SyncEngine @Inject internal constructor(
                 cartridges = p.cartridges.map { it.cartridge.cartridge.name },
                 location = p.printer.location,
                 id = p.printer.syncId ?: newId().also { sync.setClientPrinterSyncId(p.printer.id, it) },
+                serialNumber = p.printer.serialNumber.orEmpty(),
             )
         }
         return SharedClient(
@@ -421,13 +423,19 @@ class SyncEngine @Inject internal constructor(
             val same = existing.firstOrNull { it.printer.syncId == printer.id }
             if (same != null) {
                 if (same.printer.location != printer.location) sync.setClientPrinterLocation(same.printer.id, printer.location)
+                if (same.printer.serialNumber.orEmpty() != printer.serialNumber) {
+                    sync.setClientPrinterSerial(same.printer.id, printer.serialNumber.ifEmpty { null }, SerialNumbers.key(printer.serialNumber).ifEmpty { null })
+                }
                 continue
             }
             val cartridges = printer.cartridges.map { CartridgeDraft(it) }
             val modelId = catalogWriter.findOrCreateModel(PrinterModelDraft(brand = printer.brand, name = printer.model, printType = printer.printType, colorType = printer.colorType))
             val cartridgeIds = catalogWriter.linkCartridges(modelId, cartridges, exact = false)
             val printerId = catalogDao.insertClientPrinter(
-                ClientPrinterEntity(clientId = clientId, modelId = modelId, location = printer.location, syncId = printer.id.ifEmpty { null }),
+                ClientPrinterEntity(
+                    clientId = clientId, modelId = modelId, location = printer.location, syncId = printer.id.ifEmpty { null },
+                    serialNumber = printer.serialNumber.ifEmpty { null }, serialKey = SerialNumbers.key(printer.serialNumber).ifEmpty { null },
+                ),
             )
             catalogDao.insertClientPrinterCartridges(cartridgeIds.values.map { ClientPrinterCartridgeEntity(clientPrinterId = printerId, cartridgeId = it) })
         }

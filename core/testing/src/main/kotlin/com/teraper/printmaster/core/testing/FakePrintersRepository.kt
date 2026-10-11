@@ -30,4 +30,9 @@ class FakePrintersRepository(initial: List<ClientPrinter> = emptyList()) : Print
         deleted += id
         return true
     }
+
+    /** What [findBySerial] answers. */
+    var serialMatches: List<com.teraper.printmaster.core.model.SerialMatch> = emptyList()
+
+    override suspend fun findBySerial(serial: String) = serialMatches
 }

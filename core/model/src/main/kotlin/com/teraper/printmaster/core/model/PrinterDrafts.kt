@@ -66,6 +66,8 @@ data class ClientPrinterDraft(
     val selectedCartridges: Set<String> = emptySet(),
     val location: String = "",
     val note: String = "",
+    /** As on the label, typed or scanned. */
+    val serialNumber: String = "",
 ) {
     val isNew: Boolean get() = id == 0L
 
@@ -102,6 +104,7 @@ data class ClientPrinterDraft(
                 selectedCartridges = printer.cartridges.mapTo(mutableSetOf()) { CatalogNames.codeKey(it.cartridge.name) },
                 location = printer.location,
                 note = printer.note,
+                serialNumber = printer.serialNumber,
             )
         }
     }
