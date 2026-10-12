@@ -182,7 +182,7 @@ internal fun OrderDetailScreen(state: OrderDetailUiState, actions: OrderDetailAc
         when (loaded.dialog) {
             OrderDetailDialog.CONFIRM_DELETE -> PmConfirmDialog(
                 title = stringResource(R.string.feature_orders_delete_title),
-                message = loaded.order.description,
+                message = loaded.order.description.ifBlank { null },
                 confirmText = stringResource(R.string.feature_orders_delete),
                 dismissText = stringResource(R.string.feature_orders_cancel),
                 onConfirm = actions.onConfirmDelete,
@@ -341,7 +341,7 @@ private fun OrderContent(state: OrderDetailUiState.Loaded, actions: OrderDetailA
                     color = PmTheme.colors.paid,
                 )
             }
-            Text(order.description, style = MaterialTheme.typography.bodyLarge, color = PmTheme.colors.ink)
+            if (order.description.isNotBlank()) Text(order.description, style = MaterialTheme.typography.bodyLarge, color = PmTheme.colors.ink)
             HandOverCard(order)
 
             PmCard(Modifier.fillMaxWidth()) {

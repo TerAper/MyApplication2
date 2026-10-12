@@ -29,9 +29,8 @@
     <string name="feature_orders_phone">CONTACT PHONE</string>
     <string name="feature_orders_master">Master</string>
     <string name="feature_orders_not_assigned">Not assigned</string>
-    <string name="feature_orders_what">WHAT TO DO</string>
+    <string name="feature_orders_what">WHAT TO DO (OPTIONAL)</string>
     <string name="feature_orders_what_hint">e.g. refill 2 cartridges</string>
-    <string name="feature_orders_error_what">Write what needs to be done</string>
     <string name="feature_orders_create">Create · %1$s</string>
     <string name="feature_orders_discard_title">Discard changes?</string>
     <string name="feature_orders_discard">Discard</string>
@@ -92,7 +91,7 @@
     <string name="feature_orders_reopen_title">Reopen the order?</string>
     <string name="feature_orders_reopen_message">The amount charged when it was finished (and the cash payment) will be removed from the client\'s history, so you can change the work.</string>
     <string name="feature_orders_finish_cancel">Cancel order</string>
-    <string name="feature_orders_calls_that_day">CALLS THAT DAY · %1$d</string>
+    <string name="feature_orders_calls_that_day">CALLS ABOUT THIS ORDER · %1$d</string>
     <string name="feature_orders_call_missing">The recording file is not on this phone any more.</string>
     <string name="feature_orders_call_play">Play</string>
     <string name="feature_orders_call_pause">Pause</string>

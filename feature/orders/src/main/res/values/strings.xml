@@ -29,9 +29,8 @@
     <string name="feature_orders_phone">ԿԱՊԻ ՀԵՌԱԽՈՍ</string>
     <string name="feature_orders_master">Վարպետ</string>
     <string name="feature_orders_not_assigned">Չնշանակված</string>
-    <string name="feature_orders_what">ԻՆՉ ԱՆԵԼ</string>
+    <string name="feature_orders_what">ԻՆՉ ԱՆԵԼ (ՈՉ ՊԱՐՏԱԴԻՐ)</string>
     <string name="feature_orders_what_hint">օր.՝ լիցքավորել 2 քարտրիջ</string>
-    <string name="feature_orders_error_what">Գրեք, թե ինչ է պետք անել</string>
     <string name="feature_orders_create">Ստեղծել · %1$s</string>
     <string name="feature_orders_discard_title">Չպահպանե՞լ փոփոխությունները</string>
     <string name="feature_orders_discard">Չպահպանել</string>
@@ -92,7 +91,7 @@
     <string name="feature_orders_reopen_title">Նորից բացե՞լ պատվերը</string>
     <string name="feature_orders_reopen_message">Ավարտելիս գրանցված գումարը (և կանխիկ վճարումը) կհեռացվեն հաճախորդի պատմությունից, որ կարողանաք փոխել աշխատանքը։</string>
     <string name="feature_orders_finish_cancel">Չեղարկել</string>
-    <string name="feature_orders_calls_that_day">ԶԱՆԳԵՐ ԱՅԴ ՕՐԸ · %1$d</string>
+    <string name="feature_orders_calls_that_day">ԶԱՆԳԵՐ ԱՅՍ ՊԱՏՎԵՐԻ ՄԱՍԻՆ · %1$d</string>
     <string name="feature_orders_call_missing">Ձայնագրության ֆայլն այլևս այս հեռախոսում չէ։</string>
     <string name="feature_orders_call_play">Նվագարկել</string>
     <string name="feature_orders_call_pause">Դադար</string>

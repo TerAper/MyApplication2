@@ -128,20 +128,17 @@ class OrdersViewModelsTest {
     }
 
     @Test
-    fun saveNeedsDescriptionThenCreates() = runTest {
+    fun anOrderIsSavedWithoutSayingWhatToDo() = runTest {
         val orders = FakeOrdersRepository()
         val vm = editVm(orders, args = mapOf("clientId" to 1L))
         collect(vm.uiState)
 
-        vm.onSave()
-        assertEquals(setOf(OrderDraftError.DESCRIPTION_REQUIRED), vm.uiState.value.form.errors)
-
-        vm.onDescriptionChange("Refill 2 cartridges")
         vm.onTimeChange(LocalTime.of(15, 0))
         vm.onAddressChange(22)
         vm.onSave()
         assertEquals(OrderEditEvent.Saved(1, wasNew = true), vm.events.first())
         val saved = orders.saved.single()
+        assertEquals("", saved.description)
         assertEquals(LocalTime.of(15, 0), saved.time)
         assertEquals(22L, saved.addressId)
     }
@@ -170,15 +167,17 @@ class OrdersViewModelsTest {
     }
 
     @Test
-    fun detailShowsTheClientsCallsOfThatDay() = runTest {
-        val orders = FakeOrdersRepository(listOf(order(1, today, 10)))
+    fun detailShowsTheClientsCallsOfTheDayItWasWrittenAndOfTheVisit() = runTest {
+        // Written yesterday (the client called), visit today.
+        val orders = FakeOrdersRepository(listOf(order(1, today, 10).copy(createdAt = today.minusDays(1).atTime(18, 0))))
         fun call(id: Long, day: LocalDate, clientId: Long) =
             CallRecording(id, "u$id", "f$id.m4a", "Firm", day.atTime(9, 0), 1_000, listOf(RecordingClient(clientId, "Firm")))
-        val calls = FakeCallRecordingsRepository(listOf(call(1, today, 1), call(2, today.minusDays(1), 1), call(3, today, 2)))
+        val calls = FakeCallRecordingsRepository(listOf(call(1, today, 1), call(2, today.minusDays(1), 1), call(3, today, 2), call(4, today.minusDays(2), 1)))
         val vm = OrderDetailViewModel(SavedStateHandle(mapOf("orderId" to 1L)), orders, FakeRepairsRepository(), FakeCompaniesRepository(), calls, FakePhotoRepository(), clock)
         collect(vm.uiState)
 
-        assertEquals(listOf(1L), (vm.uiState.value as OrderDetailUiState.Loaded).calls.map { it.id })
+        assertEquals(listOf(1L, 2L), (vm.uiState.value as OrderDetailUiState.Loaded).calls.map { it.id })
+        assertEquals(1, calls.refreshes)
     }
 
     @Test

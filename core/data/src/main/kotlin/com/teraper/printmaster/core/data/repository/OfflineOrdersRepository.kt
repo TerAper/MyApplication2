@@ -144,6 +144,7 @@ internal class OfflineOrdersRepository @Inject constructor(
         masterId = order.masterId,
         masterName = masterName,
         doneAt = order.doneAt?.let { LocalDateTime.ofInstant(Instant.ofEpochMilli(it), zone) },
+        createdAt = order.createdAt.takeIf { it > 0 }?.let { LocalDateTime.ofInstant(Instant.ofEpochMilli(it), zone) },
         fromAttachedCompany = companyKind == CompanyKind.ATTACHED,
         companyName = companyName,
         companyOwner = companyOwner,

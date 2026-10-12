@@ -100,12 +100,21 @@ class OrderDetailViewModel @Inject constructor(
 
     private val order = ordersRepository.observeOrder(orderId)
 
-    private val calls = order.map { it?.clientId to it?.date }.distinctUntilChanged().flatMapLatest { (clientId, date) ->
+    /**
+     * The client's calls about this order: on the day it was written down (when the client
+     * usually calls) and on the day of the visit.
+     */
+    private val calls = order.map { it?.clientId to setOfNotNull(it?.date, it?.createdAt?.toLocalDate()) }.distinctUntilChanged().flatMapLatest { (clientId, days) ->
         if (clientId == null) {
             flowOf(emptyList())
         } else {
-            callRecordingsRepository.observeClientRecordings(clientId).map { list -> list.filter { it.startedAt.toLocalDate() == date } }
+            callRecordingsRepository.observeClientRecordings(clientId).map { list -> list.filter { it.startedAt.toLocalDate() in days } }
         }
+    }
+
+    init {
+        // A call that just ended shows up here without waiting for the background check.
+        viewModelScope.launch { callRecordingsRepository.refresh() }
     }
 
     private val view = combine(

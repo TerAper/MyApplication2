@@ -23,6 +23,8 @@ data class Order(
     val masterName: String? = null,
     /** When it was finished; null while open. */
     val doneAt: LocalDateTime? = null,
+    /** When it was written down (usually the day the client called). */
+    val createdAt: LocalDateTime? = null,
     /** Another owner's company gave this order to the user (an attached master): no money is kept for it here. */
     val fromAttachedCompany: Boolean = false,
     val companyName: String = "",
@@ -75,7 +77,6 @@ data class OrderDraft(
 
     fun validate(): Set<OrderDraftError> = buildSet {
         if (clientId == null) add(OrderDraftError.CLIENT_REQUIRED)
-        if (description.isBlank()) add(OrderDraftError.DESCRIPTION_REQUIRED)
     }
 
     /**
@@ -108,7 +109,8 @@ data class OrderDraft(
     }
 }
 
-enum class OrderDraftError { CLIENT_REQUIRED, DESCRIPTION_REQUIRED }
+/** What to do is optional: often it's only clear once there. */
+enum class OrderDraftError { CLIENT_REQUIRED }
 
 /** Which status changes the order screen offers. */
 fun OrderStatus.nextActions(): List<OrderStatus> = when (this) {

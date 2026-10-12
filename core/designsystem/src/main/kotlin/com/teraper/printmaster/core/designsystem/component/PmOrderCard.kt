@@ -64,7 +64,7 @@ fun PmOrderCard(
                         overflow = TextOverflow.Ellipsis,
                     )
                 }
-                Text(
+                if (order.description.isNotBlank()) Text(
                     order.description,
                     style = MaterialTheme.typography.bodyMedium.copy(
                         textDecoration = if (order.status == OrderStatus.CANCELLED) TextDecoration.LineThrough else null,

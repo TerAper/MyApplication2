@@ -10,9 +10,9 @@ class OrderTest {
     private val day = LocalDate.of(2026, 10, 8)
 
     @Test
-    fun clientAndDescriptionAreRequired() {
-        assertEquals(setOf(OrderDraftError.CLIENT_REQUIRED, OrderDraftError.DESCRIPTION_REQUIRED), OrderDraft(date = day).validate())
-        assertTrue(OrderDraft(clientId = 1, date = day, description = "Refill").validate().isEmpty())
+    fun onlyTheClientIsRequired() {
+        assertEquals(setOf(OrderDraftError.CLIENT_REQUIRED), OrderDraft(date = day).validate())
+        assertTrue(OrderDraft(clientId = 1, date = day).validate().isEmpty())
     }
 
     @Test
