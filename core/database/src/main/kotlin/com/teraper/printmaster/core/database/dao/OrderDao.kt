@@ -67,6 +67,9 @@ interface OrderDao {
     )
     suspend fun countRecordsBlockingDelete(id: Long): Int
 
+    @Query("SELECT member_uid IS NOT NULL FROM masters WHERE id = :masterId")
+    suspend fun isAttachedMaster(masterId: Long): Boolean
+
     @Query("DELETE FROM orders WHERE id = :id")
     suspend fun deleteOrder(id: Long): Int
 
@@ -77,7 +80,8 @@ interface OrderDao {
         const val SELECT_ROWS = """
             SELECT o.*, c.name AS client_name, a.address AS address_text, a.map_link AS address_link, p.number AS phone_number, m.name AS master_name,
                    co.kind AS company_kind, co.name AS company_name, co.owner_name AS company_owner,
-                   (SELECT name FROM companies WHERE id = o.from_company_id) AS from_company_name
+                   (SELECT name FROM companies WHERE id = o.from_company_id) AS from_company_name,
+                   m.member_uid IS NOT NULL AS master_attached
             FROM orders o
             JOIN clients c ON c.id = o.client_id
             JOIN companies co ON co.id = o.company_id
@@ -99,4 +103,5 @@ data class OrderRow(
     @ColumnInfo(name = "company_name") val companyName: String,
     @ColumnInfo(name = "company_owner") val companyOwner: String,
     @ColumnInfo(name = "from_company_name") val fromCompanyName: String?,
+    @ColumnInfo(name = "master_attached") val masterAttached: Boolean,
 )

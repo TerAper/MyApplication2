@@ -79,6 +79,13 @@ data class OrderEntity(
     @ColumnInfo(name = "declined_reason") val declinedReason: String? = null,
     /** Attached master's phone: the client paid cash for an order done for the attached company (no money is kept here). */
     @ColumnInfo(name = "paid_in_cash", defaultValue = "0") val paidInCash: Boolean = false,
+    /**
+     * Given to the attached master: his price, his money, his client; for the company only history.
+     * False with an attached master = he works for the company, which charges the client.
+     */
+    @ColumnInfo(name = "handed_over", defaultValue = "0") val handedOver: Boolean = false,
+    /** When the attached master accepted it; null = not yet (or he turned it down). */
+    @ColumnInfo(name = "accepted_at") val acceptedAt: Long? = null,
 )
 
 /** One line of the price list. */

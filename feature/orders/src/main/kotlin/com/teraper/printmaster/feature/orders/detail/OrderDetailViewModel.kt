@@ -51,14 +51,20 @@ sealed interface OrderDetailUiState {
         val calls: List<CallRecording> = emptyList(),
         val playing: CallRecording? = null,
         val photos: List<Photo> = emptyList(),
-        /** An attached company's order being finished (paid in cash or not): asking whose order it is. */
-        val finishChoice: Boolean? = null,
-        /** The user's own companies, to count an attached company's order as one of theirs. */
+        /** Accepting an order given as his own: choosing which of his companies it goes into. */
+        val choosingCompany: Boolean = false,
+        /** The user's own companies, for an order given to him as his own. */
         val ownCompanies: List<Company> = emptyList(),
         val declineReason: String = "",
     ) : OrderDetailUiState {
-        /** Work can be added or changed only while the order is open. */
-        val canEditWork: Boolean get() = order.isOpen && !work.isBilled
+        /**
+         * Work can be added or changed only while the order is open, and not on another owner's order
+         * before it's accepted, nor (owner) on an order given to an attached master as his.
+         */
+        val canEditWork: Boolean get() = order.isOpen && !work.isBilled && !order.awaitsAnswer && !order.declinedHere && !givenAway
+
+        /** Owner's phone: given to an attached master as his own: his work, his money. */
+        val givenAway: Boolean get() = order.handedOver && order.masterAttached && !order.fromAttachedCompany && order.takenFrom == null
 
         /** With work done, the order is finished by charging the client instead of "Mark done". */
         val canFinishWithWork: Boolean get() = canEditWork && work.total.isPositive
@@ -86,7 +92,7 @@ class OrderDetailViewModel @Inject constructor(
     private val dialog = MutableStateFlow<OrderDetailDialog?>(null)
     private val deleting = MutableStateFlow(false)
     private val playing = MutableStateFlow<CallRecording?>(null)
-    private val finishChoice = MutableStateFlow<Boolean?>(null)
+    private val choosingCompany = MutableStateFlow(false)
     private val declineReason = MutableStateFlow("")
 
     private val _events = Channel<OrderDetailEvent>(Channel.BUFFERED)
@@ -105,11 +111,11 @@ class OrderDetailViewModel @Inject constructor(
     private val view = combine(
         combine(dialog, deleting, playing, ::Triple),
         photoRepository.observePhotos(PhotoOwner.ORDER, listOf(orderId)),
-        finishChoice,
+        choosingCompany,
         companiesRepository.observeCompanies(),
         declineReason,
-    ) { (dialog, deleting, playing), photos, finishChoice, companies, reason ->
-        ViewState(dialog, deleting, playing, photos, finishChoice, companies, reason)
+    ) { (dialog, deleting, playing), photos, choosing, companies, reason ->
+        ViewState(dialog, deleting, playing, photos, choosing, companies, reason)
     }
 
     private data class ViewState(
@@ -117,7 +123,7 @@ class OrderDetailViewModel @Inject constructor(
         val deleting: Boolean,
         val playing: CallRecording?,
         val photos: List<Photo>,
-        val finishChoice: Boolean?,
+        val choosingCompany: Boolean,
         val companies: List<Company>,
         val declineReason: String,
     )
@@ -130,7 +136,7 @@ class OrderDetailViewModel @Inject constructor(
     ) { order, work, calls, view ->
         when {
             order != null -> OrderDetailUiState.Loaded(
-                order, today, work, view.dialog, calls, view.playing, view.photos, view.finishChoice, view.companies, view.declineReason,
+                order, today, work, view.dialog, calls, view.playing, view.photos, view.choosingCompany, view.companies, view.declineReason,
             )
             view.deleting -> OrderDetailUiState.Loading
             else -> OrderDetailUiState.NotFound
@@ -149,26 +155,29 @@ class OrderDetailViewModel @Inject constructor(
 
     /**
      * Charges the client for the work and closes the order; [paidInCash] also records the cash.
-     * An attached company's order first asks whose it is.
+     * Done for another company, its client is charged there, not here.
      */
     fun onFinish(paidInCash: Boolean) {
-        if ((uiState.value as? OrderDetailUiState.Loaded)?.order?.fromAttachedCompany == true) {
-            finishChoice.value = paidInCash
-            return
-        }
         viewModelScope.launch { repairsRepository.finishOrder(orderId, paidInCash) }
     }
 
-    /** [companyId] null = done for the attached company (its client owes it); else counted in that own company. */
-    fun onFinishFor(companyId: Long?) {
-        val paidInCash = finishChoice.value ?: return
-        finishChoice.value = null
-        viewModelScope.launch {
-            if (companyId == null) repairsRepository.finishOrder(orderId, paidInCash) else repairsRepository.finishAsMine(orderId, companyId, paidInCash)
+    /** Yes to an order from another company. Given as his own: into his only company, or he picks one. */
+    fun onAccept() {
+        val state = uiState.value as? OrderDetailUiState.Loaded ?: return
+        val companies = state.ownCompanies
+        when {
+            !state.order.handedOver -> viewModelScope.launch { repairsRepository.acceptOrder(orderId, null) }
+            companies.size == 1 -> viewModelScope.launch { repairsRepository.acceptOrder(orderId, companies.single().id) }
+            else -> choosingCompany.value = true
         }
     }
 
-    fun onDismissFinishChoice() = finishChoice.update { null }
+    fun onAcceptInto(companyId: Long) {
+        choosingCompany.value = false
+        viewModelScope.launch { repairsRepository.acceptOrder(orderId, companyId) }
+    }
+
+    fun onDismissCompanyChoice() = choosingCompany.update { false }
 
     /** An attached company's order: turned down with a reason, it goes back to that company. */
     fun onDeclineClick() {

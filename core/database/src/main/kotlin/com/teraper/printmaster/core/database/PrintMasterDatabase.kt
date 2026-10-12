@@ -108,6 +108,8 @@ import com.teraper.printmaster.core.database.entity.SyncStateEntity
         AutoMigration(from = 10, to = 11),
         // 12: printers' serial numbers.
         AutoMigration(from = 11, to = 12),
+        // 13: orders given to attached masters, and their accepting.
+        AutoMigration(from = 12, to = 13),
     ],
 )
 abstract class PrintMasterDatabase : RoomDatabase() {
@@ -126,7 +128,7 @@ abstract class PrintMasterDatabase : RoomDatabase() {
     abstract fun expenseDao(): ExpenseDao
 
     companion object {
-        const val VERSION = 12
+        const val VERSION = 13
 
         /** Oldest version a backup file may have; older ones only existed on development phones. */
         const val OLDEST_RESTORABLE_VERSION = 2

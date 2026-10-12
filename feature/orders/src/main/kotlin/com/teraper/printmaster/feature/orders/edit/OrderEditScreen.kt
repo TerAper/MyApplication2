@@ -19,6 +19,8 @@ import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TimePicker
@@ -98,6 +100,7 @@ internal fun OrderEditRoute(
             onAddressChange = viewModel::onAddressChange,
             onPhoneChange = viewModel::onPhoneChange,
             onMasterChange = viewModel::onMasterChange,
+            onHandedOverChange = viewModel::onHandedOverChange,
             onDescriptionChange = viewModel::onDescriptionChange,
             onSave = viewModel::onSave,
             onDiscardConfirmed = viewModel::onDiscardConfirmed,
@@ -135,6 +138,7 @@ internal data class OrderEditActions(
     val onAddressChange: (Long?) -> Unit = {},
     val onPhoneChange: (Long?) -> Unit = {},
     val onMasterChange: (Long?) -> Unit = {},
+    val onHandedOverChange: (Boolean) -> Unit = {},
     val onDescriptionChange: (String) -> Unit = {},
     val onSave: () -> Unit = {},
     val onDiscardConfirmed: () -> Unit = {},
@@ -216,6 +220,22 @@ internal fun OrderEditScreen(state: OrderEditUiState, actions: OrderEditActions,
                     onSelect = actions.onMasterChange,
                     noneLabel = stringResource(R.string.feature_orders_not_assigned),
                 )
+                // A master who uses PrintMaster can get the order as his own, or work for the company.
+                if (state.masters.firstOrNull { it.id == draft.masterId }?.isAttached == true) {
+                    PmCard(Modifier.fillMaxWidth(), containerColor = PmTheme.colors.primaryContainer, borderColor = PmTheme.colors.primary) {
+                        Row(Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                            Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                                Text(stringResource(R.string.feature_orders_given_label), style = MaterialTheme.typography.titleSmall)
+                                Text(stringResource(R.string.feature_orders_given_hint), style = MaterialTheme.typography.bodySmall, color = PmTheme.colors.inkSecondary)
+                            }
+                            Switch(
+                                checked = draft.handedOver,
+                                onCheckedChange = actions.onHandedOverChange,
+                                colors = SwitchDefaults.colors(checkedTrackColor = PmTheme.colors.primary),
+                            )
+                        }
+                    }
+                }
             }
 
             Label(stringResource(R.string.feature_orders_what))

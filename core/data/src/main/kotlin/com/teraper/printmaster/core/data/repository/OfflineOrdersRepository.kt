@@ -71,6 +71,8 @@ internal class OfflineOrdersRepository @Inject constructor(
         if (errors.isNotEmpty() || clientId == null) return SaveOrderResult.Invalid(errors)
 
         val description = draft.description.trim()
+        // Only an attached master (one using PrintMaster) can be given an order as his own.
+        val handedOver = draft.handedOver && draft.masterId?.let { orderDao.isAttachedMaster(it) } == true
         return if (draft.isNew) {
             val companyId = companies.observeActiveCompany().first()?.id ?: return SaveOrderResult.Invalid(emptySet())
             val id = orderDao.insertOrder(
@@ -83,14 +85,22 @@ internal class OfflineOrdersRepository @Inject constructor(
                     phoneId = draft.phoneId,
                     description = description,
                     createdAt = clock.millis(),
+                    handedOver = handedOver,
                 ),
             )
             SaveOrderResult.Saved(id)
         } else {
             // Editing keeps the order's company and status.
             val existing = orderDao.getOrder(draft.id) ?: return SaveOrderResult.Invalid(emptySet())
+            // Another master, or given/not given changed: the previous answer no longer applies.
+            val newDeal = existing.masterId != draft.masterId || existing.handedOver != handedOver
             orderDao.updateOrder(
                 existing.copy(
+                    handedOver = handedOver,
+                    acceptedAt = if (newDeal) null else existing.acceptedAt,
+                    declinedBy = if (newDeal) null else existing.declinedBy,
+                    declinedReason = if (newDeal) null else existing.declinedReason,
+                    status = if (newDeal && existing.status == OrderStatus.CANCELLED && existing.declinedReason != null) OrderStatus.NEW else existing.status,
                     masterId = draft.masterId,
                     clientId = clientId,
                     scheduledAt = draft.scheduledAt.millis(),
@@ -141,5 +151,8 @@ internal class OfflineOrdersRepository @Inject constructor(
         takenFrom = fromCompanyName,
         declinedBy = order.declinedBy,
         declinedReason = order.declinedReason,
+        handedOver = order.handedOver,
+        acceptedAt = order.acceptedAt?.let { LocalDateTime.ofInstant(Instant.ofEpochMilli(it), zone) },
+        masterAttached = masterAttached,
     )
 }

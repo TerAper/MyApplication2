@@ -29,13 +29,16 @@ interface RepairsRepository {
     suspend fun reopenOrder(orderId: Long)
 
     /**
-     * An attached company's order the master counts as his own: it moves into his company
-     * [companyId] (the client is copied there, or found by tax ID or name) and is finished there.
-     * The giving company only learns it was done.
+     * The master says yes to an order another company gave him. One given to him as his own moves
+     * into his company [companyId] (the client is copied there, or found by tax ID or name): his
+     * prices, his money; the giving company only follows it. One he does for the company stays its.
      */
-    suspend fun finishAsMine(orderId: Long, companyId: Long, paidInCash: Boolean): FinishOrderResult
+    suspend fun acceptOrder(orderId: Long, companyId: Long?): Boolean
 
-    /** An attached company's order the master turns down; it goes back to the company with [reason]. */
+    /**
+     * The master turns down an order another company gave him (before or after accepting it);
+     * it goes back to the company with [reason] and can't be worked on here any more.
+     */
     suspend fun declineOrder(orderId: Long, reason: String): Boolean
 }
 

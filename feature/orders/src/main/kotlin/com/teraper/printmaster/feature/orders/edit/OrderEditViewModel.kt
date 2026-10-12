@@ -182,6 +182,9 @@ class OrderEditViewModel @Inject constructor(
 
     fun onMasterChange(masterId: Long?) = editDraft { it.copy(masterId = masterId) }
 
+    /** With an attached master: give it to him as his own order (his money), or he works for the company. */
+    fun onHandedOverChange(given: Boolean) = editDraft { it.copy(handedOver = given) }
+
     fun onDescriptionChange(text: String) = editDraft { it.copy(description = text) }
 
     fun onSave() {

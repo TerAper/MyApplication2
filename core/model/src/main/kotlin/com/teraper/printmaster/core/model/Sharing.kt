@@ -56,6 +56,10 @@ data class SharedOrder(
     val takenByMaster: Boolean = false,
     /** The master turned it down; the company gives it to someone else. */
     val declinedReason: String? = null,
+    /** Given to the master as his own order (company: only history); false = he works for the company. */
+    val handedOver: Boolean = false,
+    /** The master accepted it. */
+    val accepted: Boolean = false,
 )
 
 /** Someone who joined a company's shared space with its code. */
@@ -102,9 +106,12 @@ data class SyncReport(
     val newClients: Int = 0,
     /** Company: orders masters turned down. */
     val declinedOrders: Int = 0,
+    /** Company: orders masters accepted. */
+    val acceptedOrders: Int = 0,
 ) {
     operator fun plus(other: SyncReport) = SyncReport(
         sent + other.sent, received + other.received, newOrders + other.newOrders,
         finishedOrders + other.finishedOrders, newClients + other.newClients, declinedOrders + other.declinedOrders,
+        acceptedOrders + other.acceptedOrders,
     )
 }

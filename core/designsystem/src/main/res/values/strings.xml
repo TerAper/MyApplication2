@@ -61,4 +61,9 @@
     <string name="core_designsystem_order_declined_by">Մերժեց՝ %1$s</string>
     <string name="core_designsystem_order_taken">Վարպետը կատարեց որպես իր պատվեր</string>
     <string name="core_designsystem_order_taken_from">Վերցված է %1$s-ից</string>
+    <string name="core_designsystem_order_answer">Ընդունել կամ մերժել</string>
+    <string name="core_designsystem_order_you_declined">Դուք մերժել եք</string>
+    <string name="core_designsystem_order_waiting">Սպասում է վարպետին</string>
+    <string name="core_designsystem_order_given">Տրված · ընդունված</string>
+    <string name="core_designsystem_order_accepted">Ընդունված</string>
 </resources>

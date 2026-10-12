@@ -165,7 +165,7 @@ internal fun FinishButtons(total: Money, actions: OrderDetailActions, attached: 
                 modifier = Modifier.weight(1f),
             )
             PmSecondaryButton(
-                text = stringResource(if (attached) R.string.feature_orders_decline else R.string.feature_orders_finish_cancel),
+                text = stringResource(if (attached) R.string.feature_orders_give_back else R.string.feature_orders_finish_cancel),
                 onClick = { if (attached) actions.onDecline() else actions.onStatusChange(OrderStatus.CANCELLED) },
                 modifier = Modifier.weight(1f),
             )

@@ -61,4 +61,9 @@
     <string name="core_designsystem_order_declined_by">Turned down: %1$s</string>
     <string name="core_designsystem_order_taken">Done by the master as his order</string>
     <string name="core_designsystem_order_taken_from">Taken from %1$s</string>
+    <string name="core_designsystem_order_answer">Accept or reject</string>
+    <string name="core_designsystem_order_you_declined">You turned it down</string>
+    <string name="core_designsystem_order_waiting">Waiting for the master</string>
+    <string name="core_designsystem_order_given">Given · accepted</string>
+    <string name="core_designsystem_order_accepted">Accepted</string>
 </resources>

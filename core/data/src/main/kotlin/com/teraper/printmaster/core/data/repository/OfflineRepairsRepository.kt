@@ -183,14 +183,20 @@ internal class OfflineRepairsRepository @Inject constructor(
         return FinishOrderResult.FINISHED
     }
 
-    override suspend fun finishAsMine(orderId: Long, companyId: Long, paidInCash: Boolean): FinishOrderResult {
-        val order = orderDao.getOrder(orderId) ?: return FinishOrderResult.NOT_FOUND
-        if (!order.isOpen()) return FinishOrderResult.NOT_OPEN
-        if (repairDao.getRepairs(orderId).none { r -> r.items.any { it.priceMinor * it.quantity > 0 } }) return FinishOrderResult.NO_WORK
-        val company = db.companyDao().getCompany(companyId)
-        if (company == null || company.kind != CompanyKind.OWN) return FinishOrderResult.NOT_FOUND
-        db.withTransaction { moveToOwnCompany(order, companyId) }
-        return finishOrder(orderId, paidInCash)
+    override suspend fun acceptOrder(orderId: Long, companyId: Long?): Boolean {
+        val order = orderDao.getOrder(orderId) ?: return false
+        val from = db.companyDao().getCompany(order.companyId)
+        if (!order.isOpen() || order.acceptedAt != null || order.declinedReason != null || from?.kind != CompanyKind.ATTACHED) return false
+        val accepted = order.copy(acceptedAt = clock.millis())
+        if (!order.handedOver) {
+            orderDao.updateOrder(accepted)
+            return true
+        }
+        val target = companyId?.let { db.companyDao().getCompany(it) }
+        if (target == null || target.kind != CompanyKind.OWN) return false
+        db.withTransaction { moveToOwnCompany(accepted, target.id) }
+        analytics.log("order_accepted", mapOf("given" to true))
+        return true
     }
 
     /** The order, its client (copied or found among own clients) and its work's devices, under an own company. */
@@ -262,7 +268,9 @@ internal class OfflineRepairsRepository @Inject constructor(
 
     override suspend fun declineOrder(orderId: Long, reason: String): Boolean {
         val order = orderDao.getOrder(orderId) ?: return false
-        if (!order.isOpen() || db.companyDao().getCompany(order.companyId)?.kind != CompanyKind.ATTACHED) return false
+        // Given by another company: still its (attached) or taken into an own company as given.
+        val given = db.companyDao().getCompany(order.companyId)?.kind == CompanyKind.ATTACHED || (order.fromCompanyId != null && order.takenByMaster)
+        if (!order.isOpen() || !given) return false
         orderDao.updateOrder(order.copy(status = OrderStatus.CANCELLED, declinedReason = reason.trim().ifEmpty { "—" }))
         return true
     }

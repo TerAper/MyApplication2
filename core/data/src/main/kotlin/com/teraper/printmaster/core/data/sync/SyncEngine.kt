@@ -265,6 +265,8 @@ class SyncEngine @Inject internal constructor(
             paidCash = if (done) order.paidInCash || sync.countCashPayments(order.id) > 0 else null,
             work = work,
             declinedReason = order.declinedReason,
+            handedOver = order.handedOver,
+            accepted = order.acceptedAt != null,
         )
     }
 
@@ -278,6 +280,9 @@ class SyncEngine @Inject internal constructor(
         status = order.status,
         doneAt = order.doneAt,
         takenByMaster = true,
+        handedOver = true,
+        accepted = true,
+        declinedReason = order.declinedReason,
     )
 
     /** "CF283A · HP LaserJet M125 (Office)", the same text on both phones. */
@@ -317,6 +322,7 @@ class SyncEngine @Inject internal constructor(
         var newOrders = 0
         var newClients = 0
         var declined = 0
+        var accepted = 0
         val attachedId = company.id.takeIf { isMember }
         db.withTransaction {
             applying {
@@ -330,6 +336,11 @@ class SyncEngine @Inject internal constructor(
                     // The master's answers are about orders this company gave; nothing to create for them.
                     if (!isMember && local == null && (order.takenByMaster || order.declinedReason != null)) continue
                     val id = local?.id ?: insertOrder(order, company.id, isMember)?.also { newOrders++ } ?: continue
+                    // The master said yes: the company sees it on the order.
+                    if (!isMember && local != null && order.accepted && order.declinedReason == null && local.acceptedAt == null && local.masterId != null) {
+                        sync.setAccepted(id, clock.millis())
+                        accepted++
+                    }
                     when {
                         isMember -> updateMemberOrder(id, order)
                         local?.isOpenOrder() != true -> Unit
@@ -367,6 +378,7 @@ class SyncEngine @Inject internal constructor(
             finishedOrders = finishedByMaster.size,
             newClients = newClients,
             declinedOrders = declined,
+            acceptedOrders = accepted,
         )
     }
 
@@ -456,6 +468,7 @@ class SyncEngine @Inject internal constructor(
                 description = order.description,
                 createdAt = clock.millis(),
                 syncId = order.id,
+                handedOver = isMember && order.handedOver,
             ),
         )
     }
@@ -464,6 +477,8 @@ class SyncEngine @Inject internal constructor(
     private suspend fun updateMemberOrder(id: Long, order: SharedOrder) {
         val local = orderDao.getOrder(id) ?: return
         sync.updateOrderFields(id, order.status.name, order.doneAt ?: local.doneAt, order.scheduledAt, order.description)
+        // Until he answers, the company may still change whether it's given to him.
+        if (local.acceptedAt == null && local.handedOver != order.handedOver) sync.setHandedOver(id, order.handedOver)
     }
 
     /** The work as the master entered it; costs come from this phone's price list. */

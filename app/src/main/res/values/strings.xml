@@ -30,4 +30,8 @@
         <item quantity="one">%d պատվեր վարպետը մերժեց</item>
         <item quantity="other">%d պատվեր վարպետները մերժեցին</item>
     </plurals>
+    <plurals name="notify_orders_accepted">
+        <item quantity="one">%d պատվեր վարպետն ընդունեց</item>
+        <item quantity="other">%d պատվեր վարպետներն ընդունեցին</item>
+    </plurals>
 </resources>

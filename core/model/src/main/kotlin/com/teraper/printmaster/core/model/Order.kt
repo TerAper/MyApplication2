@@ -35,7 +35,22 @@ data class Order(
     /** The attached master who turned it down, and why (owner's phone). */
     val declinedBy: String? = null,
     val declinedReason: String? = null,
+    /** Given to the attached master as his own order (his money); false = he works for the company. */
+    val handedOver: Boolean = false,
+    /** When the attached master accepted it. */
+    val acceptedAt: LocalDateTime? = null,
+    /** Owner's phone: assigned to a master who uses PrintMaster (attached with a code). */
+    val masterAttached: Boolean = false,
 ) {
+    /** Between two owners: given by another company, or to an attached master. */
+    val isShared: Boolean get() = fromAttachedCompany || takenFrom != null || (masterAttached && masterId != null) || declinedBy != null
+
+    /** Master's phone: a new order from another company, waiting for "Accept" or "Reject". */
+    val awaitsAnswer: Boolean get() = fromAttachedCompany && acceptedAt == null && declinedReason == null && isOpen
+
+    /** Master's phone: this user turned it down; nothing more to do on it. */
+    val declinedHere: Boolean get() = (fromAttachedCompany || takenFrom != null) && declinedReason != null
+
     val date: LocalDate get() = scheduledAt.toLocalDate()
 
     /** Still to be done (not finished or cancelled). */
@@ -52,6 +67,8 @@ data class OrderDraft(
     val phoneId: Long? = null,
     val masterId: Long? = null,
     val description: String = "",
+    /** With an attached master: give it to him as his own order (his money) rather than work for the company. */
+    val handedOver: Boolean = false,
 ) {
     val isNew: Boolean get() = id == 0L
     val scheduledAt: LocalDateTime get() = date.atTime(time)
@@ -86,6 +103,7 @@ data class OrderDraft(
             phoneId = order.phoneId,
             masterId = order.masterId,
             description = order.description,
+            handedOver = order.handedOver,
         )
     }
 }

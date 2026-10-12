@@ -27,4 +27,8 @@
         <item quantity="one">%d order turned down by a master</item>
         <item quantity="other">%d orders turned down by masters</item>
     </plurals>
+    <plurals name="notify_orders_accepted">
+        <item quantity="one">%d order accepted by a master</item>
+        <item quantity="other">%d orders accepted by masters</item>
+    </plurals>
 </resources>

@@ -182,26 +182,41 @@ class OrdersViewModelsTest {
     }
 
     @Test
-    fun anAttachedCompanysOrderAsksWhoseItIsAndIsTurnedDownInsteadOfCancelled() = runTest {
-        val attached = order(1, today, 10).copy(fromAttachedCompany = true, companyName = "Xerox", companyOwner = "Apo")
-        val orders = FakeOrdersRepository(listOf(attached))
+    fun aGivenOrderIsAcceptedIntoTheChosenCompanyAndCanBeGivenBack() = runTest {
+        val given = order(1, today, 10).copy(fromAttachedCompany = true, companyName = "Xerox", companyOwner = "Apo", handedOver = true)
+        val orders = FakeOrdersRepository(listOf(given))
         val repairs = FakeRepairsRepository()
-        val companies = FakeCompaniesRepository(listOf(Company(5, "Delta")))
+        val companies = FakeCompaniesRepository(listOf(Company(5, "Delta"), Company(6, "Zeta")))
         val vm = OrderDetailViewModel(SavedStateHandle(mapOf("orderId" to 1L)), orders, repairs, companies, FakeCallRecordingsRepository(), FakePhotoRepository(), clock)
         collect(vm.uiState)
         val loaded = { vm.uiState.value as OrderDetailUiState.Loaded }
 
-        vm.onFinish(paidInCash = true)
-        assertEquals(true, loaded().finishChoice)
-        assertEquals(listOf("Delta"), loaded().ownCompanies.map { it.name })
-        vm.onFinishFor(5)
-        assertNull(loaded().finishChoice)
-        assertEquals(mapOf(1L to 5L), repairs.takenAsMine)
+        // Not accepted yet: no work on it.
+        assertTrue(loaded().order.awaitsAnswer)
+        assertFalse(loaded().canEditWork)
+        vm.onAccept()
+        assertTrue(loaded().choosingCompany)
+        vm.onAcceptInto(6)
+        assertFalse(loaded().choosingCompany)
+        assertEquals(mapOf(1L to 6L), repairs.accepted)
 
         vm.onDeclineClick()
         assertEquals(OrderDetailDialog.DECLINE, loaded().dialog)
         vm.onDeclineReasonChange("Too far")
         vm.onConfirmDecline()
         assertEquals(mapOf(1L to "Too far"), repairs.declined)
+    }
+
+    @Test
+    fun anOrderDoneForTheCompanyIsAcceptedWithoutChoosing() = runTest {
+        val forThem = order(1, today, 10).copy(fromAttachedCompany = true, companyName = "Xerox")
+        val repairs = FakeRepairsRepository()
+        val vm = OrderDetailViewModel(
+            SavedStateHandle(mapOf("orderId" to 1L)), FakeOrdersRepository(listOf(forThem)), repairs,
+            FakeCompaniesRepository(listOf(Company(5, "Delta"), Company(6, "Zeta"))), FakeCallRecordingsRepository(), FakePhotoRepository(), clock,
+        )
+        collect(vm.uiState)
+        vm.onAccept()
+        assertEquals(mapOf(1L to null), repairs.accepted)
     }
 }

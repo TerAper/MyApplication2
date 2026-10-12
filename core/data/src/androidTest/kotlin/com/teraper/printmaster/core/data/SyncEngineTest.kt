@@ -28,6 +28,7 @@ import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -65,7 +66,7 @@ class SyncEngineTest {
     }
 
     /** Apo: Xerox invited masters (space w-x), Armen entered its code; one order for Armen, one Apo does himself. */
-    private suspend fun setUp() {
+    private suspend fun setUp(given: Boolean = false) {
         xerox = (apo.companies.register(AccountMode.OWNER, "Apo", CompanyDraft(name = "Xerox")) as SaveCompanyResult.Saved).companyId
         yellow = apo.addCompany("Yellow")
         apo.sql("UPDATE companies SET space_id = 'w-x', join_code = 'XCODE123' WHERE id = $xerox")
@@ -88,6 +89,7 @@ class SyncEngineTest {
             OrderDraft(
                 clientId = gamma, masterId = armenMaster.id, date = day, description = "Refill two cartridges",
                 addressId = summary.client.addresses.single().id, phoneId = summary.client.phones.single().id,
+                handedOver = given,
             ),
         ) as SaveOrderResult.Saved
         apo.orders.saveOrder(OrderDraft(clientId = gamma, date = day, description = "Apo's own visit"))
@@ -125,6 +127,13 @@ class SyncEngineTest {
         assertEquals(Money.ZERO, refill.cost)
         assertTrue(armen.clients.observeClientSummary(order.clientId).first()!!.client.isAttached)
 
+        assertTrue(order.awaitsAnswer)
+        assertTrue(armen.repairs.acceptOrder(order.id, null))
+        armenEngine.sync()
+        // Apo sees the yes.
+        assertEquals(1, apoEngine.sync().acceptedOrders)
+        assertNotNull(apoOrder().acceptedAt)
+
         armenDoesTheWork(order.id)
         assertEquals(FinishOrderResult.FINISHED, armen.repairs.finishOrder(order.id, paidInCash = true))
         // No money on Armen's phone for Xerox's client.
@@ -149,31 +158,57 @@ class SyncEngineTest {
     }
 
     @Test
-    fun masterTakesTheOrderAsHisOwnAndXeroxKeepsOnlyHistory() = runTest {
-        setUp()
+    fun aGivenOrderBecomesTheMastersOwnAndXeroxKeepsOnlyHistory() = runTest {
+        setUp(given = true)
         armenEngine.sync()
         val orderId = armenOrderId()
-        armenDoesTheWork(orderId)
+        assertTrue(armen.orders.observeOrder(orderId).first()!!.handedOver)
 
-        assertEquals(FinishOrderResult.FINISHED, armen.repairs.finishAsMine(orderId, delta, paidInCash = false))
-        // Armen: the order is Delta's now, Gamma is his own client and owes Delta.
+        // Accepting puts it in Delta: Gamma becomes Armen's own client, priced from his own list.
+        assertTrue(armen.repairs.acceptOrder(orderId, delta))
         val mine = armen.orders.observeOrder(orderId).first()!!
         assertEquals(delta, mine.companyId)
-        assertTrue(mine.takenByMaster)
+        assertEquals("Xerox", mine.takenFrom)
         val ownGamma = armen.clients.observeClientSummaries().first().single()
         assertEquals("Gamma", ownGamma.client.name)
         assertEquals("02920288", ownGamma.client.taxId)
-        assertEquals(Money.ofDram(6_000), ownGamma.charged)
-        assertEquals("CF283A · HP M125", armen.repairs.observeOrderWork(orderId).first().repairs.single().device?.name)
+        armen.priceList.saveItem(PriceItemDraft(category = RepairCategory.CARTRIDGE, name = "Armen refill", priceDigits = "2500", costDigits = "700"))
+        val myRefill = armen.priceList.observeItemsFor(delta).first().single()
+        val printer = armen.printers.observeClientPrinters(ownGamma.client.id).first().single()
+        armen.repairs.saveRepair(RepairDraft(orderId = orderId).withDevice(printer.id, printer.cartridges.single().id).plus(myRefill))
+        assertEquals(FinishOrderResult.FINISHED, armen.repairs.finishOrder(orderId, paidInCash = false))
+        assertEquals(Money.ofDram(2_500), armen.clients.observeClientSummaries().first().single().charged)
         armenEngine.sync()
 
-        // Apo: done by Armen as his own; no work, no money for Gamma.
-        assertEquals(1, apoEngine.sync().finishedOrders)
+        // Apo: accepted, then done as Armen's own; no work, no money for Gamma.
+        val report = apoEngine.sync()
+        assertEquals(1, report.finishedOrders)
         val history = apoOrder()
         assertEquals(OrderStatus.DONE, history.status)
         assertTrue(history.takenByMaster)
         assertTrue(apo.repairs.observeOrderWork(history.id).first().repairs.isEmpty())
         assertTrue(apo.payments.observeLedger(gamma).first().isEmpty())
+    }
+
+    @Test
+    fun anAcceptedOrderGivenBackReturnsToApo() = runTest {
+        setUp(given = true)
+        armenEngine.sync()
+        val orderId = armenOrderId()
+        armen.repairs.acceptOrder(orderId, delta)
+        armenEngine.sync()
+        apoEngine.sync()
+        assertNotNull(apoOrder().acceptedAt)
+
+        assertTrue(armen.repairs.declineOrder(orderId, "Car broke down"))
+        assertTrue(armen.orders.observeOrder(orderId).first()!!.declinedHere)
+        armenEngine.sync()
+        assertEquals(1, apoEngine.sync().declinedOrders)
+        val back = apoOrder()
+        assertEquals(OrderStatus.NEW, back.status)
+        assertNull(back.masterId)
+        assertNull(back.acceptedAt)
+        assertEquals("Car broke down", back.declinedReason)
     }
 
     @Test

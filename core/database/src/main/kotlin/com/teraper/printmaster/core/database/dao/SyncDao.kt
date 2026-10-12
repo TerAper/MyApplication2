@@ -131,8 +131,14 @@ interface SyncDao {
     suspend fun deleteRepairsOf(orderId: Long)
 
     /** Owner: an attached master turned the order down; it waits for someone else. */
-    @Query("UPDATE orders SET master_id = NULL, status = 'NEW', declined_by = :masterName, declined_reason = :reason WHERE id = :id")
+    @Query("UPDATE orders SET master_id = NULL, status = 'NEW', accepted_at = NULL, declined_by = :masterName, declined_reason = :reason WHERE id = :id")
     suspend fun declineOrder(id: Long, masterName: String, reason: String)
+
+    @Query("UPDATE orders SET accepted_at = :at WHERE id = :id")
+    suspend fun setAccepted(id: Long, at: Long)
+
+    @Query("UPDATE orders SET handed_over = :handedOver WHERE id = :id")
+    suspend fun setHandedOver(id: Long, handedOver: Boolean)
 
     /** Owner: the attached master did it as his own order; here it's only history. */
     @Query("UPDATE orders SET status = 'DONE', done_at = :doneAt, taken_by_master = 1 WHERE id = :id")

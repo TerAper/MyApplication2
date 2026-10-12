@@ -35,7 +35,14 @@ fun PmOrderCard(
     showClient: Boolean = true,
 ) {
     val finished = !order.isOpen
-    PmCard(modifier.fillMaxWidth(), onClick = onClick) {
+    // Orders between owners stand out: tinted, with a colored edge.
+    val shared = order.isShared
+    PmCard(
+        modifier.fillMaxWidth(),
+        onClick = onClick,
+        containerColor = if (shared) PmTheme.colors.primaryContainer else PmTheme.colors.surface,
+        borderColor = if (shared) PmTheme.colors.primary else PmTheme.colors.outline,
+    ) {
         Row(Modifier.padding(14.dp), horizontalArrangement = Arrangement.spacedBy(14.dp)) {
             Column(Modifier.width(56.dp)) {
                 Text(
@@ -82,11 +89,24 @@ fun PmOrderCard(
     }
 }
 
-/** Orders between owners: "From Xerox", "Turned down: Armen", "Done by the master". */
+/** Orders between owners: "From Xerox · New, answer", "Given to Armen · waiting", "Turned down: Armen". */
 @Composable
 fun Order.handOverTags(): List<Pair<String, TagTone>> = buildList {
     if (fromAttachedCompany) add(stringResource(R.string.core_designsystem_order_from, companyName) to TagTone.Info)
-    declinedBy?.let { add(stringResource(R.string.core_designsystem_order_declined_by, it) to TagTone.Warning) }
+    when {
+        awaitsAnswer -> add(stringResource(R.string.core_designsystem_order_answer) to TagTone.Warning)
+        declinedHere -> add(stringResource(R.string.core_designsystem_order_you_declined) to TagTone.Neutral)
+        !fromAttachedCompany && takenFrom == null && masterAttached && masterId != null && isOpen -> add(
+            stringResource(
+                when {
+                    acceptedAt == null -> R.string.core_designsystem_order_waiting
+                    handedOver -> R.string.core_designsystem_order_given
+                    else -> R.string.core_designsystem_order_accepted
+                },
+            ) to if (acceptedAt == null) TagTone.Warning else TagTone.Info,
+        )
+    }
+    declinedBy?.takeIf { isOpen }?.let { add(stringResource(R.string.core_designsystem_order_declined_by, it) to TagTone.Warning) }
     val from = takenFrom
     when {
         from != null -> add(stringResource(R.string.core_designsystem_order_taken_from, from) to TagTone.Info)

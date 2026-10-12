@@ -57,13 +57,13 @@ class FakeRepairsRepository(initial: List<Repair> = emptyList()) : RepairsReposi
         billed.value = billed.value - orderId
     }
 
-    /** Order → the own company it was finished in as the master's own. */
-    val takenAsMine = mutableMapOf<Long, Long>()
+    /** Order → the own company it was accepted into (null = done for the giving company). */
+    val accepted = mutableMapOf<Long, Long?>()
     val declined = mutableMapOf<Long, String>()
 
-    override suspend fun finishAsMine(orderId: Long, companyId: Long, paidInCash: Boolean): FinishOrderResult {
-        takenAsMine[orderId] = companyId
-        return finishOrder(orderId, paidInCash)
+    override suspend fun acceptOrder(orderId: Long, companyId: Long?): Boolean {
+        accepted[orderId] = companyId
+        return true
     }
 
     override suspend fun declineOrder(orderId: Long, reason: String): Boolean {
