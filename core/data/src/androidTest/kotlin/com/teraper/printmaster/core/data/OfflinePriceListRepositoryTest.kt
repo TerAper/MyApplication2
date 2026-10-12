@@ -5,7 +5,8 @@ import com.teraper.printmaster.core.data.repository.SavePriceItemResult
 import com.teraper.printmaster.core.model.Money
 import com.teraper.printmaster.core.model.PriceItemDraft
 import com.teraper.printmaster.core.model.PriceItemError
-import com.teraper.printmaster.core.model.RepairCategory
+import com.teraper.printmaster.core.data.repository.SaveTypeResult
+import com.teraper.printmaster.core.model.ItemTypeDraft
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.After
@@ -25,27 +26,32 @@ class OfflinePriceListRepositoryTest {
     @After
     fun tearDown() = repos.db.close()
 
-    private suspend fun save(name: String, category: RepairCategory = RepairCategory.CARTRIDGE, price: String = "3000", id: Long = 0) =
-        priceList.saveItem(PriceItemDraft(id, category, name, priceDigits = price, costDigits = "1000"))
+    private suspend fun type(name: String) = (repos.catalog.saveType(ItemTypeDraft(name = name)) as SaveTypeResult.Saved).typeId
+
+    private suspend fun save(name: String, typeId: Long? = null, price: String = "3000", id: Long = 0) =
+        priceList.saveItem(PriceItemDraft(id, typeId, name, priceDigits = price, costDigits = "1000"))
 
     @Test
-    fun itemsAreSortedByCategoryThenName() = runTest {
-        save("Թմբուկ", RepairCategory.PRINTER)
+    fun itemsAreSortedByNameAndKeepTheirType() = runTest {
+        val printer = type("Printer")
+        save("Թմբուկ", printer)
         save("Չիպ")
         save("Ամբողջական լիցք")
 
         val items = priceList.observeItems().first()
-        assertEquals(listOf("Ամբողջական լիցք", "Չիպ", "Թմբուկ"), items.map { it.name })
+        assertEquals(listOf("Ամբողջական լիցք", "Թմբուկ", "Չիպ"), items.map { it.name })
+        assertEquals(listOf(null, printer, null), items.map { it.typeId })
         assertEquals(Money.ofDram(2_000), items.first().profit)
     }
 
     @Test
-    fun sameNameInSameCategoryIsRejected() = runTest {
-        val id = (save("Refill 85A") as SavePriceItemResult.Saved).itemId
-        assertEquals(SavePriceItemResult.NameTaken, save("  refill   85a "))
-        assertTrue(save("Refill 85A", RepairCategory.OTHER) is SavePriceItemResult.Saved)
+    fun sameNameForTheSameTypeIsRejected() = runTest {
+        val cartridge = type("Cartridge")
+        val id = (save("Refill 85A", cartridge) as SavePriceItemResult.Saved).itemId
+        assertEquals(SavePriceItemResult.NameTaken, save("  refill   85a ", cartridge))
+        assertTrue(save("Refill 85A") is SavePriceItemResult.Saved)
         // Saving the item itself under the same name is fine.
-        assertTrue(save("Refill 85A", price = "3500", id = id) is SavePriceItemResult.Saved)
+        assertTrue(save("Refill 85A", cartridge, price = "3500", id = id) is SavePriceItemResult.Saved)
         assertEquals(Money.ofDram(3_500), priceList.observeItem(id).first()!!.price)
         assertEquals(SavePriceItemResult.Invalid(setOf(PriceItemError.PRICE_REQUIRED)), save("Free", price = ""))
     }

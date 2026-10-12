@@ -3,7 +3,7 @@ package com.teraper.printmaster.core.model
 import java.time.LocalDate
 
 /** What the money was spent on. */
-enum class ExpenseCategory { PARTS, TONER, TRANSPORT, RENT, SALARY, TAXES, OTHER }
+enum class ExpenseCategory { GOODS, MATERIALS, TRANSPORT, RENT, SALARY, TAXES, OTHER }
 
 /** Money the company spent, typed by hand (receipts, fuel, rent…). */
 data class Expense(
@@ -18,7 +18,7 @@ data class Expense(
 data class ExpenseDraft(
     val id: Long = 0,
     val amountDigits: String = "",
-    val category: ExpenseCategory = ExpenseCategory.PARTS,
+    val category: ExpenseCategory = ExpenseCategory.GOODS,
     val date: LocalDate,
     val note: String = "",
 ) {

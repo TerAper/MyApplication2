@@ -7,17 +7,20 @@ import com.teraper.printmaster.core.data.repository.PriceListRepository
 import com.teraper.printmaster.core.data.repository.SavePriceItemResult
 import com.teraper.printmaster.core.model.PriceItemDraft
 import com.teraper.printmaster.core.model.PriceItemError
-import com.teraper.printmaster.core.model.RepairCategory
-import com.teraper.printmaster.feature.pricelist.navigation.CATEGORY_ARG
+import com.teraper.printmaster.core.data.repository.CatalogRepository
+import com.teraper.printmaster.core.model.ItemType
+import com.teraper.printmaster.feature.pricelist.navigation.TYPE_ID_ARG
 import com.teraper.printmaster.feature.pricelist.navigation.ITEM_ID_ARG
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -44,13 +47,16 @@ sealed interface PriceItemEditEvent {
 class PriceItemEditViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val priceListRepository: PriceListRepository,
+    catalogRepository: CatalogRepository,
 ) : ViewModel() {
+
+    /** The item types a price can be for. */
+    val types: StateFlow<List<ItemType>> =
+        catalogRepository.observeTypes().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
     private val itemId: Long = savedStateHandle[ITEM_ID_ARG] ?: 0L
     private var initialDraft = PriceItemDraft(
-        category = savedStateHandle.get<String>(CATEGORY_ARG)
-            ?.let { name -> RepairCategory.entries.firstOrNull { it.name == name } }
-            ?: RepairCategory.CARTRIDGE,
+        typeId = savedStateHandle.get<Long>(TYPE_ID_ARG)?.takeIf { it != 0L },
     )
     private var triedToSave = false
 
@@ -74,7 +80,8 @@ class PriceItemEditViewModel @Inject constructor(
         }
     }
 
-    fun onCategoryChange(category: RepairCategory) = editDraft { it.copy(category = category) }
+    /** null = general work, not tied to a type. */
+    fun onTypeChange(typeId: Long?) = editDraft { it.copy(typeId = typeId) }
 
     fun onNameChange(name: String) = editDraft { it.copy(name = name) }
 
@@ -132,7 +139,7 @@ class PriceItemEditViewModel @Inject constructor(
             draft = draft,
             hasChanges = draft != initialDraft,
             errors = if (triedToSave) draft.validate() else emptySet(),
-            nameTaken = state.nameTaken && draft.name == state.draft.name && draft.category == state.draft.category,
+            nameTaken = state.nameTaken && draft.name == state.draft.name && draft.typeId == state.draft.typeId,
         )
     }
 }

@@ -5,7 +5,7 @@
     <string name="feature_expenses_previous">Previous month</string>
     <string name="feature_expenses_next">Next month</string>
     <string name="feature_expenses_empty">No expenses this month</string>
-    <string name="feature_expenses_empty_message">Add what you spend: parts, toner, fuel, rent… Reports subtract it from what you earned.</string>
+    <string name="feature_expenses_empty_message">Add what you spend: goods, materials, fuel, rent… Reports subtract it from what you earned.</string>
     <string name="feature_expenses_add">Add</string>
     <string name="feature_expenses_spent">Spent</string>
     <string name="feature_expenses_new">New expense</string>
@@ -21,7 +21,7 @@
     <string name="feature_expenses_yesterday">Yesterday</string>
     <string name="feature_expenses_pick_date">Pick date</string>
     <string name="feature_expenses_note">Note</string>
-    <string name="feature_expenses_note_hint">e.g. 2 toner bottles, fuel to Abovyan</string>
+    <string name="feature_expenses_note_hint">e.g. materials, fuel to Abovyan</string>
     <string name="feature_expenses_receipt">RECEIPT</string>
     <string name="feature_expenses_receipt_after_save">Save first, then add a photo of the receipt.</string>
     <string name="feature_expenses_save">Save</string>

@@ -32,11 +32,11 @@ class FakeOrdersRepository(initial: List<Order> = emptyList()) : OrdersRepositor
 
     override fun observeOrder(id: Long): Flow<Order?> = orders.map { list -> list.firstOrNull { it.id == id } }
 
-    /** Printer id → ids of orders with work on it. */
-    val printerOrders = mutableMapOf<Long, List<Long>>()
+    /** Client item id → ids of orders with work on it. */
+    val itemOrders = mutableMapOf<Long, List<Long>>()
 
-    override fun observePrinterOrders(printerId: Long): Flow<List<Order>> =
-        orders.map { list -> list.filter { it.id in printerOrders[printerId].orEmpty() } }
+    override fun observeClientItemOrders(clientItemId: Long): Flow<List<Order>> =
+        orders.map { list -> list.filter { it.id in itemOrders[clientItemId].orEmpty() } }
 
     override suspend fun saveOrder(draft: OrderDraft): SaveOrderResult {
         val errors = draft.validate()

@@ -27,8 +27,8 @@ internal fun ClientSummary.subtitle(): String {
         if (client.type == ClientType.PRIVATE || taxId == null) {
             client.phones.firstOrNull()?.let { add(it.number) }
         }
-        if (printerCount > 0) {
-            add(pluralStringResource(R.plurals.feature_clients_printer_count, printerCount, printerCount))
+        if (itemCount > 0) {
+            add(pluralStringResource(R.plurals.feature_clients_item_count, itemCount, itemCount))
         }
     }
     return parts.joinToString(" · ")

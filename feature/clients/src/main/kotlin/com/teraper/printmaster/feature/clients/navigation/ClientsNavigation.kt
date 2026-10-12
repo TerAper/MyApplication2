@@ -9,7 +9,7 @@ import com.teraper.printmaster.feature.clients.detail.ClientDetailRoute
 import com.teraper.printmaster.feature.clients.edit.ClientEditRoute
 import com.teraper.printmaster.feature.clients.entry.EntryDetailRoute
 import com.teraper.printmaster.feature.clients.list.ClientListRoute
-import com.teraper.printmaster.feature.clients.printer.PrinterEditRoute
+import com.teraper.printmaster.feature.clients.item.ClientItemEditRoute
 import com.teraper.printmaster.feature.clients.serial.SerialSearchRoute
 import kotlinx.serialization.Serializable
 
@@ -27,11 +27,11 @@ data class ClientDetailDestination(val clientId: Long)
 @Serializable
 data class ClientEditDestination(val clientId: Long = 0)
 
-/** [printerId] 0 = add a printer to the client. */
+/** [clientItemId] 0 = add something the client owns. */
 @Serializable
-data class PrinterEditDestination(val clientId: Long, val printerId: Long = 0)
+data class ClientItemEditDestination(val clientId: Long, val clientItemId: Long = 0)
 
-/** Which printer has this serial ([serial] scanned or empty to type), and its orders. */
+/** Which client item has this serial ([serial] scanned or empty to type), and its orders. */
 @Serializable
 data class SerialSearchDestination(val serial: String = "")
 
@@ -44,7 +44,7 @@ data class EntryDetailDestination(val isCharge: Boolean, val id: Long)
 internal const val CLIENT_ID_ARG = "clientId"
 internal const val ENTRY_ID_ARG = "id"
 internal const val IS_CHARGE_ARG = "isCharge"
-internal const val PRINTER_ID_ARG = "printerId"
+internal const val CLIENT_ITEM_ID_ARG = "clientItemId"
 
 fun NavController.navigateToClients(navOptions: NavOptions? = null) = navigate(ClientsGraph, navOptions)
 
@@ -54,7 +54,8 @@ fun NavController.navigateToClientDetail(clientId: Long) = navigate(ClientDetail
 
 /**
  * [onRecordPayment] / [onAddCharge] open the Payments feature's entry screen and
- * [onNewOrder] / [onOpenOrder] the Orders feature; the app wires them so features stay independent.
+ * [onNewOrder] / [onOpenOrder] the Orders feature, [onOpenItemTypes] the Catalog's types; the app
+ * wires them so features stay independent.
  */
 fun NavGraphBuilder.clientsGraph(
     navController: NavController,
@@ -62,6 +63,7 @@ fun NavGraphBuilder.clientsGraph(
     onAddCharge: (clientId: Long) -> Unit,
     onNewOrder: (clientId: Long) -> Unit,
     onOpenOrder: (orderId: Long) -> Unit,
+    onOpenItemTypes: () -> Unit,
 ) {
     navigation<ClientsGraph>(startDestination = ClientListDestination) {
         composable<ClientListDestination> {
@@ -77,8 +79,8 @@ fun NavGraphBuilder.clientsGraph(
                 onEdit = { navController.navigate(ClientEditDestination(it)) },
                 onRecordPayment = onRecordPayment,
                 onAddCharge = onAddCharge,
-                onAddPrinter = { navController.navigate(PrinterEditDestination(it)) },
-                onPrinterClick = { clientId, printerId -> navController.navigate(PrinterEditDestination(clientId, printerId)) },
+                onAddItem = { navController.navigate(ClientItemEditDestination(it)) },
+                onItemClick = { clientId, itemId -> navController.navigate(ClientItemEditDestination(clientId, itemId)) },
                 onNewOrder = onNewOrder,
                 onOrderClick = onOpenOrder,
                 onOpenEntry = { isCharge, id -> navController.navigate(EntryDetailDestination(isCharge, id)) },
@@ -98,8 +100,8 @@ fun NavGraphBuilder.clientsGraph(
                 onOpenOrder = onOpenOrder,
             )
         }
-        composable<PrinterEditDestination> {
-            PrinterEditRoute(onClose = navController::popBackStack)
+        composable<ClientItemEditDestination> {
+            ClientItemEditRoute(onClose = navController::popBackStack, onOpenItemTypes = onOpenItemTypes)
         }
         composable<ClientEditDestination> {
             ClientEditRoute(

@@ -57,18 +57,18 @@ internal class OfflineClientsRepository @Inject constructor(
         chargeTotals,
         paymentTotals,
         lastPaymentDays,
-        clientDao.observePrinterCounts(),
-    ) { clients, charges, payments, lastPayments, printers ->
+        clientDao.observeItemCounts(),
+    ) { clients, charges, payments, lastPayments, items ->
         val chargeBy = charges.byClient()
         val paymentBy = payments.byClient()
         val lastPaymentBy = lastPayments.byClient()
-        val printersBy = printers.byClient()
+        val itemsBy = items.byClient()
         clients
             .map { row ->
                 val id = row.client.id
                 ClientSummary(
                     client = row.toModel(),
-                    printerCount = (printersBy[id] ?: 0L).toInt(),
+                    itemCount = (itemsBy[id] ?: 0L).toInt(),
                     charged = Money(chargeBy[id] ?: 0L),
                     paid = Money(paymentBy[id] ?: 0L),
                     lastPaymentDate = lastPaymentBy[id]?.let(LocalDate::ofEpochDay),

@@ -21,8 +21,8 @@ interface OrdersRepository {
 
     fun observeOrder(id: Long): Flow<Order?>
 
-    /** Orders with work on this client printer, newest first. */
-    fun observePrinterOrders(printerId: Long): Flow<List<Order>>
+    /** Orders with work on this client item, newest first. */
+    fun observeClientItemOrders(clientItemId: Long): Flow<List<Order>>
 
     /** A new order goes to the company being viewed. */
     suspend fun saveOrder(draft: OrderDraft): SaveOrderResult

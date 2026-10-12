@@ -6,9 +6,9 @@
     <string name="feature_more_section_money">MONEY</string>
     <string name="feature_more_section_data">DATA</string>
     <string name="feature_more_price_list">Price list</string>
-    <string name="feature_more_price_list_sub">Cartridge · Printer · Other</string>
-    <string name="feature_more_catalog">Printer catalog</string>
-    <string name="feature_more_catalog_sub">Brands, models, cartridges, chips</string>
+    <string name="feature_more_price_list_sub">Services and prices</string>
+    <string name="feature_more_catalog">Catalog</string>
+    <string name="feature_more_catalog_sub">Your types, items and parts</string>
     <string name="feature_more_calls">Call recordings</string>
     <string name="feature_more_calls_sub">Attach calls to clients</string>
     <string name="feature_more_reports">Reports</string>
@@ -38,5 +38,5 @@
     <string name="feature_more_team">Masters &amp; sharing</string>
     <string name="feature_more_team_sub">Send orders to masters\' phones</string>
     <string name="feature_more_expenses">Expenses</string>
-    <string name="feature_more_expenses_sub">Parts, toner, fuel, rent… by day</string>
+    <string name="feature_more_expenses_sub">Goods, materials, fuel, rent… by day</string>
 </resources>

@@ -30,7 +30,7 @@
     <string name="feature_orders_master">Վարպետ</string>
     <string name="feature_orders_not_assigned">Չնշանակված</string>
     <string name="feature_orders_what">ԻՆՉ ԱՆԵԼ (ՈՉ ՊԱՐՏԱԴԻՐ)</string>
-    <string name="feature_orders_what_hint">օր.՝ լիցքավորել 2 քարտրիջ</string>
+    <string name="feature_orders_what_hint">օր.՝ կարճ նկարագրություն</string>
     <string name="feature_orders_create">Ստեղծել · %1$s</string>
     <string name="feature_orders_discard_title">Չպահպանե՞լ փոփոխությունները</string>
     <string name="feature_orders_discard">Չպահպանել</string>
@@ -50,7 +50,7 @@
     <string name="feature_orders_delete_blocked_message">Այս պատվերի համար արդեն գանձում կամ վճարում կա։ Նորից բացեք կամ չեղարկեք այն։</string>
     <string name="feature_orders_repair_new">Կատարված աշխատանք</string>
     <string name="feature_orders_repair_edit">Աշխատանք</string>
-    <string name="feature_orders_repair_section_device">ՍԱՐՔ</string>
+    <string name="feature_orders_repair_section_device">ԻՐ</string>
     <string name="feature_orders_repair_section_work">ԱՇԽԱՏԱՆՔ ԵՎ ՊԱՀԵՍՏԱՄԱՍԵՐ</string>
     <string name="feature_orders_repair_no_lines">Ավելացրեք գոնե մեկ կետ՝ գնացուցակից կամ ձեռքով։</string>
     <string name="feature_orders_repair_from_price_list">Գնացուցակից</string>
@@ -58,8 +58,8 @@
     <string name="feature_orders_repair_other_item_long">Այլ կետ (գնացուցակում չկա)</string>
     <string name="feature_orders_repair_note">Նշում (ըստ ցանկության)</string>
     <string name="feature_orders_repair_note_hint">օր.՝ փոխվեց թմբուկը</string>
-    <string name="feature_orders_repair_no_device">Առանց սարքի</string>
-    <string name="feature_orders_repair_no_printers">Հաճախորդի քարտում տպիչներ ավելացրեք, որ այստեղ ընտրեք։</string>
+    <string name="feature_orders_repair_no_device">Առանց իրի</string>
+    <string name="feature_orders_repair_no_items">Հաճախորդի քարտում ավելացրեք նրա իրերը, որ այստեղ ընտրեք։</string>
     <string name="feature_orders_repair_less">Պակասեցնել</string>
     <string name="feature_orders_repair_more">Ավելացնել մեկը</string>
     <string name="feature_orders_repair_item_name">Անվանում</string>
@@ -78,7 +78,7 @@
     <string name="feature_orders_repair_price_list_empty">Գնացուցակը դատարկ է։ Լրացրեք այն «Ավելին → Գնացուցակ» բաժնում կամ ավելացրեք կետ ձեռքով։</string>
     <string name="feature_orders_work_title">ԿԱՏԱՐՎԱԾ ԱՇԽԱՏԱՆՔ</string>
     <string name="feature_orders_work_add_more">Ավելացնել</string>
-    <string name="feature_orders_work_empty">Գրանցեք, թե ինչ արեցիք՝ ընտրեք տպիչը կամ քարտրիջը և գնացուցակի կետերը։ Ավարտելիս գումարը կգրանցվի հաճախորդի վրա։</string>
+    <string name="feature_orders_work_empty">Գրանցեք, թե ինչ արեցիք՝ ընտրեք իրը կամ դրա մասը և գնացուցակի կետերը։ Ավարտելիս գումարը կգրանցվի հաճախորդի վրա։</string>
     <string name="feature_orders_work_add">Ավելացնել աշխատանք</string>
     <string name="feature_orders_work_total">Ընդամենը</string>
     <string name="feature_orders_work_cost">Ինքնարժեք</string>
@@ -118,7 +118,7 @@
     <string name="feature_orders_ho_asked">%1$s-ը խնդրում է կատարել այս պատվերը</string>
     <string name="feature_orders_ho_asked_hint">Դուք աշխատում եք %1$s-ի համար՝ նա է գանձում իր հաճախորդից։ Ձեզ համար սա պատմություն է։</string>
     <string name="feature_orders_ho_for_them">Կատարում եք %1$s-ի համար</string>
-    <string name="feature_orders_ho_for_them_hint">%1$s-ը (սեփականատեր՝ %2$s) գանձում է իր հաճախորդից։ Տեսնում եք կոնտակտներն ու տպիչները, ոչ թե պարտքը։</string>
+    <string name="feature_orders_ho_for_them_hint">%1$s-ը (սեփականատեր՝ %2$s) գանձում է իր հաճախորդից։ Տեսնում եք կոնտակտներն ու իրերը, ոչ թե պարտքը։</string>
     <string name="feature_orders_ho_yours_from">Ձեր պատվերն է՝ տրված %1$s-ի կողմից</string>
     <string name="feature_orders_ho_yours_from_hint">Ձեր գները, Ձեր գումարը։ %1$s-ը տեսնում է միայն, որ կատարված է կամ վերադարձված։</string>
     <string name="feature_orders_ho_declined">%1$s-ը մերժեց</string>
@@ -132,4 +132,5 @@
     <string name="feature_orders_ho_for_us_hint">Ավարտելիս աշխատանքը կգա այստեղ, և Դուք կգանձեք հաճախորդից։</string>
     <string name="feature_orders_given_label">Տալ վարպետին որպես իր պատվեր</string>
     <string name="feature_orders_given_hint">Միացված՝ նրա գինը և գումարը, այստեղ միայն պատմություն։ Անջատված՝ աշխատում է Ձեզ համար, և Դուք եք գանձում։</string>
+    <string name="feature_orders_repair_general">Ընդհանուր</string>
 </resources>

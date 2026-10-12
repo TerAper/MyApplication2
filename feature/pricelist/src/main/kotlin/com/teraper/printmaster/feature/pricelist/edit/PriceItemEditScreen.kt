@@ -2,6 +2,7 @@ package com.teraper.printmaster.feature.pricelist.edit
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -32,20 +33,20 @@ import com.teraper.printmaster.core.designsystem.component.DRAM_SIGN
 import com.teraper.printmaster.core.designsystem.component.PmCard
 import com.teraper.printmaster.core.designsystem.component.PmConfirmDialog
 import com.teraper.printmaster.core.designsystem.component.PmPrimaryButton
-import com.teraper.printmaster.core.designsystem.component.PmSegmentedButtons
+import com.teraper.printmaster.core.designsystem.component.PmFilterChip
 import com.teraper.printmaster.core.designsystem.component.PmTextField
 import com.teraper.printmaster.core.designsystem.component.PmTopBar
-import com.teraper.printmaster.core.designsystem.component.label
 import com.teraper.printmaster.core.designsystem.icon.PmIcons
 import com.teraper.printmaster.core.designsystem.theme.PmTheme
 import com.teraper.printmaster.core.model.PriceItemDraft
 import com.teraper.printmaster.core.model.PriceItemError
-import com.teraper.printmaster.core.model.RepairCategory
+import com.teraper.printmaster.core.model.ItemType
 import com.teraper.printmaster.feature.pricelist.R
 
 @Composable
 internal fun PriceItemEditRoute(onClose: () -> Unit, viewModel: PriceItemEditViewModel = hiltViewModel()) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val types by viewModel.types.collectAsStateWithLifecycle()
 
     LaunchedEffect(viewModel) {
         viewModel.events.collect { event ->
@@ -58,10 +59,11 @@ internal fun PriceItemEditRoute(onClose: () -> Unit, viewModel: PriceItemEditVie
 
     PriceItemEditScreen(
         state = state,
+        types = types,
         actions = PriceItemEditActions(
             onClose = viewModel::onCloseRequest,
             onDelete = viewModel::onDeleteClick,
-            onCategoryChange = viewModel::onCategoryChange,
+            onTypeChange = viewModel::onTypeChange,
             onNameChange = viewModel::onNameChange,
             onDescriptionChange = viewModel::onDescriptionChange,
             onPriceChange = viewModel::onPriceChange,
@@ -77,7 +79,7 @@ internal fun PriceItemEditRoute(onClose: () -> Unit, viewModel: PriceItemEditVie
 internal data class PriceItemEditActions(
     val onClose: () -> Unit = {},
     val onDelete: () -> Unit = {},
-    val onCategoryChange: (RepairCategory) -> Unit = {},
+    val onTypeChange: (Long?) -> Unit = {},
     val onNameChange: (String) -> Unit = {},
     val onDescriptionChange: (String) -> Unit = {},
     val onPriceChange: (String) -> Unit = {},
@@ -89,8 +91,14 @@ internal data class PriceItemEditActions(
 )
 
 @Composable
-internal fun PriceItemEditScreen(state: PriceItemEditUiState, actions: PriceItemEditActions, modifier: Modifier = Modifier) {
+internal fun PriceItemEditScreen(
+    state: PriceItemEditUiState,
+    types: List<ItemType>,
+    actions: PriceItemEditActions,
+    modifier: Modifier = Modifier,
+) {
     val draft = state.draft
+    val groupName = types.firstOrNull { it.id == draft.typeId }?.name ?: stringResource(R.string.feature_pricelist_general)
     Column(modifier.fillMaxSize().background(PmTheme.colors.background).imePadding()) {
         PmTopBar(
             title = stringResource(if (state.isNew) R.string.feature_pricelist_new_item else R.string.feature_pricelist_edit_item),
@@ -111,19 +119,21 @@ internal fun PriceItemEditScreen(state: PriceItemEditUiState, actions: PriceItem
             Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            PmSegmentedButtons(
-                options = RepairCategory.entries,
-                selected = draft.category,
-                onSelect = actions.onCategoryChange,
-                label = { it.label() },
-            )
+            if (types.isNotEmpty()) {
+                // What the work is on: offered first when working on that type.
+                Text(stringResource(R.string.feature_pricelist_for_type), style = MaterialTheme.typography.labelMedium, color = PmTheme.colors.inkSecondary)
+                Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    PmFilterChip(text = stringResource(R.string.feature_pricelist_general), selected = draft.typeId == null, onClick = { actions.onTypeChange(null) })
+                    types.forEach { type -> PmFilterChip(text = type.name, selected = draft.typeId == type.id, onClick = { actions.onTypeChange(type.id) }) }
+                }
+            }
             PmTextField(
                 value = draft.name,
                 onValueChange = actions.onNameChange,
                 label = stringResource(R.string.feature_pricelist_name),
                 placeholder = stringResource(R.string.feature_pricelist_name_hint),
                 error = when {
-                    state.nameTaken -> stringResource(R.string.feature_pricelist_error_taken, draft.category.label())
+                    state.nameTaken -> stringResource(R.string.feature_pricelist_error_taken, groupName)
                     PriceItemError.NAME_REQUIRED in state.errors -> stringResource(R.string.feature_pricelist_error_name)
                     else -> null
                 },
@@ -226,8 +236,9 @@ private fun PriceItemEditScreenPreview() {
     PmTheme {
         PriceItemEditScreen(
             state = PriceItemEditUiState(
-                draft = PriceItemDraft(1, RepairCategory.CARTRIDGE, "Լիցքավորում (սև)", "HP 85A, 83A", "3000", "900"),
+                draft = PriceItemDraft(1, 2, "Լիցքավորում (սև)", "HP 85A, 83A", "3000", "900"),
             ),
+            types = listOf(ItemType(1, "Տպիչ"), ItemType(2, "Քարտրիջ", 1)),
             actions = PriceItemEditActions(),
         )
     }

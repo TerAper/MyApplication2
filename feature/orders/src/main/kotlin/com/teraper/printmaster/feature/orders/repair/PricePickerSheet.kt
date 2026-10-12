@@ -30,11 +30,10 @@ import androidx.compose.ui.unit.dp
 import com.teraper.printmaster.core.designsystem.component.AmountText
 import com.teraper.printmaster.core.designsystem.component.PmFilterChip
 import com.teraper.printmaster.core.designsystem.component.PmSearchField
-import com.teraper.printmaster.core.designsystem.component.label
 import com.teraper.printmaster.core.designsystem.icon.PmIcons
 import com.teraper.printmaster.core.designsystem.theme.PmTheme
 import com.teraper.printmaster.core.model.PriceItem
-import com.teraper.printmaster.core.model.RepairCategory
+import com.teraper.printmaster.core.model.ItemType
 import com.teraper.printmaster.feature.orders.R
 
 /**
@@ -48,7 +47,9 @@ internal fun PricePickerSheet(
     items: List<PriceItem>,
     priceListIsEmpty: Boolean,
     quantities: Map<Long, Int>,
-    onCategoryClick: (RepairCategory?) -> Unit,
+    types: List<ItemType>,
+    hasGeneral: Boolean,
+    onGroupClick: (Long?) -> Unit,
     onQueryChange: (String) -> Unit,
     onPick: (PriceItem) -> Unit,
     onAddCustom: () -> Unit,
@@ -74,11 +75,18 @@ internal fun PricePickerSheet(
                 Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     PmFilterChip(
                         text = stringResource(R.string.feature_orders_repair_all),
-                        selected = picker.category == null,
-                        onClick = { onCategoryClick(null) },
+                        selected = picker.group == null,
+                        onClick = { onGroupClick(null) },
                     )
-                    RepairCategory.entries.forEach { category ->
-                        PmFilterChip(text = category.label(), selected = picker.category == category, onClick = { onCategoryClick(category) })
+                    types.forEach { type ->
+                        PmFilterChip(text = type.name, selected = picker.group == type.id, onClick = { onGroupClick(type.id) })
+                    }
+                    if (hasGeneral && types.isNotEmpty()) {
+                        PmFilterChip(
+                            text = stringResource(R.string.feature_orders_repair_general),
+                            selected = picker.group == PricePicker.GENERAL,
+                            onClick = { onGroupClick(PricePicker.GENERAL) },
+                        )
                     }
                 }
             }

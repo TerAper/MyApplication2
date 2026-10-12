@@ -1,16 +1,14 @@
 package com.teraper.printmaster.core.data.sync
 
 import com.teraper.printmaster.core.model.ClientType
-import com.teraper.printmaster.core.model.ColorType
 import com.teraper.printmaster.core.model.OrderStatus
-import com.teraper.printmaster.core.model.PrintType
-import com.teraper.printmaster.core.model.RepairCategory
 import com.teraper.printmaster.core.model.SharedClient
 import com.teraper.printmaster.core.model.SharedContact
 import com.teraper.printmaster.core.model.SharedLine
 import com.teraper.printmaster.core.model.SharedOrder
 import com.teraper.printmaster.core.model.SharedPriceItem
-import com.teraper.printmaster.core.model.SharedPrinter
+import com.teraper.printmaster.core.model.SharedItem
+import com.teraper.printmaster.core.model.SharedPart
 import com.teraper.printmaster.core.model.SharedRepair
 
 /** Shared values ↔ Firestore documents (plain maps; enums by name, money in minor units). */
@@ -22,10 +20,11 @@ internal object FirestoreMapping {
         "taxId" to taxId,
         "phones" to phones.map { it.toMap() },
         "addresses" to addresses.map { it.toMap() },
-        "printers" to printers.map {
+        "items" to items.map {
             mapOf(
-                "brand" to it.brand, "model" to it.model, "printType" to it.printType.name, "colorType" to it.colorType.name,
-                "cartridges" to it.cartridges, "location" to it.location, "id" to it.id, "serial" to it.serialNumber,
+                "type" to it.type, "name" to it.name, "fields" to it.fields, "titleFields" to it.titleFields,
+                "parts" to it.parts.map { p -> mapOf("type" to p.type, "name" to p.name) },
+                "place" to it.place, "id" to it.id, "serial" to it.serialNumber,
             )
         },
         "createdByMaster" to createdByMaster,
@@ -39,14 +38,15 @@ internal object FirestoreMapping {
         taxId = d["taxId"] as? String,
         phones = d.list("phones").map(::contact),
         addresses = d.list("addresses").map(::contact),
-        printers = d.list("printers").map {
-            SharedPrinter(
-                brand = it.string("brand"),
-                model = it.string("model"),
-                printType = enumOr(it["printType"], PrintType.LASER),
-                colorType = enumOr(it["colorType"], ColorType.MONO),
-                cartridges = (it["cartridges"] as? List<*>).orEmpty().filterIsInstance<String>(),
-                location = it.string("location"),
+        items = d.list("items").map {
+            SharedItem(
+                type = it.string("type"),
+                name = it.string("name"),
+                fields = (it["fields"] as? Map<*, *>).orEmpty().entries
+                    .mapNotNull { (k, v) -> if (k is String && v is String) k to v else null }.toMap(),
+                titleFields = (it["titleFields"] as? List<*>).orEmpty().filterIsInstance<String>(),
+                parts = it.list("parts").map { p -> SharedPart(p.string("type"), p.string("name")) },
+                place = it.string("place"),
                 id = it.string("id"),
                 serialNumber = it.string("serial"),
             )
@@ -67,7 +67,7 @@ internal object FirestoreMapping {
         "paidCash" to paidCash,
         "work" to work.map { r ->
             mapOf(
-                "id" to r.id, "device" to r.device, "note" to r.note, "printerId" to r.printerId,
+                "id" to r.id, "device" to r.device, "note" to r.note, "itemId" to r.itemId,
                 "lines" to r.lines.map { mapOf("itemId" to it.itemId, "name" to it.name, "priceMinor" to it.priceMinor, "quantity" to it.quantity) },
             )
         },
@@ -95,7 +95,7 @@ internal object FirestoreMapping {
                 device = r["device"] as? String,
                 note = r.string("note"),
                 lines = r.list("lines").map { SharedLine(it["itemId"] as? String, it.string("name"), it.long("priceMinor") ?: 0, (it.long("quantity") ?: 1).toInt()) },
-                printerId = r["printerId"] as? String,
+                itemId = r["itemId"] as? String,
             )
         },
         createdByMaster = d["createdByMaster"] == true,
@@ -106,12 +106,12 @@ internal object FirestoreMapping {
     )
 
     fun SharedPriceItem.toMap(): Map<String, Any?> = mapOf(
-        "category" to category.name, "name" to name, "description" to description, "priceMinor" to priceMinor, "archived" to archived,
+        "type" to type, "name" to name, "description" to description, "priceMinor" to priceMinor, "archived" to archived,
     )
 
     fun priceItem(id: String, d: Map<String, Any?>) = SharedPriceItem(
         id = id,
-        category = enumOr(d["category"], RepairCategory.OTHER),
+        type = d["type"] as? String,
         name = d.string("name"),
         description = d.string("description"),
         priceMinor = d.long("priceMinor") ?: 0,

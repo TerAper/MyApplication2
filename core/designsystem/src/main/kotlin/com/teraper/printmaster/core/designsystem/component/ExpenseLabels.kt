@@ -8,8 +8,8 @@ import com.teraper.printmaster.core.model.ExpenseCategory
 @Composable
 fun ExpenseCategory.label(): String = stringResource(
     when (this) {
-        ExpenseCategory.PARTS -> R.string.core_designsystem_expense_parts
-        ExpenseCategory.TONER -> R.string.core_designsystem_expense_toner
+        ExpenseCategory.GOODS -> R.string.core_designsystem_expense_goods
+        ExpenseCategory.MATERIALS -> R.string.core_designsystem_expense_materials
         ExpenseCategory.TRANSPORT -> R.string.core_designsystem_expense_transport
         ExpenseCategory.RENT -> R.string.core_designsystem_expense_rent
         ExpenseCategory.SALARY -> R.string.core_designsystem_expense_salary

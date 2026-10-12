@@ -34,11 +34,10 @@ import com.teraper.printmaster.core.designsystem.component.PmTopBar
 import com.teraper.printmaster.core.designsystem.component.TagTone
 import com.teraper.printmaster.core.designsystem.icon.PmIcons
 import com.teraper.printmaster.core.designsystem.theme.PmTheme
-import com.teraper.printmaster.core.model.CatalogNames
-import com.teraper.printmaster.core.model.ClientPrinter
-import com.teraper.printmaster.core.model.ColorType
-import com.teraper.printmaster.core.model.PrintType
-import com.teraper.printmaster.core.model.PrinterModel
+import com.teraper.printmaster.core.model.CatalogItem
+import com.teraper.printmaster.core.model.ClientItem
+import com.teraper.printmaster.core.model.ItemField
+import com.teraper.printmaster.core.model.ItemType
 import com.teraper.printmaster.core.model.SerialMatch
 import com.teraper.printmaster.feature.clients.R
 import com.teraper.printmaster.feature.clients.common.ScanOutcome
@@ -81,7 +80,7 @@ internal fun SerialSearchScreen(
                 PmTextField(
                     value = query,
                     onValueChange = onQueryChange,
-                    label = stringResource(R.string.feature_clients_printer_serial),
+                    label = stringResource(R.string.feature_clients_item_serial),
                     capitalization = KeyboardCapitalization.Characters,
                     trailingIcon = {
                         IconButton(onClick = onScan) {
@@ -95,17 +94,17 @@ internal fun SerialSearchScreen(
             }
             if (!state.isSearching && query.isNotBlank() && state.hits.isEmpty()) {
                 item {
-                    PmEmptyState(PmIcons.Printer, stringResource(R.string.feature_clients_serial_none), stringResource(R.string.feature_clients_serial_none_hint))
+                    PmEmptyState(PmIcons.Item, stringResource(R.string.feature_clients_serial_none), stringResource(R.string.feature_clients_serial_none_hint))
                 }
             }
             state.hits.forEach { hit ->
-                item(key = "printer-${hit.match.printer.id}") { PrinterHit(hit.match, onClick = { onOpenClient(hit.match.printer.clientId) }) }
+                item(key = "item-${hit.match.item.id}") { ItemHit(hit.match, onClick = { onOpenClient(hit.match.item.clientId) }) }
                 if (hit.orders.isEmpty()) {
-                    item(key = "none-${hit.match.printer.id}") {
+                    item(key = "none-${hit.match.item.id}") {
                         Text(stringResource(R.string.feature_clients_serial_no_orders), Modifier.padding(start = 4.dp), style = MaterialTheme.typography.bodySmall, color = PmTheme.colors.inkMuted)
                     }
                 } else {
-                    item(key = "title-${hit.match.printer.id}") {
+                    item(key = "title-${hit.match.item.id}") {
                         Text(
                             stringResource(R.string.feature_clients_serial_orders, hit.orders.size),
                             Modifier.padding(start = 2.dp, top = 4.dp),
@@ -113,7 +112,7 @@ internal fun SerialSearchScreen(
                             color = PmTheme.colors.inkMuted,
                         )
                     }
-                    items(hit.orders, key = { "order-${hit.match.printer.id}-${it.id}" }) { order ->
+                    items(hit.orders, key = { "order-${hit.match.item.id}-${it.id}" }) { order ->
                         PmOrderCard(order, onClick = { onOpenOrder(order.id) }, today = state.today, showClient = false)
                     }
                 }
@@ -122,10 +121,10 @@ internal fun SerialSearchScreen(
     }
 }
 
-/** The printer found: whose it is, which model, where, its serial. */
+/** The item found: whose it is, which model, where, its serial. */
 @Composable
-private fun PrinterHit(match: SerialMatch, onClick: () -> Unit) {
-    val printer = match.printer
+private fun ItemHit(match: SerialMatch, onClick: () -> Unit) {
+    val owned = match.item
     PmCard(Modifier.fillMaxWidth(), onClick = onClick) {
         Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -133,11 +132,8 @@ private fun PrinterHit(match: SerialMatch, onClick: () -> Unit) {
                 Text(match.clientName, Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
                 if (!match.exact) PmTag(stringResource(R.string.feature_clients_serial_partial), TagTone.Warning)
             }
-            Text(
-                CatalogNames.clean("${printer.model.brand} ${printer.model.name}") + if (printer.location.isBlank()) "" else " · ${printer.location}",
-                style = MaterialTheme.typography.bodyLarge,
-            )
-            Text(printer.serialNumber, style = MaterialTheme.typography.bodyMedium.copy(fontFamily = FontFamily.Monospace), color = PmTheme.colors.inkSecondary)
+            Text(owned.item.title + if (owned.place.isBlank()) "" else " · ${owned.place}", style = MaterialTheme.typography.bodyLarge)
+            Text(owned.serialNumber, style = MaterialTheme.typography.bodyMedium.copy(fontFamily = FontFamily.Monospace), color = PmTheme.colors.inkSecondary)
             Text(stringResource(R.string.feature_clients_serial_open_client), style = MaterialTheme.typography.bodySmall, color = PmTheme.colors.primary)
         }
     }
@@ -146,7 +142,8 @@ private fun PrinterHit(match: SerialMatch, onClick: () -> Unit) {
 @Preview(showBackground = true, widthDp = 390, heightDp = 700)
 @Composable
 private fun SerialSearchPreview() {
-    val printer = ClientPrinter(5, 1, PrinterModel(1, 1, "HP", "LaserJet M125", PrintType.LASER, ColorType.MONO), location = "Accounting", serialNumber = "CNB8K12345")
+    val type = ItemType(1, "Printer", fields = listOf(ItemField(1, 1, "Brand", inTitle = true)))
+    val printer = ClientItem(5, 1, CatalogItem(1, type, "LaserJet M125", mapOf(1L to "HP")), place = "Accounting", serialNumber = "CNB8K12345")
     PmTheme {
         SerialSearchScreen(
             SerialSearchUiState(isSearching = false, hits = listOf(SerialHit(SerialMatch(printer, "Gamma LLC", exact = true), emptyList())), today = LocalDate.of(2026, 10, 11)),

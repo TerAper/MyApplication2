@@ -9,9 +9,9 @@ import com.teraper.printmaster.core.data.repository.DeleteClientResult
 import com.teraper.printmaster.core.data.repository.OrdersRepository
 import com.teraper.printmaster.core.data.repository.PaymentsRepository
 import com.teraper.printmaster.core.data.repository.PhotoRepository
-import com.teraper.printmaster.core.data.repository.PrintersRepository
+import com.teraper.printmaster.core.data.repository.ClientItemsRepository
 import com.teraper.printmaster.core.model.CallRecording
-import com.teraper.printmaster.core.model.ClientPrinter
+import com.teraper.printmaster.core.model.ClientItem
 import com.teraper.printmaster.core.model.ClientSummary
 import com.teraper.printmaster.core.model.LedgerEntry
 import com.teraper.printmaster.core.model.Order
@@ -35,7 +35,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-enum class ClientTab { INFO, PRINTERS, ORDERS, FINANCE }
+enum class ClientTab { INFO, ITEMS, ORDERS, FINANCE }
 
 sealed interface ClientDetailUiState {
     data object Loading : ClientDetailUiState
@@ -43,7 +43,7 @@ sealed interface ClientDetailUiState {
     data class Loaded(
         val summary: ClientSummary,
         val ledger: List<LedgerEntry> = emptyList(),
-        val printers: List<ClientPrinter> = emptyList(),
+        val items: List<ClientItem> = emptyList(),
         val orders: List<Order> = emptyList(),
         val today: LocalDate? = null,
         val tab: ClientTab = ClientTab.INFO,
@@ -52,9 +52,9 @@ sealed interface ClientDetailUiState {
         val calls: List<CallRecording> = emptyList(),
         val showAllCalls: Boolean = false,
         val playing: CallRecording? = null,
-        /** Photos by printer id and by client-printer-cartridge id. */
-        val printerPhotos: Map<Long, List<Photo>> = emptyMap(),
-        val cartridgePhotos: Map<Long, List<Photo>> = emptyMap(),
+        /** Photos by client item id and by client item part id. */
+        val itemPhotos: Map<Long, List<Photo>> = emptyMap(),
+        val partPhotos: Map<Long, List<Photo>> = emptyMap(),
     ) : ClientDetailUiState
 }
 
@@ -73,7 +73,7 @@ class ClientDetailViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val clientsRepository: ClientsRepository,
     private val paymentsRepository: PaymentsRepository,
-    printersRepository: PrintersRepository,
+    clientItemsRepository: ClientItemsRepository,
     ordersRepository: OrdersRepository,
     callRecordingsRepository: CallRecordingsRepository,
     private val photoRepository: PhotoRepository,
@@ -100,7 +100,7 @@ class ClientDetailViewModel @Inject constructor(
     private class Records(
         val summary: ClientSummary?,
         val ledger: List<LedgerEntry>,
-        val printers: List<ClientPrinter>,
+        val items: List<ClientItem>,
         val orders: List<Order>,
         val calls: List<CallRecording>,
     )
@@ -108,17 +108,17 @@ class ClientDetailViewModel @Inject constructor(
     private val records = combine(
         clientsRepository.observeClientSummary(clientId),
         paymentsRepository.observeLedger(clientId),
-        printersRepository.observeClientPrinters(clientId),
+        clientItemsRepository.observeClientItems(clientId),
         ordersRepository.observeClientOrders(clientId),
         callRecordingsRepository.observeClientRecordings(clientId),
         ::Records,
     )
 
-    private val photos = printersRepository.observeClientPrinters(clientId).flatMapLatest { printers ->
+    private val photos = clientItemsRepository.observeClientItems(clientId).flatMapLatest { items ->
         combine(
-            photoRepository.observePhotos(PhotoOwner.PRINTER, printers.map { it.id }),
-            photoRepository.observePhotos(PhotoOwner.CARTRIDGE, printers.flatMap { p -> p.cartridges.map { it.id } }),
-        ) { printer, cartridge -> printer.groupBy { it.ownerId } to cartridge.groupBy { it.ownerId } }
+            photoRepository.observePhotos(PhotoOwner.CLIENT_ITEM, items.map { it.id }),
+            photoRepository.observePhotos(PhotoOwner.CLIENT_ITEM_PART, items.flatMap { i -> i.parts.map { it.id } }),
+        ) { item, part -> item.groupBy { it.ownerId } to part.groupBy { it.ownerId } }
     }
 
     private val callsView = combine(showAllCalls, playing, photos) { all, playing, photos -> Triple(all, playing, photos) }
@@ -134,9 +134,9 @@ class ClientDetailViewModel @Inject constructor(
         val summary = records.summary
         when {
             summary != null -> ClientDetailUiState.Loaded(
-                summary, records.ledger, records.printers, records.orders, today, tab, dialog,
+                summary, records.ledger, records.items, records.orders, today, tab, dialog,
                 calls = records.calls, showAllCalls = showAll, playing = playing,
-                printerPhotos = photos.first, cartridgePhotos = photos.second,
+                itemPhotos = photos.first, partPhotos = photos.second,
             )
             // Just deleted: keep showing Loading for the moment before the screen closes.
             deleting -> ClientDetailUiState.Loading

@@ -6,7 +6,6 @@ import androidx.room.ForeignKey
 import androidx.room.Index
 import androidx.room.PrimaryKey
 import com.teraper.printmaster.core.model.OrderStatus
-import com.teraper.printmaster.core.model.RepairCategory
 
 /** A planned visit to a client. */
 @Entity(
@@ -88,11 +87,22 @@ data class OrderEntity(
     @ColumnInfo(name = "accepted_at") val acceptedAt: Long? = null,
 )
 
-/** One line of the price list. */
-@Entity(tableName = "repair_parts", indices = [Index(value = ["category"]), Index(value = ["attached_company_id"])])
+/** One line of the price list; [typeId] is the item type it's work on, null = general. */
+@Entity(
+    tableName = "repair_parts",
+    foreignKeys = [
+        ForeignKey(
+            entity = ItemTypeEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["type_id"],
+            onDelete = ForeignKey.SET_NULL,
+        ),
+    ],
+    indices = [Index(value = ["type_id"]), Index(value = ["attached_company_id"])],
+)
 data class RepairPartEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
-    val category: RepairCategory,
+    @ColumnInfo(name = "type_id") val typeId: Long?,
     val name: String,
     val description: String = "",
     @ColumnInfo(name = "price_minor") val priceMinor: Long,
@@ -105,7 +115,7 @@ data class RepairPartEntity(
     @ColumnInfo(name = "attached_company_id") val attachedCompanyId: Long? = null,
 )
 
-/** The work done during a visit on one device. */
+/** The work done during a visit on one client item (or none). */
 @Entity(
     tableName = "repairs",
     foreignKeys = [
@@ -116,29 +126,29 @@ data class RepairPartEntity(
             onDelete = ForeignKey.CASCADE,
         ),
         ForeignKey(
-            entity = ClientPrinterEntity::class,
+            entity = ClientItemEntity::class,
             parentColumns = ["id"],
-            childColumns = ["client_printer_id"],
+            childColumns = ["client_item_id"],
             onDelete = ForeignKey.SET_NULL,
         ),
         ForeignKey(
-            entity = ClientPrinterCartridgeEntity::class,
+            entity = ClientItemPartEntity::class,
             parentColumns = ["id"],
-            childColumns = ["client_printer_cartridge_id"],
+            childColumns = ["client_item_part_id"],
             onDelete = ForeignKey.SET_NULL,
         ),
     ],
     indices = [
         Index(value = ["order_id"]),
-        Index(value = ["client_printer_id"]),
-        Index(value = ["client_printer_cartridge_id"]),
+        Index(value = ["client_item_id"]),
+        Index(value = ["client_item_part_id"]),
     ],
 )
 data class RepairEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     @ColumnInfo(name = "order_id") val orderId: Long,
-    @ColumnInfo(name = "client_printer_id") val clientPrinterId: Long?,
-    @ColumnInfo(name = "client_printer_cartridge_id") val clientPrinterCartridgeId: Long?,
+    @ColumnInfo(name = "client_item_id") val clientItemId: Long?,
+    @ColumnInfo(name = "client_item_part_id") val clientItemPartId: Long?,
     val note: String = "",
     @ColumnInfo(name = "created_at") val createdAt: Long,
     /** Same repair on every phone of the company (see sync). */

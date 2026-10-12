@@ -2,16 +2,14 @@ package com.teraper.printmaster.core.data.sync
 
 import com.teraper.printmaster.core.data.sync.FirestoreMapping.toMap
 import com.teraper.printmaster.core.model.ClientType
-import com.teraper.printmaster.core.model.ColorType
 import com.teraper.printmaster.core.model.OrderStatus
-import com.teraper.printmaster.core.model.PrintType
-import com.teraper.printmaster.core.model.RepairCategory
 import com.teraper.printmaster.core.model.SharedClient
 import com.teraper.printmaster.core.model.SharedContact
 import com.teraper.printmaster.core.model.SharedLine
 import com.teraper.printmaster.core.model.SharedOrder
 import com.teraper.printmaster.core.model.SharedPriceItem
-import com.teraper.printmaster.core.model.SharedPrinter
+import com.teraper.printmaster.core.model.SharedItem
+import com.teraper.printmaster.core.model.SharedPart
 import com.teraper.printmaster.core.model.SharedRepair
 import org.junit.Assert.assertEquals
 import org.junit.Test
@@ -24,7 +22,12 @@ class FirestoreMappingTest {
             "c1", "«Ալֆա» ՍՊԸ", ClientType.FIRM, "01234567",
             phones = listOf(SharedContact("091 111111", "accountant")),
             addresses = listOf(SharedContact("Komitas 5", "", "geo:40.1,44.5?q=40.1,44.5")),
-            printers = listOf(SharedPrinter("HP", "M125", PrintType.LASER, ColorType.MONO, listOf("CF283A"), "Office")),
+            items = listOf(
+                SharedItem(
+                    "Printer", "M125", mapOf("Brand" to "HP", "Print" to "Laser"), listOf("Brand"),
+                    listOf(SharedPart("Cartridge", "CF283A")), "Office", id = "i1", serialNumber = "SN1",
+                ),
+            ),
             createdByMaster = true,
             visibleTo = listOf("u1"),
         )
@@ -36,7 +39,7 @@ class FirestoreMappingTest {
         )
         assertEquals(order, FirestoreMapping.order("o1", order.toMap()))
 
-        val price = SharedPriceItem("p1", RepairCategory.CARTRIDGE, "Refill", "85A", 300_000)
+        val price = SharedPriceItem("p1", "Cartridge", "Refill", "85A", 300_000)
         assertEquals(price, FirestoreMapping.priceItem("p1", price.toMap()))
     }
 }

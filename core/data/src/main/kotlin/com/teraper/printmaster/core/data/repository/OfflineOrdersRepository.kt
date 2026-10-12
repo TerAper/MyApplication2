@@ -61,7 +61,7 @@ internal class OfflineOrdersRepository @Inject constructor(
 
     override fun observeOrder(id: Long): Flow<Order?> = orderDao.observeOrder(id).map { it?.toOrder() }
 
-    override fun observePrinterOrders(printerId: Long): Flow<List<Order>> = orderDao.observePrinterOrders(printerId).map { it.toOrders() }
+    override fun observeClientItemOrders(clientItemId: Long): Flow<List<Order>> = orderDao.observeClientItemOrders(clientItemId).map { it.toOrders() }
 
     override suspend fun saveOrder(draft: OrderDraft): SaveOrderResult {
         val errors = draft.validate().toMutableSet()

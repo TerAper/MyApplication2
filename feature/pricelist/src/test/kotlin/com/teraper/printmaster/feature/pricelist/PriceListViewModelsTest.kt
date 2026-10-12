@@ -4,12 +4,14 @@ import androidx.lifecycle.SavedStateHandle
 import com.teraper.printmaster.core.model.Money
 import com.teraper.printmaster.core.model.PriceItem
 import com.teraper.printmaster.core.model.PriceItemError
-import com.teraper.printmaster.core.model.RepairCategory
+import com.teraper.printmaster.core.model.ItemType
+import com.teraper.printmaster.core.testing.FakeCatalogRepository
 import com.teraper.printmaster.core.testing.FakePriceListRepository
 import com.teraper.printmaster.core.testing.MainDispatcherRule
 import com.teraper.printmaster.feature.pricelist.edit.PriceItemEditDialog
 import com.teraper.printmaster.feature.pricelist.edit.PriceItemEditEvent
 import com.teraper.printmaster.feature.pricelist.edit.PriceItemEditViewModel
+import com.teraper.printmaster.feature.pricelist.list.PriceListUiState
 import com.teraper.printmaster.feature.pricelist.list.PriceListViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.first
@@ -27,37 +29,45 @@ class PriceListViewModelsTest {
 
     @get:Rule val mainRule = MainDispatcherRule()
 
-    private val refill = PriceItem(1, RepairCategory.CARTRIDGE, "Refill 85A", "HP", Money.ofDram(3_000), Money.ofDram(900))
-    private val chip = PriceItem(2, RepairCategory.CARTRIDGE, "Chip", price = Money.ofDram(2_500))
-    private val drum = PriceItem(3, RepairCategory.PRINTER, "Drum", price = Money.ofDram(8_000))
-    private val repo = FakePriceListRepository(listOf(refill, chip, drum))
+    private val printer = ItemType(1, "Printer")
+    private val cartridge = ItemType(2, "Cartridge", parentId = 1)
+    private val catalog = FakeCatalogRepository(listOf(printer, cartridge))
+    private val refill = PriceItem(1, 2, "Refill 85A", "HP", Money.ofDram(3_000), Money.ofDram(900))
+    private val chip = PriceItem(2, 2, "Chip", price = Money.ofDram(2_500))
+    private val drum = PriceItem(3, 1, "Drum", price = Money.ofDram(8_000))
+    private val visit = PriceItem(4, null, "Visit", price = Money.ofDram(1_000))
+    private val repo = FakePriceListRepository(listOf(refill, chip, drum, visit))
 
-    private fun editVm(itemId: Long = 0, category: String? = null) =
-        PriceItemEditViewModel(SavedStateHandle(mapOf("itemId" to itemId, "category" to category)), repo)
+    private fun editVm(itemId: Long = 0, typeId: Long = 0) =
+        PriceItemEditViewModel(SavedStateHandle(mapOf("itemId" to itemId, "typeId" to typeId)), repo, catalog)
 
     @Test
-    fun listFiltersByCategoryAndSearch() = runTest {
-        val vm = PriceListViewModel(repo)
+    fun listGroupsByTypeFiltersAndSearches() = runTest {
+        val vm = PriceListViewModel(repo, catalog)
         backgroundScope.launch(UnconfinedTestDispatcher()) { vm.uiState.collect {} }
 
-        assertEquals(3, vm.uiState.value.totalCount)
-        assertEquals(mapOf(RepairCategory.CARTRIDGE to 2, RepairCategory.PRINTER to 1), vm.uiState.value.counts)
-        assertEquals(2, vm.uiState.value.groups.size)
+        assertEquals(4, vm.uiState.value.totalCount)
+        // Types in their order, general work last.
+        assertEquals(listOf("Printer" to 1, "Cartridge" to 2, null to 1), vm.uiState.value.chips.map { it.first.type?.name to it.second })
+        assertEquals(3, vm.uiState.value.groups.size)
 
-        vm.onCategoryClick(RepairCategory.PRINTER)
+        vm.onGroupClick(printer.id)
         assertEquals(listOf(drum), vm.uiState.value.groups.single().items)
+        vm.onGroupClick(PriceListUiState.GENERAL)
+        assertEquals(listOf(visit), vm.uiState.value.groups.single().items)
         // Tapping the selected chip again shows everything.
-        vm.onCategoryClick(RepairCategory.PRINTER)
-        assertEquals(null, vm.uiState.value.category)
+        vm.onGroupClick(PriceListUiState.GENERAL)
+        assertEquals(null, vm.uiState.value.group)
 
         vm.onQueryChange("hp")
         assertEquals(listOf(refill), vm.uiState.value.groups.single().items)
     }
 
     @Test
-    fun newItemStartsInGivenCategoryAndSaves() = runTest {
-        val vm = editVm(category = "PRINTER")
-        assertEquals(RepairCategory.PRINTER, vm.uiState.value.draft.category)
+    fun newItemStartsForTheGivenTypeAndSaves() = runTest {
+        val vm = editVm(typeId = printer.id)
+        assertEquals(printer.id, vm.uiState.value.draft.typeId)
+        assertEquals(null, editVm().uiState.value.draft.typeId)
 
         vm.onSave()
         assertEquals(setOf(PriceItemError.NAME_REQUIRED, PriceItemError.PRICE_REQUIRED), vm.uiState.value.errors)
@@ -75,13 +85,13 @@ class PriceListViewModelsTest {
 
     @Test
     fun duplicateNameIsShownUntilChanged() = runTest {
-        val vm = editVm()
+        val vm = editVm(typeId = cartridge.id)
         vm.onNameChange("chip")
         vm.onPriceChange("100")
         vm.onSave()
         assertTrue(vm.uiState.value.nameTaken)
 
-        vm.onCategoryChange(RepairCategory.OTHER)
+        vm.onTypeChange(null)
         assertFalse(vm.uiState.value.nameTaken)
     }
 

@@ -46,8 +46,8 @@ interface ClientDao {
     )
     fun observeLastPaymentDays(companyId: Long): Flow<List<ClientTotal>>
 
-    @Query("SELECT client_id, COUNT(*) AS total FROM client_printers GROUP BY client_id")
-    fun observePrinterCounts(): Flow<List<ClientTotal>>
+    @Query("SELECT client_id, COUNT(*) AS total FROM client_items GROUP BY client_id")
+    fun observeItemCounts(): Flow<List<ClientTotal>>
 
     @Query("SELECT * FROM clients WHERE tax_id = :taxId AND id != :excludeId LIMIT 1")
     suspend fun findOtherClientWithTaxId(taxId: String, excludeId: Long): ClientEntity?

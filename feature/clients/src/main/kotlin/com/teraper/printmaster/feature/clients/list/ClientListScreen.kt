@@ -42,7 +42,6 @@ import com.teraper.printmaster.core.designsystem.component.PmSearchField
 import com.teraper.printmaster.core.designsystem.icon.PmIcons
 import com.teraper.printmaster.core.designsystem.theme.PmTheme
 import com.teraper.printmaster.core.model.Client
-import com.teraper.printmaster.core.model.CatalogNames
 import com.teraper.printmaster.core.model.SerialMatch
 import com.teraper.printmaster.core.model.ClientPhone
 import com.teraper.printmaster.core.model.ClientSummary
@@ -63,7 +62,7 @@ internal fun ClientListRoute(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val query by viewModel.query.collectAsStateWithLifecycle()
-    // Scan a printer's label: the serial search shows whose printer it is. No scanner = type it there.
+    // Scan an item's label: the serial search shows whose it is. No scanner = type it there.
     val scan = rememberSerialScanner { outcome ->
         when (outcome) {
             is ScanOutcome.Read -> onSearchSerial(outcome.text)
@@ -125,7 +124,7 @@ internal fun ClientListScreen(
                     title = stringResource(R.string.feature_clients_empty_title),
                     message = stringResource(R.string.feature_clients_empty_message),
                 )
-                state.clients.isEmpty() && state.printers.isEmpty() -> PmEmptyState(
+                state.clients.isEmpty() && state.serials.isEmpty() -> PmEmptyState(
                     icon = PmIcons.Search,
                     title = stringResource(R.string.feature_clients_no_results_title),
                     message = stringResource(R.string.feature_clients_no_results_message),
@@ -134,8 +133,8 @@ internal fun ClientListScreen(
                     // Room at the bottom so the last row isn't hidden by the button.
                     contentPadding = PaddingValues(bottom = 96.dp),
                 ) {
-                    items(state.printers, key = { "printer-${it.printer.id}" }) { match ->
-                        SerialRow(match, onClick = { onOpenSerial(match.printer.serialNumber) })
+                    items(state.serials, key = { "item-${it.item.id}" }) { match ->
+                        SerialRow(match, onClick = { onOpenSerial(match.item.serialNumber) })
                         HorizontalDivider(color = PmTheme.colors.surfaceMuted)
                     }
                     items(state.clients, key = { it.client.id }) { summary ->
@@ -220,7 +219,7 @@ internal fun BalanceAmount(balance: Money, modifier: Modifier = Modifier) {
 
 private fun previewClient(id: Long, name: String, type: ClientType, taxId: String?, balance: Long) = ClientSummary(
     client = Client(id, name, type, taxId, "", listOf(ClientPhone(id, "091 123456", "")), emptyList()),
-    printerCount = if (type == ClientType.FIRM) 3 else 0,
+    itemCount = if (type == ClientType.FIRM) 3 else 0,
     charged = Money.ofDram(balance.coerceAtLeast(0)),
     paid = Money.ofDram((-balance).coerceAtLeast(0)),
 )
@@ -248,7 +247,7 @@ private fun ClientListScreenPreview() {
     }
 }
 
-/** A printer whose serial number has what was typed: opens its client and orders. */
+/** A client item whose serial number has what was typed: opens its client and orders. */
 @Composable
 private fun SerialRow(match: SerialMatch, onClick: () -> Unit) {
     Row(
@@ -256,11 +255,11 @@ private fun SerialRow(match: SerialMatch, onClick: () -> Unit) {
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(14.dp),
     ) {
-        Icon(PmIcons.Printer, contentDescription = null, tint = PmTheme.colors.primary)
+        Icon(PmIcons.Item, contentDescription = null, tint = PmTheme.colors.primary)
         Column(Modifier.weight(1f)) {
-            Text(match.printer.serialNumber, style = MaterialTheme.typography.titleSmall)
+            Text(match.item.serialNumber, style = MaterialTheme.typography.titleSmall)
             Text(
-                stringResource(R.string.feature_clients_serial_row, CatalogNames.clean("${match.printer.model.brand} ${match.printer.model.name}"), match.clientName),
+                stringResource(R.string.feature_clients_serial_row, match.item.item.title, match.clientName),
                 style = MaterialTheme.typography.bodySmall,
                 color = PmTheme.colors.inkMuted,
             )

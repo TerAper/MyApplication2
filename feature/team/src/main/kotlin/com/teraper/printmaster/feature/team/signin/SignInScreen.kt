@@ -58,7 +58,7 @@ internal fun SignInScreen(state: SignInUiState, onSignIn: () -> Unit, onSkip: ((
                 Modifier.padding(top = 32.dp).size(64.dp).background(PmTheme.colors.primaryContainer, PmTheme.shapes.button),
                 contentAlignment = Alignment.Center,
             ) {
-                Icon(PmIcons.Printer, contentDescription = null, tint = PmTheme.colors.primary, modifier = Modifier.size(36.dp))
+                Icon(PmIcons.Item, contentDescription = null, tint = PmTheme.colors.primary, modifier = Modifier.size(36.dp))
             }
             Text(stringResource(R.string.feature_team_start_title), style = MaterialTheme.typography.headlineMedium, color = PmTheme.colors.ink)
             Text(stringResource(R.string.feature_team_start_message), style = MaterialTheme.typography.bodyLarge, color = PmTheme.colors.inkMuted)

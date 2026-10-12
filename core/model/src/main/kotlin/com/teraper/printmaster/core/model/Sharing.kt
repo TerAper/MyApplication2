@@ -6,7 +6,7 @@ package com.teraper.printmaster.core.model
  * debts are never in here: a master doesn't see what clients owe.
  */
 
-/** A client as a master needs it: who, how to reach, which printers. */
+/** A client as a master needs it: who, how to reach, which items they own. */
 data class SharedClient(
     val id: String,
     val name: String,
@@ -14,7 +14,7 @@ data class SharedClient(
     val taxId: String? = null,
     val phones: List<SharedContact> = emptyList(),
     val addresses: List<SharedContact> = emptyList(),
-    val printers: List<SharedPrinter> = emptyList(),
+    val items: List<SharedItem> = emptyList(),
     /** Added by a master in the field; the company reviews it. */
     val createdByMaster: Boolean = false,
     /** Masters (account ids) allowed to see this client: those with an order for it. */
@@ -23,17 +23,24 @@ data class SharedClient(
 
 data class SharedContact(val value: String, val label: String = "", val mapLink: String? = null)
 
-data class SharedPrinter(
-    val brand: String,
-    val model: String,
-    val printType: PrintType,
-    val colorType: ColorType,
-    val cartridges: List<String> = emptyList(),
-    val location: String = "",
-    /** The client's printer itself: a client can have two of one model. */
+/**
+ * A client's item. Types travel by name, so the other phone finds or makes the same type;
+ * [fields] are values by field name, [titleFields] the ones written before the name ("HP").
+ */
+data class SharedItem(
+    val type: String,
+    val name: String,
+    val fields: Map<String, String> = emptyMap(),
+    val titleFields: List<String> = emptyList(),
+    val parts: List<SharedPart> = emptyList(),
+    val place: String = "",
+    /** The client's item itself: a client can have two of one model. */
     val id: String = "",
     val serialNumber: String = "",
 )
+
+/** A part the client's item uses: its type and its title ("Cartridge", "CF283A"). */
+data class SharedPart(val type: String, val name: String)
 
 /** An order and, once done, the work and how it was paid. */
 data class SharedOrder(
@@ -71,16 +78,17 @@ data class SharedRepair(
     val device: String?,
     val note: String,
     val lines: List<SharedLine>,
-    /** Which of the client's printers ([SharedPrinter.id]); [device] says which cartridge. */
-    val printerId: String? = null,
+    /** Which of the client's items ([SharedItem.id]); [device] says which part. */
+    val itemId: String? = null,
 )
 
 /** A price-list item ([itemId]) or a custom line; prices only, never costs. */
 data class SharedLine(val itemId: String?, val name: String, val priceMinor: Long, val quantity: Int)
 
+/** [type] is the item type's name, null = general. */
 data class SharedPriceItem(
     val id: String,
-    val category: RepairCategory,
+    val type: String?,
     val name: String,
     val description: String,
     val priceMinor: Long,

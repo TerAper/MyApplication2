@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Names given to the printer data when it moves into item types (database version 14). -->
+    <string name="core_database_type_printer">Տպիչ</string>
+    <string name="core_database_type_cartridge">Քարտրիջ</string>
+    <string name="core_database_type_chip">Չիպ</string>
+    <string name="core_database_field_brand">Բրենդ</string>
+    <string name="core_database_field_print">Տպման տեսակ</string>
+    <string name="core_database_field_color">Գույն</string>
+    <string name="core_database_print_laser">Լազերային</string>
+    <string name="core_database_print_ink">Թանաքային</string>
+    <string name="core_database_color_mono">Սև/սպիտակ</string>
+    <string name="core_database_color_color">Գունավոր</string>
+</resources>

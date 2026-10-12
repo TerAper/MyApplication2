@@ -6,7 +6,7 @@
     <string name="feature_team_cancel">Չեղարկել</string>
     <string name="feature_team_unavailable">Համօգտագործումը կարգավորված չէ</string>
     <string name="feature_team_unavailable_message">Հավելվածի այս տարբերակում Firebase-ի կարգավորումներ չկան, պատվերները հնարավոր չէ կիսել։</string>
-    <string name="feature_team_intro">Տվեք պատվերներ վարպետներին, ովքեր նույնպես օգտվում են PrintMaster-ից, կամ կատարեք այլ սեփականատերերի տված պատվերները։ Յուրաքանչյուր ընկերություն ունի իր կոդը։ Վարպետները տեսնում են միայն իրենց տրված պատվերները՝ հաճախորդի հեռախոսով, հասցեով և տպիչներով, երբեք՝ պարտքերը։</string>
+    <string name="feature_team_intro">Տվեք պատվերներ վարպետներին, ովքեր նույնպես օգտվում են PrintMaster-ից, կամ կատարեք այլ սեփականատերերի տված պատվերները։ Յուրաքանչյուր ընկերություն ունի իր կոդը։ Վարպետները տեսնում են միայն իրենց տրված պատվերները՝ հաճախորդի հեռախոսով, հասցեով և իրերով, երբեք՝ պարտքերը։</string>
     <string name="feature_team_sign_in">Մուտք Google-ով</string>
     <string name="feature_team_signed_in">Մուտք՝ %1$s</string>
     <string name="feature_team_sign_out">Ելք</string>

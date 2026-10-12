@@ -1,18 +1,15 @@
 package com.teraper.printmaster.feature.orders
 
 import androidx.lifecycle.SavedStateHandle
-import com.teraper.printmaster.core.model.Cartridge
-import com.teraper.printmaster.core.model.ClientPrinter
-import com.teraper.printmaster.core.model.ClientPrinterCartridge
-import com.teraper.printmaster.core.model.ColorType
+import com.teraper.printmaster.core.model.CatalogItem
+import com.teraper.printmaster.core.model.ClientItem
+import com.teraper.printmaster.core.model.ClientItemPart
+import com.teraper.printmaster.core.model.ItemType
 import com.teraper.printmaster.core.model.Money
 import com.teraper.printmaster.core.model.Order
 import com.teraper.printmaster.core.model.OrderStatus
 import com.teraper.printmaster.core.model.PriceItem
-import com.teraper.printmaster.core.model.PrintType
-import com.teraper.printmaster.core.model.PrinterModel
 import com.teraper.printmaster.core.model.Repair
-import com.teraper.printmaster.core.model.RepairCategory
 import com.teraper.printmaster.core.model.RepairDraftError
 import com.teraper.printmaster.core.model.RepairLine
 import com.teraper.printmaster.core.testing.FakeCallRecordingsRepository
@@ -20,7 +17,8 @@ import com.teraper.printmaster.core.testing.FakeCompaniesRepository
 import com.teraper.printmaster.core.testing.FakeOrdersRepository
 import com.teraper.printmaster.core.testing.FakePhotoRepository
 import com.teraper.printmaster.core.testing.FakePriceListRepository
-import com.teraper.printmaster.core.testing.FakePrintersRepository
+import com.teraper.printmaster.core.testing.FakeCatalogRepository
+import com.teraper.printmaster.core.testing.FakeClientItemsRepository
 import com.teraper.printmaster.core.testing.FakeRepairsRepository
 import com.teraper.printmaster.core.testing.MainDispatcherRule
 import com.teraper.printmaster.feature.orders.detail.OrderDetailDialog
@@ -52,23 +50,26 @@ class RepairViewModelsTest {
 
     private val clock = Clock.fixed(Instant.parse("2026-10-08T08:00:00Z"), ZoneOffset.UTC)
     private val orders = FakeOrdersRepository(listOf(Order(1, 1, 7, "Firm", LocalDateTime.of(2026, 10, 8, 10, 0), "Refill")))
-    private val model = PrinterModel(1, 1, "HP", "M125", PrintType.LASER, ColorType.MONO)
-    private val printer = ClientPrinter(5, 7, model, "Office", cartridges = listOf(ClientPrinterCartridge(50, Cartridge(1, "CF283A"))))
-    private val refill = PriceItem(1, RepairCategory.CARTRIDGE, "Refill", price = Money.ofDram(3_000), cost = Money.ofDram(900))
-    private val drum = PriceItem(2, RepairCategory.PRINTER, "Drum", price = Money.ofDram(8_000))
+    private val printerType = ItemType(1, "Printer")
+    private val cartridgeType = ItemType(2, "Cartridge", parentId = 1)
+    private val printer = ClientItem(5, 7, CatalogItem(1, printerType, "HP M125"), "Office", parts = listOf(ClientItemPart(50, CatalogItem(3, cartridgeType, "CF283A"))))
+    private val refill = PriceItem(1, 2, "Refill", price = Money.ofDram(3_000), cost = Money.ofDram(900))
+    private val drum = PriceItem(2, 1, "Drum", price = Money.ofDram(8_000))
+    private val catalog = FakeCatalogRepository(listOf(printerType, cartridgeType))
     private val priceList = FakePriceListRepository(listOf(refill, drum))
     private val repairs = FakeRepairsRepository()
 
-    private fun editVm(printers: List<ClientPrinter> = listOf(printer), repairId: Long = 0) = RepairEditViewModel(
+    private fun editVm(items: List<ClientItem> = listOf(printer), repairId: Long = 0) = RepairEditViewModel(
         SavedStateHandle(mapOf("orderId" to 1L, "repairId" to repairId)),
-        orders, FakePrintersRepository(printers), priceList, repairs,
+        orders, FakeClientItemsRepository(items), catalog, priceList, repairs,
     )
 
     @Test
-    fun newWorkPicksTheOnlyPrinterAndPickerFollowsTheDevice() = runTest {
+    fun newWorkPicksTheOnlyItemAndPickerFollowsTheDevice() = runTest {
         val vm = editVm()
         backgroundScope.launch(UnconfinedTestDispatcher()) { vm.uiState.collect {} }
-        assertEquals(5L, vm.uiState.value.form.draft.printerId)
+        assertEquals(5L, vm.uiState.value.form.draft.itemId)
+        assertEquals(listOf(printerType, cartridgeType), vm.uiState.value.pickerTypes)
         assertFalse(vm.uiState.value.form.hasChanges)
 
         vm.onDeviceClick(5, 50)
@@ -77,7 +78,7 @@ class RepairViewModelsTest {
 
         vm.onPickItem(refill)
         vm.onPickItem(refill)
-        vm.onPickerCategoryClick(RepairCategory.CARTRIDGE)
+        vm.onPickerGroupClick(cartridgeType.id)
         assertEquals(listOf(refill, drum), vm.uiState.value.pickerItems)
         vm.onClosePicker()
         assertEquals(Money.ofDram(6_000), vm.uiState.value.form.draft.total)
@@ -88,15 +89,15 @@ class RepairViewModelsTest {
         vm.onSave()
         assertEquals(RepairEditEvent.Close, vm.events.first())
         val saved = repairs.saved.single()
-        assertEquals(50L, saved.cartridgeId)
+        assertEquals(50L, saved.itemPartId)
         assertEquals(2, saved.lines.single().quantity)
     }
 
     @Test
     fun customLineNeedsNameAndPriceAndEmptyWorkIsRejected() = runTest {
-        val vm = editVm(printers = emptyList())
+        val vm = editVm(items = emptyList())
         backgroundScope.launch(UnconfinedTestDispatcher()) { vm.uiState.collect {} }
-        assertNull(vm.uiState.value.form.draft.printerId)
+        assertNull(vm.uiState.value.form.draft.itemId)
 
         vm.onSave()
         assertEquals(setOf(RepairDraftError.LINES_REQUIRED), vm.uiState.value.form.errors)

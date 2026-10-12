@@ -1,13 +1,6 @@
 package com.teraper.printmaster.feature.clients
 
-import com.teraper.printmaster.core.data.repository.CatalogRepository
 import com.teraper.printmaster.core.data.repository.ClientsRepository
-import com.teraper.printmaster.core.data.repository.DeleteModelResult
-import com.teraper.printmaster.core.data.repository.SaveModelResult
-import com.teraper.printmaster.core.model.CatalogModel
-import com.teraper.printmaster.core.model.ModelOwner
-import com.teraper.printmaster.core.model.PrinterModel
-import com.teraper.printmaster.core.model.PrinterModelDraft
 import com.teraper.printmaster.core.data.repository.DeleteClientResult
 import com.teraper.printmaster.core.data.repository.PaymentsRepository
 import com.teraper.printmaster.core.data.repository.SaveMoneyEntryResult
@@ -108,19 +101,4 @@ class FakePaymentsRepository : PaymentsRepository {
         ledgers.value = ledgers.value.mapValues { (_, list) -> list - entry }
         return true
     }
-}
-
-/** Catalog holding whatever models the test puts in. */
-class FakeCatalogRepository(models: List<PrinterModel> = emptyList()) : CatalogRepository {
-    val catalog = MutableStateFlow(models.map { CatalogModel(it) })
-
-    override fun observeCatalog(): Flow<List<CatalogModel>> = catalog
-
-    override fun observeModel(id: Long): Flow<PrinterModel?> = catalog.map { list -> list.firstOrNull { it.model.id == id }?.model }
-
-    override fun observeModelOwners(modelId: Long): Flow<List<ModelOwner>> = MutableStateFlow(emptyList())
-
-    override suspend fun saveModel(draft: PrinterModelDraft): SaveModelResult = SaveModelResult.Saved(1)
-
-    override suspend fun deleteModel(id: Long): DeleteModelResult = DeleteModelResult.DELETED
 }

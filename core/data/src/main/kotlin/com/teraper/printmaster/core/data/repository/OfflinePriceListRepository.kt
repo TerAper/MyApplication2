@@ -18,11 +18,11 @@ internal class OfflinePriceListRepository @Inject constructor(
 ) : PriceListRepository {
 
     override fun observeItems(): Flow<List<PriceItem>> = dao.observeParts().map { rows ->
-        rows.map { it.toModel() }.sortedWith(compareBy({ it.category.ordinal }, { PriceListSearch.key(it.name) }))
+        rows.map { it.toModel() }.sortedBy { PriceListSearch.key(it.name) }
     }
 
     override fun observeItemsFor(companyId: Long): Flow<List<PriceItem>> = dao.observePartsFor(companyId).map { rows ->
-        rows.map { it.toModel() }.sortedWith(compareBy({ it.category.ordinal }, { PriceListSearch.key(it.name) }))
+        rows.map { it.toModel() }.sortedBy { PriceListSearch.key(it.name) }
     }
 
     override fun observeItem(id: Long): Flow<PriceItem?> = dao.observePart(id).map { it?.toModel() }
@@ -33,12 +33,12 @@ internal class OfflinePriceListRepository @Inject constructor(
         val name = draft.name.trim().replace(Regex("""\s+"""), " ")
         return db.withTransaction {
             val key = PriceListSearch.key(name)
-            if (dao.getPartsIn(draft.category).any { it.id != draft.id && PriceListSearch.key(it.name) == key }) {
+            if (dao.getPartsIn(draft.typeId).any { it.id != draft.id && PriceListSearch.key(it.name) == key }) {
                 return@withTransaction SavePriceItemResult.NameTaken
             }
             val entity = RepairPartEntity(
                 id = draft.id,
-                category = draft.category,
+                typeId = draft.typeId,
                 name = name,
                 description = draft.description.trim(),
                 priceMinor = draft.price.minor,
@@ -60,7 +60,7 @@ internal class OfflinePriceListRepository @Inject constructor(
 
 private fun RepairPartEntity.toModel() = PriceItem(
     id = id,
-    category = category,
+    typeId = typeId,
     name = name,
     description = description,
     price = Money(priceMinor),

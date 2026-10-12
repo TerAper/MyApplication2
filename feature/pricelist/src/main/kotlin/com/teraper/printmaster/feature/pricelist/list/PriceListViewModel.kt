@@ -5,7 +5,8 @@ import androidx.lifecycle.viewModelScope
 import com.teraper.printmaster.core.data.repository.PriceListRepository
 import com.teraper.printmaster.core.model.PriceItem
 import com.teraper.printmaster.core.model.PriceListSearch
-import com.teraper.printmaster.core.model.RepairCategory
+import com.teraper.printmaster.core.model.ItemType
+import com.teraper.printmaster.core.data.repository.CatalogRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -15,42 +16,49 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import javax.inject.Inject
 
-data class PriceGroup(val category: RepairCategory, val items: List<PriceItem>)
+/** Prices for work on items of [type]; null = general work. */
+data class PriceGroup(val type: ItemType?, val items: List<PriceItem>)
 
 data class PriceListUiState(
     val isLoading: Boolean = true,
     val totalCount: Int = 0,
-    /** Items in each category, for the filter chips. */
-    val counts: Map<RepairCategory, Int> = emptyMap(),
-    /** null = all categories. */
-    val category: RepairCategory? = null,
+    /** The groups to filter by, with how many prices each has. */
+    val chips: List<Pair<PriceGroup, Int>> = emptyList(),
+    /** An item type's id, [GENERAL], or null = all. */
+    val group: Long? = null,
     val query: String = "",
     val groups: List<PriceGroup> = emptyList(),
-)
+) {
+    companion object {
+        const val GENERAL = 0L
+    }
+}
 
 @HiltViewModel
 class PriceListViewModel @Inject constructor(
     priceListRepository: PriceListRepository,
+    catalogRepository: CatalogRepository,
 ) : ViewModel() {
 
     private val filter = MutableStateFlow(PriceListUiState())
 
-    val uiState: StateFlow<PriceListUiState> = combine(priceListRepository.observeItems(), filter) { items, filter ->
+    val uiState: StateFlow<PriceListUiState> = combine(priceListRepository.observeItems(), catalogRepository.observeTypes(), filter) { items, types, filter ->
+        // Type order (parents, then their parts), general work last.
+        val all = types.map { type -> PriceGroup(type, items.filter { it.typeId == type.id }) } +
+            PriceGroup(null, items.filter { item -> types.none { it.id == item.typeId } })
+        val inGroup = { group: PriceGroup -> filter.group == null || filter.group == (group.type?.id ?: PriceListUiState.GENERAL) }
         filter.copy(
             isLoading = false,
             totalCount = items.size,
-            counts = items.groupingBy { it.category }.eachCount(),
-            // The repository already sorts by category, so grouping keeps that order.
-            groups = items
-                .filter { (filter.category == null || it.category == filter.category) && PriceListSearch.matches(it, filter.query) }
-                .groupBy { it.category }
-                .map { (category, list) -> PriceGroup(category, list) },
+            chips = all.filter { it.items.isNotEmpty() }.map { it to it.items.size },
+            groups = all.filter(inGroup)
+                .map { group -> group.copy(items = group.items.filter { PriceListSearch.matches(it, filter.query) }) }
+                .filter { it.items.isNotEmpty() },
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), PriceListUiState())
 
     fun onQueryChange(query: String) = filter.update { it.copy(query = query) }
 
-    /** Tapping the selected category again shows all. */
-    fun onCategoryClick(category: RepairCategory?) =
-        filter.update { it.copy(category = if (it.category == category) null else category) }
+    /** Tapping the selected group again shows all. */
+    fun onGroupClick(group: Long?) = filter.update { it.copy(group = if (it.group == group) null else group) }
 }

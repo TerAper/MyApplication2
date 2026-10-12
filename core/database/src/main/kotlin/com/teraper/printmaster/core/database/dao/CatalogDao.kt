@@ -4,155 +4,170 @@ import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.OnConflictStrategy
 import androidx.room.Query
-import androidx.room.Transaction
 import androidx.room.Update
-import com.teraper.printmaster.core.database.entity.BrandEntity
-import com.teraper.printmaster.core.database.entity.CartridgeChipCrossRef
-import com.teraper.printmaster.core.database.entity.CartridgeEntity
-import com.teraper.printmaster.core.database.entity.ChipEntity
-import com.teraper.printmaster.core.database.entity.ClientPrinterCartridgeEntity
-import com.teraper.printmaster.core.database.entity.ClientPrinterEntity
-import com.teraper.printmaster.core.database.entity.ModelCartridgeCrossRef
-import com.teraper.printmaster.core.database.entity.PrinterModelEntity
-import com.teraper.printmaster.core.database.model.ClientPrinterWithDetails
+import com.teraper.printmaster.core.database.entity.ClientItemEntity
+import com.teraper.printmaster.core.database.entity.ClientItemPartEntity
+import com.teraper.printmaster.core.database.entity.ItemEntity
+import com.teraper.printmaster.core.database.entity.ItemFieldEntity
+import com.teraper.printmaster.core.database.entity.ItemFitEntity
+import com.teraper.printmaster.core.database.entity.ItemTypeEntity
+import com.teraper.printmaster.core.database.entity.ItemValueEntity
 import com.teraper.printmaster.core.database.model.IdCount
-import com.teraper.printmaster.core.database.model.ModelOwnerRow
-import com.teraper.printmaster.core.database.model.PrinterModelWithDetails
+import com.teraper.printmaster.core.database.model.ItemOwnerRow
 import kotlinx.coroutines.flow.Flow
 
-/** Printer catalog (brands, models, cartridges, chips) and the printers clients own. */
+/**
+ * The customer's item types and fields, the catalog of items, and what clients own.
+ * The catalog is small, so it is read whole and put together in the repository.
+ */
 @Dao
 interface CatalogDao {
 
-    // ---- Reading ----
+    // ---- Types and fields ----
 
-    @Transaction
-    @Query("SELECT * FROM printer_models")
-    fun observeModels(): Flow<List<PrinterModelWithDetails>>
+    @Query("SELECT * FROM item_types")
+    fun observeTypes(): Flow<List<ItemTypeEntity>>
 
-    @Transaction
-    @Query("SELECT * FROM printer_models WHERE id = :id")
-    fun observeModel(id: Long): Flow<PrinterModelWithDetails?>
+    @Query("SELECT * FROM item_fields ORDER BY position, id")
+    fun observeFields(): Flow<List<ItemFieldEntity>>
 
-    @Query("SELECT model_id AS id, COUNT(*) AS count FROM client_printers GROUP BY model_id")
-    fun observePrinterCountsByModel(): Flow<List<IdCount>>
+    @Query("SELECT * FROM item_types")
+    suspend fun getTypes(): List<ItemTypeEntity>
+
+    @Query("SELECT * FROM item_fields ORDER BY position, id")
+    suspend fun getFields(): List<ItemFieldEntity>
+
+    @Insert
+    suspend fun insertType(type: ItemTypeEntity): Long
+
+    @Update
+    suspend fun updateType(type: ItemTypeEntity)
+
+    @Query("DELETE FROM item_types WHERE id = :id")
+    suspend fun deleteType(id: Long)
+
+    @Query("SELECT COUNT(*) FROM items WHERE type_id = :typeId")
+    suspend fun countItemsOfType(typeId: Long): Int
+
+    @Insert
+    suspend fun insertField(field: ItemFieldEntity): Long
+
+    @Update
+    suspend fun updateField(field: ItemFieldEntity)
+
+    @Query("DELETE FROM item_fields WHERE type_id = :typeId AND id NOT IN (:keepIds)")
+    suspend fun deleteFieldsExcept(typeId: Long, keepIds: List<Long>)
+
+    // ---- Catalog items ----
+
+    @Query("SELECT * FROM items")
+    fun observeItems(): Flow<List<ItemEntity>>
+
+    @Query("SELECT * FROM item_values")
+    fun observeValues(): Flow<List<ItemValueEntity>>
+
+    @Query("SELECT * FROM item_fits")
+    fun observeFits(): Flow<List<ItemFitEntity>>
+
+    @Query("SELECT * FROM items")
+    suspend fun getItems(): List<ItemEntity>
+
+    @Query("SELECT * FROM item_values")
+    suspend fun getValues(): List<ItemValueEntity>
+
+    @Query("SELECT * FROM item_fits")
+    suspend fun getFits(): List<ItemFitEntity>
+
+    @Query("SELECT * FROM items WHERE id = :id")
+    suspend fun getItem(id: Long): ItemEntity?
+
+    @Query("SELECT item_id AS id, COUNT(*) AS count FROM client_items GROUP BY item_id")
+    fun observeOwnedCounts(): Flow<List<IdCount>>
 
     @Query(
         """
-        SELECT c.id AS client_id, c.name AS client_name, p.location AS location
-        FROM client_printers p JOIN clients c ON c.id = p.client_id
-        WHERE p.model_id = :modelId
+        SELECT c.id AS client_id, c.name AS client_name, i.place AS place
+        FROM client_items i JOIN clients c ON c.id = i.client_id
+        WHERE i.item_id = :itemId
         ORDER BY c.name
         """,
     )
-    fun observeModelOwners(modelId: Long): Flow<List<ModelOwnerRow>>
+    fun observeOwners(itemId: Long): Flow<List<ItemOwnerRow>>
 
-    @Transaction
-    @Query("SELECT * FROM client_printers WHERE client_id = :clientId ORDER BY id")
-    fun observeClientPrinters(clientId: Long): Flow<List<ClientPrinterWithDetails>>
-
-    @Transaction
-    @Query("SELECT * FROM client_printers WHERE id = :id")
-    suspend fun getClientPrinter(id: Long): ClientPrinterWithDetails?
-
-    /** Printers whose serial is [key] exactly, or contains it when [partial] (a part of the label read). */
-    @Transaction
+    /** Client items and parts of this model: it can't leave the catalog while they exist. */
     @Query(
         """
-        SELECT * FROM client_printers WHERE serial_key = :key
+        SELECT (SELECT COUNT(*) FROM client_items WHERE item_id = :itemId)
+             + (SELECT COUNT(*) FROM client_item_parts WHERE item_id = :itemId)
+        """,
+    )
+    suspend fun countUses(itemId: Long): Int
+
+    @Insert
+    suspend fun insertItem(item: ItemEntity): Long
+
+    @Update
+    suspend fun updateItem(item: ItemEntity)
+
+    @Query("DELETE FROM items WHERE id = :id")
+    suspend fun deleteItem(id: Long)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun upsertValues(values: List<ItemValueEntity>)
+
+    @Query("DELETE FROM item_values WHERE item_id = :itemId AND field_id NOT IN (:keepFieldIds)")
+    suspend fun deleteValuesExcept(itemId: Long, keepFieldIds: List<Long>)
+
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    suspend fun linkFits(links: List<ItemFitEntity>)
+
+    /** Unlinks what [itemId] goes into, except [keepIds]. */
+    @Query("DELETE FROM item_fits WHERE item_id = :itemId AND into_id NOT IN (:keepIds)")
+    suspend fun unlinkIntoExcept(itemId: Long, keepIds: List<Long>)
+
+    /** Unlinks the parts that go into [intoId], except [keepIds]. */
+    @Query("DELETE FROM item_fits WHERE into_id = :intoId AND item_id NOT IN (:keepIds)")
+    suspend fun unlinkPartsExcept(intoId: Long, keepIds: List<Long>)
+
+    // ---- Client items ----
+
+    @Query("SELECT * FROM client_items WHERE client_id = :clientId ORDER BY id")
+    fun observeClientItems(clientId: Long): Flow<List<ClientItemEntity>>
+
+    @Query("SELECT p.* FROM client_item_parts p JOIN client_items i ON i.id = p.client_item_id WHERE i.client_id = :clientId ORDER BY p.id")
+    fun observeClientItemParts(clientId: Long): Flow<List<ClientItemPartEntity>>
+
+    @Query("SELECT * FROM client_items WHERE id = :id")
+    suspend fun getClientItem(id: Long): ClientItemEntity?
+
+    @Query("SELECT * FROM client_items WHERE client_id = :clientId ORDER BY id")
+    suspend fun getClientItems(clientId: Long): List<ClientItemEntity>
+
+    @Query("SELECT * FROM client_item_parts WHERE client_item_id = :clientItemId ORDER BY id")
+    suspend fun getClientItemParts(clientItemId: Long): List<ClientItemPartEntity>
+
+    /** Items whose serial is [key] exactly, or contains it when [partial] (a part of the label read). */
+    @Query(
+        """
+        SELECT * FROM client_items WHERE serial_key = :key
            OR (:partial AND length(:key) >= 4 AND serial_key LIKE '%' || :key || '%')
         ORDER BY serial_key = :key DESC, id
         """,
     )
-    suspend fun findClientPrintersBySerial(key: String, partial: Boolean): List<ClientPrinterWithDetails>
-
-    @Query("SELECT * FROM brands")
-    suspend fun getBrands(): List<BrandEntity>
-
-    @Query("SELECT * FROM printer_models")
-    suspend fun getModelEntities(): List<PrinterModelEntity>
-
-    @Query("SELECT * FROM printer_models WHERE id = :id")
-    suspend fun getModelEntity(id: Long): PrinterModelEntity?
-
-    @Query("SELECT * FROM cartridges")
-    suspend fun getCartridges(): List<CartridgeEntity>
-
-    @Query("SELECT * FROM chips")
-    suspend fun getChips(): List<ChipEntity>
-
-    @Query("SELECT COUNT(*) FROM client_printers WHERE model_id = :modelId")
-    suspend fun countPrintersOfModel(modelId: Long): Int
-
-    @Query("SELECT * FROM client_printer_cartridges WHERE client_printer_id = :printerId")
-    suspend fun getClientPrinterCartridges(printerId: Long): List<ClientPrinterCartridgeEntity>
-
-    // ---- Catalog writes ----
+    suspend fun findClientItemsBySerial(key: String, partial: Boolean): List<ClientItemEntity>
 
     @Insert
-    suspend fun insertBrand(brand: BrandEntity): Long
-
-    @Insert
-    suspend fun insertModel(model: PrinterModelEntity): Long
+    suspend fun insertClientItem(item: ClientItemEntity): Long
 
     @Update
-    suspend fun updateModel(model: PrinterModelEntity)
+    suspend fun updateClientItem(item: ClientItemEntity)
 
-    @Query("DELETE FROM printer_models WHERE id = :id")
-    suspend fun deleteModel(id: Long)
-
-    @Insert
-    suspend fun insertCartridge(cartridge: CartridgeEntity): Long
-
-    @Query("UPDATE cartridges SET name = :name WHERE id = :id")
-    suspend fun renameCartridge(id: Long, name: String)
+    @Query("DELETE FROM client_items WHERE id = :id")
+    suspend fun deleteClientItem(id: Long): Int
 
     @Insert
-    suspend fun insertChip(chip: ChipEntity): Long
+    suspend fun insertClientItemParts(rows: List<ClientItemPartEntity>)
 
-    @Insert(onConflict = OnConflictStrategy.IGNORE)
-    suspend fun linkModelCartridges(links: List<ModelCartridgeCrossRef>)
-
-    @Query("DELETE FROM model_cartridges WHERE model_id = :modelId AND cartridge_id NOT IN (:keepIds)")
-    suspend fun unlinkModelCartridgesExcept(modelId: Long, keepIds: List<Long>)
-
-    @Insert(onConflict = OnConflictStrategy.IGNORE)
-    suspend fun linkCartridgeChips(links: List<CartridgeChipCrossRef>)
-
-    @Query("DELETE FROM cartridge_chips WHERE cartridge_id = :cartridgeId AND chip_id NOT IN (:keepIds)")
-    suspend fun unlinkCartridgeChipsExcept(cartridgeId: Long, keepIds: List<Long>)
-
-    // Names nobody uses any more are removed so the catalog doesn't fill with typos.
-
-    @Query("DELETE FROM brands WHERE id NOT IN (SELECT brand_id FROM printer_models)")
-    suspend fun deleteUnusedBrands()
-
-    @Query(
-        """
-        DELETE FROM cartridges
-        WHERE id NOT IN (SELECT cartridge_id FROM model_cartridges)
-          AND id NOT IN (SELECT cartridge_id FROM client_printer_cartridges)
-        """,
-    )
-    suspend fun deleteUnusedCartridges()
-
-    @Query("DELETE FROM chips WHERE id NOT IN (SELECT chip_id FROM cartridge_chips)")
-    suspend fun deleteUnusedChips()
-
-    // ---- Client printers ----
-
-    @Insert
-    suspend fun insertClientPrinter(printer: ClientPrinterEntity): Long
-
-    @Update
-    suspend fun updateClientPrinter(printer: ClientPrinterEntity)
-
-    @Query("DELETE FROM client_printers WHERE id = :id")
-    suspend fun deleteClientPrinter(id: Long): Int
-
-    @Insert
-    suspend fun insertClientPrinterCartridges(rows: List<ClientPrinterCartridgeEntity>)
-
-    @Query("DELETE FROM client_printer_cartridges WHERE client_printer_id = :printerId AND id NOT IN (:keepIds)")
-    suspend fun deleteClientPrinterCartridgesExcept(printerId: Long, keepIds: List<Long>)
+    @Query("DELETE FROM client_item_parts WHERE client_item_id = :clientItemId AND id NOT IN (:keepIds)")
+    suspend fun deleteClientItemPartsExcept(clientItemId: Long, keepIds: List<Long>)
 }

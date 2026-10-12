@@ -32,7 +32,7 @@ class PrintMasterApplication : Application() {
         CallRecordingsSync.schedule(this)
         callRecordings.startWatching(appScope)
         liveSync.start(appScope)
-        // Photos of deleted printers, cartridges and orders.
+        // Photos of deleted client items, parts, orders and expenses.
         appScope.launch { photos.cleanUp() }
         appScope.launch { syncRunner.reports.collect { SyncNotifications.show(this@PrintMasterApplication, it) } }
     }

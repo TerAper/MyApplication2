@@ -1,4 +1,4 @@
-package com.teraper.printmaster.feature.clients.printer
+package com.teraper.printmaster.feature.clients.item
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
@@ -36,39 +36,36 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.teraper.printmaster.core.designsystem.component.PmCard
 import com.teraper.printmaster.core.designsystem.component.PmConfirmDialog
 import com.teraper.printmaster.core.designsystem.component.PmFilterChip
+import com.teraper.printmaster.core.designsystem.component.PmItemFields
 import com.teraper.printmaster.core.designsystem.component.PmPrimaryButton
 import com.teraper.printmaster.core.designsystem.component.PmSecondaryButton
-import com.teraper.printmaster.core.designsystem.component.PmSegmentedButtons
 import com.teraper.printmaster.core.designsystem.component.PmTextField
 import com.teraper.printmaster.core.designsystem.component.PmTopBar
-import com.teraper.printmaster.core.designsystem.component.label
-import com.teraper.printmaster.core.designsystem.component.typeLabel
 import com.teraper.printmaster.core.designsystem.icon.PmIcons
 import com.teraper.printmaster.core.designsystem.theme.PmTheme
-import com.teraper.printmaster.core.model.Cartridge
-import com.teraper.printmaster.core.model.CartridgeDraft
+import com.teraper.printmaster.core.model.CatalogItem
 import com.teraper.printmaster.core.model.CatalogNames
-import com.teraper.printmaster.core.model.ClientPrinterDraft
-import com.teraper.printmaster.core.model.ColorType
-import com.teraper.printmaster.core.model.PrintType
-import com.teraper.printmaster.core.model.PrinterDraftError
-import com.teraper.printmaster.core.model.PrinterModel
-import com.teraper.printmaster.core.model.PrinterModelDraft
+import com.teraper.printmaster.core.model.ClientItemDraft
+import com.teraper.printmaster.core.model.ItemDraftError
+import com.teraper.printmaster.core.model.ItemField
+import com.teraper.printmaster.core.model.ItemRef
+import com.teraper.printmaster.core.model.ItemType
 import com.teraper.printmaster.feature.clients.R
-import com.teraper.printmaster.feature.clients.common.rememberSerialScanner
 import com.teraper.printmaster.feature.clients.common.ScanOutcome
+import com.teraper.printmaster.feature.clients.common.rememberSerialScanner
 
 @Composable
-internal fun PrinterEditRoute(
+internal fun ClientItemEditRoute(
     onClose: () -> Unit,
-    viewModel: PrinterEditViewModel = hiltViewModel(),
+    onOpenItemTypes: () -> Unit,
+    viewModel: ClientItemEditViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
 
     LaunchedEffect(viewModel) {
         viewModel.events.collect { event ->
             when (event) {
-                PrinterEditEvent.Close -> onClose()
+                ClientItemEditEvent.Close -> onClose()
             }
         }
     }
@@ -81,26 +78,27 @@ internal fun PrinterEditRoute(
         }
     }
 
-    PrinterEditScreen(
+    ClientItemEditScreen(
         state = state,
-        actions = PrinterEditActions(
+        actions = ClientItemEditActions(
             onClose = viewModel::onCloseRequest,
             onDelete = viewModel::onDeleteClick,
             onModelQueryChange = viewModel::onModelQueryChange,
             onModelPicked = viewModel::onModelPicked,
             onStartNewModel = viewModel::onStartNewModel,
+            onNewModelType = viewModel::onNewModelType,
             onChangeModel = viewModel::onChangeModel,
-            onBrandChange = viewModel::onBrandChange,
             onModelNameChange = viewModel::onModelNameChange,
-            onPrintTypeChange = viewModel::onPrintTypeChange,
-            onColorTypeChange = viewModel::onColorTypeChange,
-            onCartridgeToggle = viewModel::onCartridgeToggle,
-            onNewCartridgeChange = viewModel::onNewCartridgeChange,
-            onAddCartridge = viewModel::onAddCartridge,
-            onLocationChange = viewModel::onLocationChange,
+            onModelValueChange = viewModel::onModelValueChange,
+            onPartToggle = viewModel::onPartToggle,
+            onNewPartChange = viewModel::onNewPartChange,
+            onNewPartType = viewModel::onNewPartType,
+            onAddPart = viewModel::onAddPart,
+            onPlaceChange = viewModel::onPlaceChange,
             onNoteChange = viewModel::onNoteChange,
             onSerialChange = viewModel::onSerialChange,
             onScanSerial = scanSerial,
+            onOpenItemTypes = onOpenItemTypes,
             onSave = viewModel::onSave,
             onConfirmDelete = viewModel::onConfirmDelete,
             onDiscardConfirmed = viewModel::onDiscardConfirmed,
@@ -109,24 +107,25 @@ internal fun PrinterEditRoute(
     )
 }
 
-internal data class PrinterEditActions(
+internal data class ClientItemEditActions(
     val onClose: () -> Unit = {},
     val onDelete: () -> Unit = {},
     val onModelQueryChange: (String) -> Unit = {},
-    val onModelPicked: (PrinterModel) -> Unit = {},
+    val onModelPicked: (CatalogItem) -> Unit = {},
     val onStartNewModel: () -> Unit = {},
+    val onNewModelType: (Long) -> Unit = {},
     val onChangeModel: () -> Unit = {},
-    val onBrandChange: (String) -> Unit = {},
     val onModelNameChange: (String) -> Unit = {},
-    val onPrintTypeChange: (PrintType) -> Unit = {},
-    val onColorTypeChange: (ColorType) -> Unit = {},
-    val onCartridgeToggle: (String) -> Unit = {},
+    val onModelValueChange: (Long, String) -> Unit = { _, _ -> },
+    val onPartToggle: (String) -> Unit = {},
+    val onNewPartChange: (String) -> Unit = {},
+    val onNewPartType: (Long) -> Unit = {},
+    val onAddPart: () -> Unit = {},
+    val onPlaceChange: (String) -> Unit = {},
+    val onNoteChange: (String) -> Unit = {},
     val onSerialChange: (String) -> Unit = {},
     val onScanSerial: () -> Unit = {},
-    val onNewCartridgeChange: (CartridgeDraft) -> Unit = {},
-    val onAddCartridge: () -> Unit = {},
-    val onLocationChange: (String) -> Unit = {},
-    val onNoteChange: (String) -> Unit = {},
+    val onOpenItemTypes: () -> Unit = {},
     val onSave: () -> Unit = {},
     val onConfirmDelete: () -> Unit = {},
     val onDiscardConfirmed: () -> Unit = {},
@@ -134,16 +133,16 @@ internal data class PrinterEditActions(
 )
 
 @Composable
-internal fun PrinterEditScreen(
-    state: PrinterEditUiState,
-    actions: PrinterEditActions,
+internal fun ClientItemEditScreen(
+    state: ClientItemEditUiState,
+    actions: ClientItemEditActions,
     modifier: Modifier = Modifier,
 ) {
     val form = state.form
     val draft = form.draft
     Column(modifier = modifier.fillMaxSize().background(PmTheme.colors.background).imePadding()) {
         PmTopBar(
-            title = stringResource(if (state.isNew) R.string.feature_clients_printer_new else R.string.feature_clients_printer_edit),
+            title = stringResource(if (state.isNew) R.string.feature_clients_item_new else R.string.feature_clients_item_edit),
             navigationLabel = stringResource(R.string.feature_clients_cancel),
             navigationIcon = PmIcons.Close,
             onNavigate = actions.onClose,
@@ -161,24 +160,35 @@ internal fun PrinterEditScreen(
             modifier = Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            SectionTitle(stringResource(R.string.feature_clients_printer_section_model))
+            if (state.types.isEmpty()) {
+                // A client's thing needs a type; the customer makes them (or picks a template) first.
+                Text(stringResource(R.string.feature_clients_item_no_types), style = MaterialTheme.typography.bodyMedium, color = PmTheme.colors.inkSecondary)
+                PmPrimaryButton(
+                    text = stringResource(R.string.feature_clients_item_open_types),
+                    onClick = actions.onOpenItemTypes,
+                    icon = PmIcons.ItemTypes,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                return@Column
+            }
+            SectionTitle(stringResource(R.string.feature_clients_item_section_model))
             when (form.step) {
                 ModelStep.SEARCH -> ModelSearch(state, actions)
-                ModelStep.PICKED -> PickedModel(draft.model, actions.onChangeModel)
-                ModelStep.NEW -> NewModelFields(draft.model, form.errors, state.brands, actions)
+                ModelStep.PICKED -> PickedModel(state, actions.onChangeModel)
+                ModelStep.NEW -> NewModelFields(state, actions)
             }
 
-            if (form.step != ModelStep.SEARCH) {
-                SectionTitle(stringResource(R.string.feature_clients_printer_section_cartridges))
-                CartridgeChoices(draft, form.newCartridge, actions)
+            if (form.step != ModelStep.SEARCH && state.partTypes.isNotEmpty()) {
+                SectionTitle(state.partTypes.joinToString(", ") { it.name }.uppercase())
+                PartChoices(state, actions)
             }
 
-            SectionTitle(stringResource(R.string.feature_clients_printer_section_place))
+            SectionTitle(stringResource(R.string.feature_clients_item_section_place))
             PmTextField(
                 value = draft.serialNumber,
                 onValueChange = actions.onSerialChange,
-                label = stringResource(R.string.feature_clients_printer_serial),
-                placeholder = stringResource(R.string.feature_clients_printer_serial_hint),
+                label = stringResource(R.string.feature_clients_item_serial),
+                placeholder = stringResource(R.string.feature_clients_item_serial_hint),
                 capitalization = KeyboardCapitalization.Characters,
                 trailingIcon = {
                     IconButton(onClick = actions.onScanSerial) {
@@ -187,16 +197,16 @@ internal fun PrinterEditScreen(
                 },
             )
             form.serialTakenBy?.let {
-                Text(stringResource(R.string.feature_clients_printer_serial_taken, it), style = MaterialTheme.typography.bodySmall, color = PmTheme.colors.warning)
+                Text(stringResource(R.string.feature_clients_item_serial_taken, it), style = MaterialTheme.typography.bodySmall, color = PmTheme.colors.warning)
             }
             if (form.scanUnavailable) {
                 Text(stringResource(R.string.feature_clients_scan_unavailable), style = MaterialTheme.typography.bodySmall, color = PmTheme.colors.error)
             }
             PmTextField(
-                value = draft.location,
-                onValueChange = actions.onLocationChange,
-                label = stringResource(R.string.feature_clients_printer_location),
-                placeholder = stringResource(R.string.feature_clients_printer_location_hint),
+                value = draft.place,
+                onValueChange = actions.onPlaceChange,
+                label = stringResource(R.string.feature_clients_item_place),
+                placeholder = stringResource(R.string.feature_clients_item_place_hint),
             )
             PmTextField(
                 value = draft.note,
@@ -211,14 +221,14 @@ internal fun PrinterEditScreen(
             PmPrimaryButton(
                 text = stringResource(R.string.feature_clients_save),
                 onClick = actions.onSave,
-                enabled = !form.isSaving,
+                enabled = !form.isSaving && state.types.isNotEmpty(),
                 modifier = Modifier.fillMaxWidth(),
             )
         }
     }
 
     when (form.dialog) {
-        PrinterEditDialog.DISCARD -> PmConfirmDialog(
+        ClientItemEditDialog.DISCARD -> PmConfirmDialog(
             title = stringResource(R.string.feature_clients_discard_title),
             message = null,
             confirmText = stringResource(R.string.feature_clients_discard),
@@ -227,9 +237,9 @@ internal fun PrinterEditScreen(
             onDismiss = actions.onDismissDialog,
             destructive = true,
         )
-        PrinterEditDialog.CONFIRM_DELETE -> PmConfirmDialog(
-            title = stringResource(R.string.feature_clients_printer_delete_title),
-            message = draft.model.fullName,
+        ClientItemEditDialog.CONFIRM_DELETE -> PmConfirmDialog(
+            title = stringResource(R.string.feature_clients_item_delete_title),
+            message = state.title,
             confirmText = stringResource(R.string.feature_clients_delete),
             dismissText = stringResource(R.string.feature_clients_cancel),
             onConfirm = actions.onConfirmDelete,
@@ -241,14 +251,14 @@ internal fun PrinterEditScreen(
 }
 
 @Composable
-private fun ModelSearch(state: PrinterEditUiState, actions: PrinterEditActions) {
+private fun ModelSearch(state: ClientItemEditUiState, actions: ClientItemEditActions) {
     val query = state.form.modelQuery
     PmTextField(
         value = query,
         onValueChange = actions.onModelQueryChange,
-        label = stringResource(R.string.feature_clients_printer_model_search),
-        placeholder = stringResource(R.string.feature_clients_printer_model_search_hint),
-        error = if (state.form.errors.isNotEmpty()) stringResource(R.string.feature_clients_printer_error_no_model) else null,
+        label = stringResource(R.string.feature_clients_item_model_search),
+        placeholder = stringResource(R.string.feature_clients_item_model_search_hint),
+        error = if (state.form.errors.isNotEmpty()) stringResource(R.string.feature_clients_item_error_no_model) else null,
         capitalization = KeyboardCapitalization.None,
     )
     if (state.suggestions.isNotEmpty()) {
@@ -258,9 +268,9 @@ private fun ModelSearch(state: PrinterEditUiState, actions: PrinterEditActions) 
                 Column(
                     Modifier.fillMaxWidth().clickable { actions.onModelPicked(model) }.padding(horizontal = 14.dp, vertical = 10.dp),
                 ) {
-                    Text(model.fullName, style = MaterialTheme.typography.titleSmall)
+                    Text(model.title, style = MaterialTheme.typography.titleSmall)
                     Text(
-                        listOf(model.typeLabel(), model.cartridges.joinToString(", ") { it.name }).filter { it.isNotEmpty() }.joinToString(" · "),
+                        listOf(model.type.name, model.details, model.parts.joinToString(", ") { it.title }).filter { it.isNotEmpty() }.joinToString(" · "),
                         style = MaterialTheme.typography.bodySmall,
                         color = PmTheme.colors.inkMuted,
                         maxLines = 1,
@@ -270,17 +280,13 @@ private fun ModelSearch(state: PrinterEditUiState, actions: PrinterEditActions) 
             }
         }
     } else if (query.isNotBlank()) {
-        Text(
-            stringResource(R.string.feature_clients_printer_not_in_catalog),
-            style = MaterialTheme.typography.bodySmall,
-            color = PmTheme.colors.inkMuted,
-        )
+        Text(stringResource(R.string.feature_clients_item_not_in_catalog), style = MaterialTheme.typography.bodySmall, color = PmTheme.colors.inkMuted)
     }
     PmSecondaryButton(
         text = if (query.isBlank()) {
-            stringResource(R.string.feature_clients_printer_new_model)
+            stringResource(R.string.feature_clients_item_new_model)
         } else {
-            stringResource(R.string.feature_clients_printer_new_model_named, CatalogNames.clean(query))
+            stringResource(R.string.feature_clients_item_new_model_named, CatalogNames.clean(query))
         },
         onClick = actions.onStartNewModel,
         icon = PmIcons.Add,
@@ -289,159 +295,133 @@ private fun ModelSearch(state: PrinterEditUiState, actions: PrinterEditActions) 
 }
 
 @Composable
-private fun PickedModel(model: PrinterModelDraft, onChange: () -> Unit) {
+private fun PickedModel(state: ClientItemEditUiState, onChange: () -> Unit) {
     PmCard(Modifier.fillMaxWidth()) {
         Row(Modifier.padding(start = 14.dp, top = 6.dp, bottom = 6.dp, end = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-            Icon(PmIcons.Printer, contentDescription = null, tint = PmTheme.colors.primary)
+            Icon(PmIcons.Item, contentDescription = null, tint = PmTheme.colors.primary)
             Column(Modifier.weight(1f).padding(horizontal = 12.dp)) {
-                Text(model.fullName, style = MaterialTheme.typography.titleSmall)
+                Text(state.title, style = MaterialTheme.typography.titleSmall)
+                val type = state.type
+                val details = type?.let { com.teraper.printmaster.core.model.ItemTitles.details(it, state.form.draft.item.values) }.orEmpty()
                 Text(
-                    "${model.printType.label()} · ${model.colorType.label()}",
+                    listOfNotNull(type?.name, details.takeIf { it.isNotEmpty() }).joinToString(" · "),
                     style = MaterialTheme.typography.bodySmall,
                     color = PmTheme.colors.inkMuted,
                 )
             }
-            TextButton(onClick = onChange) { Text(stringResource(R.string.feature_clients_printer_change_model)) }
+            TextButton(onClick = onChange) { Text(stringResource(R.string.feature_clients_item_change_model)) }
         }
     }
 }
 
 @Composable
-private fun NewModelFields(
-    model: PrinterModelDraft,
-    errors: Set<PrinterDraftError>,
-    brands: List<String>,
-    actions: PrinterEditActions,
-) {
-    PmTextField(
-        value = model.brand,
-        onValueChange = actions.onBrandChange,
-        label = stringResource(R.string.feature_clients_printer_brand),
-        error = if (PrinterDraftError.BRAND_REQUIRED in errors) stringResource(R.string.feature_clients_printer_error_brand) else null,
-        capitalization = KeyboardCapitalization.Words,
-    )
-    if (brands.isNotEmpty()) {
+private fun NewModelFields(state: ClientItemEditUiState, actions: ClientItemEditActions) {
+    val model = state.form.draft.item
+    if (state.types.size > 1) {
         Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            brands.forEach { brand ->
-                PmFilterChip(
-                    text = brand,
-                    selected = CatalogNames.key(brand) == CatalogNames.key(model.brand),
-                    onClick = { actions.onBrandChange(brand) },
-                )
+            state.types.forEach { type ->
+                PmFilterChip(text = type.name, selected = model.typeId == type.id, onClick = { actions.onNewModelType(type.id) })
             }
         }
+        if (ItemDraftError.TYPE_REQUIRED in state.form.errors) {
+            Text(stringResource(R.string.feature_clients_item_error_type), style = MaterialTheme.typography.bodySmall, color = PmTheme.colors.error)
+        }
+    }
+    val type = state.type
+    if (type != null && type.titleFields.isNotEmpty()) {
+        PmItemFields(type.titleFields, model.values, actions.onModelValueChange, suggestions = state.valueSuggestions)
     }
     PmTextField(
         value = model.name,
         onValueChange = actions.onModelNameChange,
-        label = stringResource(R.string.feature_clients_printer_model_name),
-        placeholder = stringResource(R.string.feature_clients_printer_model_name_hint),
-        error = if (PrinterDraftError.MODEL_REQUIRED in errors) stringResource(R.string.feature_clients_printer_error_model) else null,
+        label = stringResource(R.string.feature_clients_item_model_name),
+        placeholder = stringResource(R.string.feature_clients_item_model_name_hint),
+        error = if (ItemDraftError.NAME_REQUIRED in state.form.errors) stringResource(R.string.feature_clients_item_error_model) else null,
         capitalization = KeyboardCapitalization.None,
     )
-    PmSegmentedButtons(options = PrintType.entries, selected = model.printType, onSelect = actions.onPrintTypeChange, label = { it.label() })
-    PmSegmentedButtons(options = ColorType.entries, selected = model.colorType, onSelect = actions.onColorTypeChange, label = { it.label() })
-    TextButton(onClick = actions.onChangeModel) { Text(stringResource(R.string.feature_clients_printer_pick_from_catalog)) }
+    if (type != null) {
+        val others = type.fields.filterNot { it.inTitle }
+        if (others.isNotEmpty()) PmItemFields(others, model.values, actions.onModelValueChange, suggestions = state.valueSuggestions)
+    }
+    TextButton(onClick = actions.onChangeModel) { Text(stringResource(R.string.feature_clients_item_pick_from_catalog)) }
 }
 
+/** The model's parts to tick for this client's item, and a field to add one that's missing. */
 @Composable
-private fun CartridgeChoices(draft: ClientPrinterDraft, newCartridge: CartridgeDraft, actions: PrinterEditActions) {
+private fun PartChoices(state: ClientItemEditUiState, actions: ClientItemEditActions) {
+    val draft = state.form.draft
+    val parts = draft.item.parts
     PmCard(Modifier.fillMaxWidth()) {
-        if (draft.model.cartridges.isEmpty()) {
+        if (parts.isEmpty()) {
             Text(
-                stringResource(R.string.feature_clients_printer_no_cartridges),
+                stringResource(R.string.feature_clients_item_no_parts),
                 modifier = Modifier.padding(14.dp),
                 style = MaterialTheme.typography.bodyMedium,
                 color = PmTheme.colors.inkMuted,
             )
         }
-        draft.model.cartridges.forEachIndexed { index, cartridge ->
+        parts.forEachIndexed { index, part ->
             if (index > 0) HorizontalDivider(color = PmTheme.colors.surfaceMuted)
-            val checked = cartridge.key in draft.selectedCartridges
             Row(
-                Modifier.fillMaxWidth().clickable { actions.onCartridgeToggle(cartridge.key) }.padding(end = 14.dp),
+                Modifier.fillMaxWidth().clickable { actions.onPartToggle(part.key) }.padding(end = 14.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Checkbox(
-                    checked = checked,
-                    onCheckedChange = { actions.onCartridgeToggle(cartridge.key) },
+                    checked = part.key in draft.selectedParts,
+                    onCheckedChange = { actions.onPartToggle(part.key) },
                     colors = CheckboxDefaults.colors(checkedColor = PmTheme.colors.primary),
                 )
-                Column(Modifier.weight(1f)) {
-                    Text(cartridge.name, style = MaterialTheme.typography.bodyLarge)
-                    if (cartridge.chips.isNotBlank()) {
-                        Text(
-                            stringResource(R.string.feature_clients_printer_chip_value, cartridge.chips),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = PmTheme.colors.inkMuted,
-                        )
-                    }
+                Text(part.title, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
+                if (state.partTypes.size > 1) {
+                    Text(state.partTypes.firstOrNull { it.id == part.typeId }?.name.orEmpty(), style = MaterialTheme.typography.bodySmall, color = PmTheme.colors.inkMuted)
                 }
             }
         }
     }
+    if (state.partTypes.size > 1) {
+        val selected = state.form.newPartTypeId ?: state.partTypes.first().id
+        Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            state.partTypes.forEach { type -> PmFilterChip(text = type.name, selected = selected == type.id, onClick = { actions.onNewPartType(type.id) }) }
+        }
+    }
+    val partTypeName = (state.partTypes.firstOrNull { it.id == state.form.newPartTypeId } ?: state.partTypes.first()).name
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
         PmTextField(
-            value = newCartridge.name,
-            onValueChange = { actions.onNewCartridgeChange(newCartridge.copy(name = it)) },
-            label = stringResource(R.string.feature_clients_printer_add_cartridge),
-            placeholder = "CF283A",
+            value = state.form.newPart,
+            onValueChange = actions.onNewPartChange,
+            label = stringResource(R.string.feature_clients_item_add_part, partTypeName),
             capitalization = KeyboardCapitalization.Characters,
             modifier = Modifier.weight(1f),
         )
-        PmTextField(
-            value = newCartridge.chips,
-            onValueChange = { actions.onNewCartridgeChange(newCartridge.copy(chips = it)) },
-            label = stringResource(R.string.feature_clients_printer_chip),
-            capitalization = KeyboardCapitalization.None,
-            modifier = Modifier.weight(0.8f),
-        )
-        IconButton(onClick = actions.onAddCartridge, enabled = newCartridge.name.isNotBlank()) {
-            Icon(PmIcons.Add, contentDescription = stringResource(R.string.feature_clients_printer_add_cartridge), tint = PmTheme.colors.primary)
+        IconButton(onClick = actions.onAddPart, enabled = state.form.newPart.isNotBlank()) {
+            Icon(PmIcons.Add, contentDescription = stringResource(R.string.feature_clients_item_add_part, partTypeName), tint = PmTheme.colors.primary)
         }
     }
 }
 
 @Composable
 private fun SectionTitle(text: String) {
-    Text(
-        text,
-        modifier = Modifier.padding(top = 4.dp, start = 2.dp),
-        style = MaterialTheme.typography.labelSmall,
-        color = PmTheme.colors.inkMuted,
-    )
+    Text(text, modifier = Modifier.padding(top = 4.dp, start = 2.dp), style = MaterialTheme.typography.labelSmall, color = PmTheme.colors.inkMuted)
 }
 
 @Preview(showBackground = true, widthDp = 390, heightDp = 800)
 @Composable
-private fun PrinterEditPickedPreview() {
-    val model = PrinterModel(
-        1, 1, "HP", "LaserJet M125", PrintType.LASER, ColorType.MONO,
-        listOf(Cartridge(1, "CF283A"), Cartridge(2, "CF283X")),
+private fun ClientItemEditPickedPreview() {
+    val printer = ItemType(1, "Տպիչ", fields = listOf(ItemField(1, 1, "Բրենդ", inTitle = true), ItemField(2, 1, "Տպման տեսակ")))
+    val cartridge = ItemType(2, "Քարտրիջ", 1)
+    val model = CatalogItem(
+        1, printer, "LaserJet M125", mapOf(1L to "HP", 2L to "Լազերային"),
+        parts = listOf(ItemRef(5, 2, "Քարտրիջ", "CF283A"), ItemRef(6, 2, "Քարտրիջ", "CF283X")),
     )
     PmTheme {
-        PrinterEditScreen(
-            state = PrinterEditUiState(
-                form = PrinterForm(
-                    draft = ClientPrinterDraft(clientId = 1, location = "Հաշվապահություն").withModel(model).toggleCartridge("CF283X"),
-                    step = ModelStep.PICKED,
-                ),
+        ClientItemEditScreen(
+            state = ClientItemEditUiState(
+                form = ClientItemForm(draft = ClientItemDraft(clientId = 1, place = "Հաշվապահություն").withItem(model), step = ModelStep.PICKED),
+                types = listOf(printer, cartridge),
+                type = printer,
+                partTypes = listOf(cartridge),
             ),
-            actions = PrinterEditActions(),
-        )
-    }
-}
-
-@Preview(showBackground = true, widthDp = 390, heightDp = 800)
-@Composable
-private fun PrinterEditSearchPreview() {
-    PmTheme {
-        PrinterEditScreen(
-            state = PrinterEditUiState(
-                form = PrinterForm(modelQuery = "m125"),
-                suggestions = listOf(PrinterModel(1, 1, "HP", "LaserJet M125", PrintType.LASER, ColorType.MONO, listOf(Cartridge(1, "CF283A")))),
-            ),
-            actions = PrinterEditActions(),
+            actions = ClientItemEditActions(),
         )
     }
 }

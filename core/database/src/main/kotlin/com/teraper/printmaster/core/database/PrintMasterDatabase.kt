@@ -20,31 +20,30 @@ import com.teraper.printmaster.core.database.dao.RepairDao
 import com.teraper.printmaster.core.database.dao.ReportDao
 import com.teraper.printmaster.core.database.dao.SyncDao
 import com.teraper.printmaster.core.database.entity.AppProfileEntity
-import com.teraper.printmaster.core.database.entity.BrandEntity
+import com.teraper.printmaster.core.database.entity.ClientItemEntity
+import com.teraper.printmaster.core.database.entity.ClientItemPartEntity
+import com.teraper.printmaster.core.database.entity.ItemEntity
+import com.teraper.printmaster.core.database.entity.ItemFieldEntity
+import com.teraper.printmaster.core.database.entity.ItemFitEntity
+import com.teraper.printmaster.core.database.entity.ItemTypeEntity
+import com.teraper.printmaster.core.database.entity.ItemValueEntity
 import com.teraper.printmaster.core.database.entity.CallRecordingClientEntity
 import com.teraper.printmaster.core.database.entity.CallRecordingEntity
-import com.teraper.printmaster.core.database.entity.CartridgeChipCrossRef
-import com.teraper.printmaster.core.database.entity.CartridgeEntity
 import com.teraper.printmaster.core.database.entity.ChargeEntity
-import com.teraper.printmaster.core.database.entity.ChipEntity
 import com.teraper.printmaster.core.database.entity.ClientAddressEntity
 import com.teraper.printmaster.core.database.entity.ClientAliasEntity
 import com.teraper.printmaster.core.database.entity.ClientEntity
 import com.teraper.printmaster.core.database.entity.ClientPhoneEntity
-import com.teraper.printmaster.core.database.entity.ClientPrinterCartridgeEntity
-import com.teraper.printmaster.core.database.entity.ClientPrinterEntity
 import com.teraper.printmaster.core.database.entity.CompanyEntity
 import com.teraper.printmaster.core.database.entity.CompanyMemberEntity
 import com.teraper.printmaster.core.database.entity.ExpenseEntity
 import com.teraper.printmaster.core.database.entity.ImportBatchEntity
 import com.teraper.printmaster.core.database.entity.MasterEntity
-import com.teraper.printmaster.core.database.entity.ModelCartridgeCrossRef
 import com.teraper.printmaster.core.database.entity.OrderEntity
 import com.teraper.printmaster.core.database.entity.MatchRejectionEntity
 import com.teraper.printmaster.core.database.entity.PayerAccountEntity
 import com.teraper.printmaster.core.database.entity.PhotoEntity
 import com.teraper.printmaster.core.database.entity.PaymentEntity
-import com.teraper.printmaster.core.database.entity.PrinterModelEntity
 import com.teraper.printmaster.core.database.entity.RepairEntity
 import com.teraper.printmaster.core.database.entity.RepairItemEntity
 import com.teraper.printmaster.core.database.entity.RepairPartEntity
@@ -61,14 +60,13 @@ import com.teraper.printmaster.core.database.entity.SyncStateEntity
         ClientPhoneEntity::class,
         ClientAddressEntity::class,
         ClientAliasEntity::class,
-        BrandEntity::class,
-        PrinterModelEntity::class,
-        CartridgeEntity::class,
-        ChipEntity::class,
-        ModelCartridgeCrossRef::class,
-        CartridgeChipCrossRef::class,
-        ClientPrinterEntity::class,
-        ClientPrinterCartridgeEntity::class,
+        ItemTypeEntity::class,
+        ItemFieldEntity::class,
+        ItemEntity::class,
+        ItemValueEntity::class,
+        ItemFitEntity::class,
+        ClientItemEntity::class,
+        ClientItemPartEntity::class,
         OrderEntity::class,
         RepairPartEntity::class,
         RepairEntity::class,
@@ -110,6 +108,7 @@ import com.teraper.printmaster.core.database.entity.SyncStateEntity
         AutoMigration(from = 11, to = 12),
         // 13: orders given to attached masters, and their accepting.
         AutoMigration(from = 12, to = 13),
+        // 14: the customer's own item types instead of printers (ItemsMigration, by hand).
     ],
 )
 abstract class PrintMasterDatabase : RoomDatabase() {
@@ -128,7 +127,7 @@ abstract class PrintMasterDatabase : RoomDatabase() {
     abstract fun expenseDao(): ExpenseDao
 
     companion object {
-        const val VERSION = 13
+        const val VERSION = 14
 
         /** Oldest version a backup file may have; older ones only existed on development phones. */
         const val OLDEST_RESTORABLE_VERSION = 2
@@ -144,6 +143,7 @@ abstract class PrintMasterDatabase : RoomDatabase() {
             }
             return builder
                 .addCallback(ForeignKeysOn)
+                .addMigrations(ItemsMigration(PrinterWords.from(context)))
                 // Version 1 only ever existed on development phones (before companies were added).
                 .fallbackToDestructiveMigrationFrom(dropAllTables = true, 1)
                 .build()

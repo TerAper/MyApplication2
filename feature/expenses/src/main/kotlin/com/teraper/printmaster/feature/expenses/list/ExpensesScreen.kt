@@ -168,8 +168,8 @@ private fun ExpensesPreview() {
             ExpensesUiState(
                 isLoading = false,
                 month = YearMonth.of(2026, 10),
-                days = listOf(day to listOf(Expense(1, day, Money.ofDram(4_000), ExpenseCategory.TRANSPORT, "Fuel"), Expense(2, day, Money.ofDram(12_000), ExpenseCategory.TONER))),
-                totals = ExpenseTotals(mapOf(ExpenseCategory.TRANSPORT to Money.ofDram(4_000), ExpenseCategory.TONER to Money.ofDram(12_000))),
+                days = listOf(day to listOf(Expense(1, day, Money.ofDram(4_000), ExpenseCategory.TRANSPORT, "Fuel"), Expense(2, day, Money.ofDram(12_000), ExpenseCategory.MATERIALS))),
+                totals = ExpenseTotals(mapOf(ExpenseCategory.TRANSPORT to Money.ofDram(4_000), ExpenseCategory.MATERIALS to Money.ofDram(12_000))),
             ),
             {}, {}, {}, {}, {},
         )

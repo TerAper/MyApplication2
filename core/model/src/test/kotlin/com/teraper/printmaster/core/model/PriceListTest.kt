@@ -23,14 +23,14 @@ class PriceListTest {
 
     @Test
     fun draftFromItemLeavesZeroCostEmpty() {
-        val draft = PriceItemDraft.from(PriceItem(4, RepairCategory.PRINTER, "Roller", price = Money.ofDram(5_000)))
+        val draft = PriceItemDraft.from(PriceItem(4, 1, "Roller", price = Money.ofDram(5_000)))
         assertEquals("5000", draft.priceDigits)
         assertEquals("", draft.costDigits)
     }
 
     @Test
     fun searchLooksInNameAndDescription() {
-        val item = PriceItem(1, RepairCategory.CARTRIDGE, "Լիցքավորում 85A", "HP, Canon 725", Money.ofDram(3_000))
+        val item = PriceItem(1, 2, "Լիցքավորում 85A", "HP, Canon 725", Money.ofDram(3_000))
         assertTrue(PriceListSearch.matches(item, "լից canon"))
         assertTrue(PriceListSearch.matches(item, ""))
         assertFalse(PriceListSearch.matches(item, "drum"))

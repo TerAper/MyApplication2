@@ -5,7 +5,7 @@
     <string name="feature_expenses_previous">Նախորդ ամիս</string>
     <string name="feature_expenses_next">Հաջորդ ամիս</string>
     <string name="feature_expenses_empty">Այս ամիս ծախս չկա</string>
-    <string name="feature_expenses_empty_message">Ավելացրեք ծախսերը՝ պահեստամասեր, տոներ, վառելիք, վարձ… Հաշվետվությունները կհանեն դրանք վաստակածից։</string>
+    <string name="feature_expenses_empty_message">Ավելացրեք ծախսերը՝ ապրանքներ, նյութեր, վառելիք, վարձ… Հաշվետվությունները կհանեն դրանք վաստակածից։</string>
     <string name="feature_expenses_add">Ավելացնել</string>
     <string name="feature_expenses_spent">Ծախսված</string>
     <string name="feature_expenses_new">Նոր ծախս</string>
@@ -21,7 +21,7 @@
     <string name="feature_expenses_yesterday">Երեկ</string>
     <string name="feature_expenses_pick_date">Ընտրել օր</string>
     <string name="feature_expenses_note">Նշում</string>
-    <string name="feature_expenses_note_hint">օր.՝ 2 շիշ տոներ, վառելիք Աբովյան</string>
+    <string name="feature_expenses_note_hint">օր.՝ նյութեր, վառելիք Աբովյան</string>
     <string name="feature_expenses_receipt">ԿՏՐՈՆ</string>
     <string name="feature_expenses_receipt_after_save">Նախ պահպանեք, հետո ավելացրեք կտրոնի լուսանկարը։</string>
     <string name="feature_expenses_save">Պահպանել</string>

@@ -15,7 +15,6 @@ import com.teraper.printmaster.core.model.Money
 import com.teraper.printmaster.core.model.OrderDraft
 import com.teraper.printmaster.core.model.PaymentMethod
 import com.teraper.printmaster.core.model.PriceItemDraft
-import com.teraper.printmaster.core.model.RepairCategory
 import com.teraper.printmaster.core.model.RepairDraft
 import com.teraper.printmaster.core.model.WorkTotals
 import kotlinx.coroutines.flow.first
@@ -50,7 +49,7 @@ class OfflineReportsRepositoryTest {
         val alfa = repos.register("Alfa")
         val beta = repos.addCompany("Beta")
         val clientId = (repos.clients.saveClient(ClientDraft(name = "Firm")) as SaveClientResult.Saved).clientId
-        repos.priceList.saveItem(PriceItemDraft(category = RepairCategory.CARTRIDGE, name = "Refill", priceDigits = "3000", costDigits = "900"))
+        repos.priceList.saveItem(PriceItemDraft(name = "Refill", priceDigits = "3000", costDigits = "900"))
         val refill = repos.priceList.observeItems().first().single()
         val orderId = (repos.orders.saveOrder(OrderDraft(clientId = clientId, date = LocalDate.of(2026, 10, 7), description = "Refill")) as SaveOrderResult.Saved).orderId
         repos.repairs.saveRepair(RepairDraft(orderId = orderId).plus(refill).plus(refill))
@@ -97,15 +96,15 @@ class OfflineReportsRepositoryTest {
             ),
         )
         repos.expenses.save(ExpenseDraft(amountDigits = "4000", category = ExpenseCategory.TRANSPORT, date = LocalDate.of(2026, 10, 2), note = "Fuel"))
-        repos.expenses.save(ExpenseDraft(amountDigits = "6000", category = ExpenseCategory.TONER, date = LocalDate.of(2026, 10, 3)))
-        repos.expenses.save(ExpenseDraft(amountDigits = "1000", category = ExpenseCategory.TONER, date = LocalDate.of(2026, 9, 30)))
+        repos.expenses.save(ExpenseDraft(amountDigits = "6000", category = ExpenseCategory.MATERIALS, date = LocalDate.of(2026, 10, 3)))
+        repos.expenses.save(ExpenseDraft(amountDigits = "1000", category = ExpenseCategory.MATERIALS, date = LocalDate.of(2026, 9, 30)))
         repos.companies.selectCompany(beta)
         repos.expenses.save(ExpenseDraft(amountDigits = "99000", category = ExpenseCategory.RENT, date = LocalDate.of(2026, 10, 1)))
         repos.companies.selectCompany(alfa)
 
         val report = repos.reports.observeMonth(october).first()
         assertEquals(Money.ofDram(10_000), report.expenses.total)
-        assertEquals(Money.ofDram(6_000), report.expenses.byCategory[ExpenseCategory.TONER])
+        assertEquals(Money.ofDram(6_000), report.expenses.byCategory[ExpenseCategory.MATERIALS])
         assertEquals(Money.ofDram(10_000), report.cashLeft) // 20 000 received − 10 000 spent
         assertEquals(Money.ofDram(20_000), report.earned) // 30 000 billed − 0 parts cost − 10 000 spent
         assertEquals(listOf("Fuel", ""), repos.expenses.observeExpenses(october).first().sortedBy { it.date }.map { it.note })

@@ -14,11 +14,13 @@ import com.teraper.printmaster.feature.account.navigation.navigateToCompany
 import com.teraper.printmaster.feature.account.navigation.navigateToMasters
 import com.teraper.printmaster.feature.calls.navigation.callsScreens
 import com.teraper.printmaster.feature.calls.navigation.navigateToCalls
-import com.teraper.printmaster.feature.catalog.navigation.ModelEditDestination
+import com.teraper.printmaster.feature.catalog.navigation.ItemEditDestination
+import com.teraper.printmaster.feature.catalog.navigation.TypeEditDestination
 import com.teraper.printmaster.feature.catalog.navigation.catalogScreens
 import com.teraper.printmaster.feature.catalog.navigation.navigateToCatalog
+import com.teraper.printmaster.feature.catalog.navigation.navigateToItemTypes
 import com.teraper.printmaster.feature.clients.navigation.ClientEditDestination
-import com.teraper.printmaster.feature.clients.navigation.PrinterEditDestination
+import com.teraper.printmaster.feature.clients.navigation.ClientItemEditDestination
 import com.teraper.printmaster.feature.clients.navigation.clientsGraph
 import com.teraper.printmaster.feature.clients.navigation.navigateToClientDetail
 import com.teraper.printmaster.feature.expenses.navigation.ExpenseEditDestination
@@ -80,6 +82,7 @@ fun PrintMasterNavHost(navController: NavHostController, modifier: Modifier = Mo
             onAddCharge = { navController.navigateToMoneyEntry(it, MoneyEntryKind.MANUAL_CHARGE) },
             onNewOrder = { navController.navigateToNewOrder(clientId = it) },
             onOpenOrder = navController::navigateToOrder,
+            onOpenItemTypes = navController::navigateToItemTypes,
         )
         ordersGraph(navController)
         orderScreens(navController, onOpenClient = navController::openClientFromOtherTab)
@@ -135,9 +138,10 @@ private fun NavHostController.openClientFromOtherTab(clientId: Long) {
 /** Forms that use the whole screen; the bottom bar is hidden on them. */
 private val fullScreenRoutes = listOf(
     ClientEditDestination::class,
-    PrinterEditDestination::class,
+    ClientItemEditDestination::class,
     MoneyEntryDestination::class,
-    ModelEditDestination::class,
+    ItemEditDestination::class,
+    TypeEditDestination::class,
     CompanyEditDestination::class,
     OrderEditDestination::class,
     PriceItemEditDestination::class,

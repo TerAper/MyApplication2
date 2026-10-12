@@ -5,20 +5,15 @@ import com.teraper.printmaster.core.data.repository.DeleteOrderResult
 import com.teraper.printmaster.core.data.repository.FinishOrderResult
 import com.teraper.printmaster.core.data.repository.SaveClientResult
 import com.teraper.printmaster.core.data.repository.SaveOrderResult
-import com.teraper.printmaster.core.data.repository.SavePrinterResult
 import com.teraper.printmaster.core.data.repository.SaveRepairResult
-import com.teraper.printmaster.core.model.CartridgeDraft
 import com.teraper.printmaster.core.model.ChargeSource
 import com.teraper.printmaster.core.model.ClientDraft
-import com.teraper.printmaster.core.model.ClientPrinterDraft
 import com.teraper.printmaster.core.model.LedgerEntry
 import com.teraper.printmaster.core.model.Money
 import com.teraper.printmaster.core.model.OrderDraft
 import com.teraper.printmaster.core.model.OrderStatus
 import com.teraper.printmaster.core.model.PriceItem
 import com.teraper.printmaster.core.model.PriceItemDraft
-import com.teraper.printmaster.core.model.PrinterModelDraft
-import com.teraper.printmaster.core.model.RepairCategory
 import com.teraper.printmaster.core.model.RepairDraft
 import com.teraper.printmaster.core.model.RepairLine
 import kotlinx.coroutines.flow.first
@@ -51,15 +46,13 @@ class OfflineRepairsRepositoryTest {
     fun setUp() = runTest {
         companyId = repos.register()
         clientId = (repos.clients.saveClient(ClientDraft(name = "Firm")) as SaveClientResult.Saved).clientId
-        val model = PrinterModelDraft(brand = "HP", name = "M125", cartridges = listOf(CartridgeDraft("CF283A")))
-        printerId = (
-            repos.printers.savePrinter(
-                ClientPrinterDraft(clientId = clientId, model = model, selectedCartridges = model.cartridges.mapTo(mutableSetOf()) { it.key }),
-            ) as SavePrinterResult.Saved
-            ).printerId
-        cartridgeId = repos.printers.getPrinter(printerId)!!.cartridges.single().id
-        repos.priceList.saveItem(PriceItemDraft(category = RepairCategory.CARTRIDGE, name = "Refill", priceDigits = "3000", costDigits = "900"))
-        repos.priceList.saveItem(PriceItemDraft(category = RepairCategory.CARTRIDGE, name = "Chip", priceDigits = "2500", costDigits = "1000"))
+        repos.addPrinter(clientId).let { (item, part) ->
+            printerId = item
+            cartridgeId = part
+        }
+        val cartridgeType = repos.printerTypes().second
+        repos.priceList.saveItem(PriceItemDraft(typeId = cartridgeType, name = "Refill", priceDigits = "3000", costDigits = "900"))
+        repos.priceList.saveItem(PriceItemDraft(typeId = cartridgeType, name = "Chip", priceDigits = "2500", costDigits = "1000"))
         val items = repos.priceList.observeItems().first()
         refill = items.first { it.name == "Refill" }
         chip = items.first { it.name == "Chip" }

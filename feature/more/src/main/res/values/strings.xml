@@ -6,9 +6,9 @@
     <string name="feature_more_section_money">ՓՈՂ</string>
     <string name="feature_more_section_data">ՏՎՅԱԼՆԵՐ</string>
     <string name="feature_more_price_list">Գնացուցակ</string>
-    <string name="feature_more_price_list_sub">Քարտրիջ · Տպիչ · Այլ</string>
-    <string name="feature_more_catalog">Տպիչների կատալոգ</string>
-    <string name="feature_more_catalog_sub">Բրենդներ, մոդելներ, քարտրիջներ, չիպեր</string>
+    <string name="feature_more_price_list_sub">Ծառայություններ և գներ</string>
+    <string name="feature_more_catalog">Կատալոգ</string>
+    <string name="feature_more_catalog_sub">Ձեր տեսակները, ապրանքներն ու մասերը</string>
     <string name="feature_more_calls">Զանգերի ձայնագրություններ</string>
     <string name="feature_more_calls_sub">Կցել զանգերը հաճախորդներին</string>
     <string name="feature_more_reports">Հաշվետվություններ</string>
@@ -38,5 +38,5 @@
     <string name="feature_more_team">Վարպետներ և համօգտագործում</string>
     <string name="feature_more_team_sub">Պատվերներ վարպետների հեռախոսներին</string>
     <string name="feature_more_expenses">Ծախսեր</string>
-    <string name="feature_more_expenses_sub">Պահեստամասեր, տոներ, վառելիք, վարձ… ըստ օրերի</string>
+    <string name="feature_more_expenses_sub">Ապրանքներ, նյութեր, վառելիք, վարձ… ըստ օրերի</string>
 </resources>

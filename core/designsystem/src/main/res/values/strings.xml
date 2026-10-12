@@ -1,12 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="core_designsystem_print_laser">Լազերային</string>
-    <string name="core_designsystem_print_ink">Թանաքային</string>
-    <string name="core_designsystem_color_mono">Սև/սպիտակ</string>
-    <string name="core_designsystem_category_cartridge">Քարտրիջ</string>
-    <string name="core_designsystem_category_printer">Տպիչ</string>
-    <string name="core_designsystem_category_other">Այլ</string>
-    <string name="core_designsystem_color_color">Գունավոր</string>
     <string name="core_designsystem_order_new">Նոր</string>
     <string name="core_designsystem_order_in_progress">Ընթացքում</string>
     <string name="core_designsystem_order_done">Արված</string>
@@ -14,8 +7,8 @@
     <string name="core_designsystem_today">Այսօր</string>
     <string name="core_designsystem_tomorrow">Վաղը</string>
     <string name="core_designsystem_yesterday">Երեկ</string>
-    <string name="core_designsystem_expense_parts">Պահեստամասեր և քարտրիջներ</string>
-    <string name="core_designsystem_expense_toner">Տոներ և թանաք</string>
+    <string name="core_designsystem_expense_goods">Ապրանքներ և պահեստամասեր</string>
+    <string name="core_designsystem_expense_materials">Նյութեր</string>
     <string name="core_designsystem_expense_transport">Տրանսպորտ և վառելիք</string>
     <string name="core_designsystem_expense_rent">Վարձ</string>
     <string name="core_designsystem_expense_salary">Աշխատավարձ</string>

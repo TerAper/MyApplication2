@@ -10,7 +10,7 @@ import com.teraper.printmaster.core.model.RecordingClient
 import com.teraper.printmaster.core.testing.FakeCallRecordingsRepository
 import com.teraper.printmaster.core.testing.FakeOrdersRepository
 import com.teraper.printmaster.core.testing.FakePhotoRepository
-import com.teraper.printmaster.core.testing.FakePrintersRepository
+import com.teraper.printmaster.core.testing.FakeClientItemsRepository
 import com.teraper.printmaster.feature.clients.detail.ClientDetailDialog
 import com.teraper.printmaster.feature.clients.detail.ClientDetailEvent
 import com.teraper.printmaster.feature.clients.detail.ClientDetailUiState
@@ -44,7 +44,7 @@ class ClientDetailViewModelTest {
     private val invoice = LedgerEntry.Charge(12, day, Money.ofDram(20_000), "", 3, ChargeSource.INVOICE_IMPORT, "0451")
 
     private fun TestScope.vm(id: Long) = ClientDetailViewModel(
-        SavedStateHandle(mapOf("clientId" to id)), repo, payments, FakePrintersRepository(), FakeOrdersRepository(), calls, FakePhotoRepository(), Clock.systemUTC(),
+        SavedStateHandle(mapOf("clientId" to id)), repo, payments, FakeClientItemsRepository(), FakeOrdersRepository(), calls, FakePhotoRepository(), Clock.systemUTC(),
     ).also { vm ->
         backgroundScope.launch(UnconfinedTestDispatcher()) { vm.uiState.collect {} }
     }

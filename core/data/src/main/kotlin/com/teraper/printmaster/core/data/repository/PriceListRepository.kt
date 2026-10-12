@@ -7,7 +7,7 @@ import kotlinx.coroutines.flow.Flow
 
 /** The master's price list. Shared by all companies. */
 interface PriceListRepository {
-    /** Sorted by category, then name. */
+    /** Sorted by name; the screens group them by type. */
     /** The user's own price list. */
     fun observeItems(): Flow<List<PriceItem>>
 
@@ -26,6 +26,6 @@ sealed interface SavePriceItemResult {
     data class Saved(val itemId: Long) : SavePriceItemResult
     data class Invalid(val errors: Set<PriceItemError>) : SavePriceItemResult
 
-    /** The same name already exists in that category. */
+    /** The same name already exists for that type. */
     data object NameTaken : SavePriceItemResult
 }

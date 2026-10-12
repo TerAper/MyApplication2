@@ -14,7 +14,8 @@ import com.teraper.printmaster.core.data.repository.OfflineCompaniesRepository
 import com.teraper.printmaster.core.data.repository.OfflinePaymentsRepository
 import com.teraper.printmaster.core.data.repository.OfflineOrdersRepository
 import com.teraper.printmaster.core.data.repository.OfflinePriceListRepository
-import com.teraper.printmaster.core.data.repository.OfflinePrintersRepository
+import com.teraper.printmaster.core.data.repository.OfflineCatalogRepository
+import com.teraper.printmaster.core.data.repository.OfflineClientItemsRepository
 import com.teraper.printmaster.core.data.repository.OfflineRepairsRepository
 import com.teraper.printmaster.core.data.repository.SaveCompanyResult
 import com.teraper.printmaster.core.data.sync.SyncBackend
@@ -28,7 +29,15 @@ import com.teraper.printmaster.core.model.ImportKind
 import java.time.Clock
 import java.time.Instant
 import java.time.ZoneOffset
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
+import com.teraper.printmaster.core.data.repository.SaveClientItemResult
+import com.teraper.printmaster.core.data.repository.SaveTypeResult
+import com.teraper.printmaster.core.model.ClientItemDraft
+import com.teraper.printmaster.core.model.FieldDraft
+import com.teraper.printmaster.core.model.ItemDraft
+import com.teraper.printmaster.core.model.ItemTypeDraft
+import com.teraper.printmaster.core.model.LinkDraft
 
 /** Real repositories over an in-memory database, wired like the app does. */
 internal class TestRepos(clock: Clock = Clock.fixed(Instant.parse("2026-10-07T10:00:00Z"), ZoneOffset.UTC)) {
@@ -37,9 +46,10 @@ internal class TestRepos(clock: Clock = Clock.fixed(Instant.parse("2026-10-07T10
     val clients = OfflineClientsRepository(db, db.clientDao(), clock, companies)
     val payments = OfflinePaymentsRepository(db.ledgerDao(), db.clientDao(), db.companyDao(), clock, companies)
     val priceList = OfflinePriceListRepository(db, db.priceListDao())
-    val printers = OfflinePrintersRepository(db, db.catalogDao(), CatalogWriter(db.catalogDao()))
+    val catalog = OfflineCatalogRepository(db, db.catalogDao(), CatalogWriter(db.catalogDao()))
+    val clientItems = OfflineClientItemsRepository(db, db.catalogDao(), CatalogWriter(db.catalogDao()))
     val orders = OfflineOrdersRepository(db.orderDao(), db.clientDao(), companies, clock)
-    val repairs = OfflineRepairsRepository(db, db.repairDao(), db.orderDao(), db.ledgerDao(), printers, clock, NoAnalytics)
+    val repairs = OfflineRepairsRepository(db, db.repairDao(), db.orderDao(), db.ledgerDao(), clientItems, clock, NoAnalytics)
     val reports = OfflineReportsRepository(db.reportDao(), db.expenseDao(), companies)
     val expenses = com.teraper.printmaster.core.data.repository.OfflineExpensesRepository(db.expenseDao(), companies, clock)
     val calls = OfflineCallRecordingsRepository(ApplicationProvider.getApplicationContext(), db, db.callRecordingDao(), clock)
@@ -60,6 +70,31 @@ internal class TestRepos(clock: Clock = Clock.fixed(Instant.parse("2026-10-07T10
 
     suspend fun addCompany(name: String): Long =
         (companies.saveCompany(CompanyDraft(name = name)) as SaveCompanyResult.Saved).companyId
+
+    /** Printer (Brand before the name) → Cartridge types, made once. */
+    suspend fun printerTypes(): Pair<Long, Long> {
+        val types = catalog.observeTypes().first()
+        types.firstOrNull { it.name == "Printer" }?.let { printer -> return printer.id to types.first { it.name == "Cartridge" }.id }
+        val printer = (catalog.saveType(ItemTypeDraft(name = "Printer", fields = listOf(FieldDraft(name = "Brand", inTitle = true)))) as SaveTypeResult.Saved).typeId
+        val cartridge = (catalog.saveType(ItemTypeDraft(name = "Cartridge", parentId = printer)) as SaveTypeResult.Saved).typeId
+        return printer to cartridge
+    }
+
+    /** Gives the client an "HP M125" with cartridge "CF283A"; returns (client item id, part id). */
+    suspend fun addPrinter(clientId: Long, place: String = "", name: String = "M125", serial: String = ""): Pair<Long, Long> {
+        val (printer, cartridge) = printerTypes()
+        val brand = catalog.observeTypes().first().first { it.id == printer }.fields.first().id
+        val part = LinkDraft(typeId = cartridge, title = "CF283A")
+        val draft = ClientItemDraft(
+            clientId = clientId,
+            item = ItemDraft(typeId = printer, name = name, values = mapOf(brand to "HP"), parts = listOf(part)),
+            selectedParts = setOf(part.key),
+            place = place,
+            serialNumber = serial,
+        )
+        val id = (clientItems.saveClientItem(draft) as SaveClientItemResult.Saved).clientItemId
+        return id to clientItems.getClientItem(id)!!.parts.single().id
+    }
 
     fun sql(statement: String) = db.openHelper.writableDatabase.execSQL(statement)
 

@@ -24,12 +24,12 @@ class FakePriceListRepository(initial: List<PriceItem> = emptyList()) : PriceLis
         val errors = draft.validate()
         if (errors.isNotEmpty()) return SavePriceItemResult.Invalid(errors)
         val key = PriceListSearch.key(draft.name)
-        if (items.value.any { it.id != draft.id && it.category == draft.category && PriceListSearch.key(it.name) == key }) {
+        if (items.value.any { it.id != draft.id && it.typeId == draft.typeId && PriceListSearch.key(it.name) == key }) {
             return SavePriceItemResult.NameTaken
         }
         saved += draft
         val id = if (draft.isNew) (items.value.maxOfOrNull { it.id } ?: 0) + 1 else draft.id
-        val item = PriceItem(id, draft.category, draft.name.trim(), draft.description.trim(), draft.price, draft.cost)
+        val item = PriceItem(id, draft.typeId, draft.name.trim(), draft.description.trim(), draft.price, draft.cost)
         items.value = items.value.filterNot { it.id == id } + item
         return SavePriceItemResult.Saved(id)
     }

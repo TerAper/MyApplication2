@@ -4,7 +4,7 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.teraper.printmaster.core.data.repository.OrdersRepository
-import com.teraper.printmaster.core.data.repository.PrintersRepository
+import com.teraper.printmaster.core.data.repository.ClientItemsRepository
 import com.teraper.printmaster.core.model.Order
 import com.teraper.printmaster.core.model.SerialMatch
 import com.teraper.printmaster.core.model.SerialNumbers
@@ -28,7 +28,7 @@ import java.time.Clock
 import java.time.LocalDate
 import javax.inject.Inject
 
-/** A printer with this serial and the orders with work on it. */
+/** A client item with this serial and the orders with work on it. */
 data class SerialHit(val match: SerialMatch, val orders: List<Order>)
 
 data class SerialSearchUiState(
@@ -39,12 +39,12 @@ data class SerialSearchUiState(
     val scanUnavailable: Boolean = false,
 )
 
-/** "Which printer is this?": by its scanned or typed serial number. */
+/** "Whose is this?": by its scanned or typed serial number. */
 @OptIn(ExperimentalCoroutinesApi::class, FlowPreview::class)
 @HiltViewModel
 class SerialSearchViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
-    private val printers: PrintersRepository,
+    private val clientItems: ClientItemsRepository,
     private val orders: OrdersRepository,
     clock: Clock,
 ) : ViewModel() {
@@ -58,11 +58,11 @@ class SerialSearchViewModel @Inject constructor(
         if (key.isEmpty()) {
             flowOf(emptyList())
         } else {
-            flow { emit(printers.findBySerial(key)) }.flatMapLatest { matches ->
+            flow { emit(clientItems.findBySerial(key)) }.flatMapLatest { matches ->
                 if (matches.isEmpty()) {
                     flowOf(emptyList())
                 } else {
-                    combine(matches.map { m -> orders.observePrinterOrders(m.printer.id).map { SerialHit(m, it) } }) { it.toList() }
+                    combine(matches.map { m -> orders.observeClientItemOrders(m.item.id).map { SerialHit(m, it) } }) { it.toList() }
                 }
             }
         }

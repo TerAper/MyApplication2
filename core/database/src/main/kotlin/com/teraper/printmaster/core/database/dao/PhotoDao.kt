@@ -25,12 +25,12 @@ interface PhotoDao {
     @Query("SELECT file_name FROM photos")
     suspend fun getFileNames(): List<String>
 
-    /** Rows whose printer, cartridge or order no longer exists; their files go too. */
+    /** Rows whose client item, part, order or expense no longer exists; their files go too. */
     @Query(
         """
         SELECT * FROM photos WHERE
-          (owner_type = 'PRINTER' AND owner_id NOT IN (SELECT id FROM client_printers)) OR
-          (owner_type = 'CARTRIDGE' AND owner_id NOT IN (SELECT id FROM client_printer_cartridges)) OR
+          (owner_type = 'CLIENT_ITEM' AND owner_id NOT IN (SELECT id FROM client_items)) OR
+          (owner_type = 'CLIENT_ITEM_PART' AND owner_id NOT IN (SELECT id FROM client_item_parts)) OR
           (owner_type = 'ORDER' AND owner_id NOT IN (SELECT id FROM orders)) OR
           (owner_type = 'EXPENSE' AND owner_id NOT IN (SELECT id FROM expenses))
         """,

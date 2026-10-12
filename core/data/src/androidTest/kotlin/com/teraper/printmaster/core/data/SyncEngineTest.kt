@@ -5,13 +5,10 @@ import com.teraper.printmaster.core.data.repository.FinishOrderResult
 import com.teraper.printmaster.core.data.repository.SaveClientResult
 import com.teraper.printmaster.core.data.repository.SaveCompanyResult
 import com.teraper.printmaster.core.data.repository.SaveOrderResult
-import com.teraper.printmaster.core.data.repository.SavePrinterResult
 import com.teraper.printmaster.core.database.entity.CompanyEntity
 import com.teraper.printmaster.core.model.AccountMode
-import com.teraper.printmaster.core.model.CartridgeDraft
 import com.teraper.printmaster.core.model.ClientDraft
 import com.teraper.printmaster.core.model.ClientDraft.ContactDraft
-import com.teraper.printmaster.core.model.ClientPrinterDraft
 import com.teraper.printmaster.core.model.CompanyDraft
 import com.teraper.printmaster.core.model.CompanyKind
 import com.teraper.printmaster.core.model.LedgerEntry
@@ -20,8 +17,6 @@ import com.teraper.printmaster.core.model.OrderDraft
 import com.teraper.printmaster.core.model.OrderStatus
 import com.teraper.printmaster.core.model.PaymentMethod
 import com.teraper.printmaster.core.model.PriceItemDraft
-import com.teraper.printmaster.core.model.PrinterModelDraft
-import com.teraper.printmaster.core.model.RepairCategory
 import com.teraper.printmaster.core.model.RepairDraft
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
@@ -71,10 +66,9 @@ class SyncEngineTest {
         yellow = apo.addCompany("Yellow")
         apo.sql("UPDATE companies SET space_id = 'w-x', join_code = 'XCODE123' WHERE id = $xerox")
         cloud.attach("w-x", "u-armen", "Armen")
-        apo.priceList.saveItem(PriceItemDraft(category = RepairCategory.CARTRIDGE, name = "Refill 85A", priceDigits = "3000", costDigits = "900"))
+        apo.priceList.saveItem(PriceItemDraft(typeId = apo.printerTypes().second, name = "Refill 85A", priceDigits = "3000", costDigits = "900"))
         gamma = (apo.clients.saveClient(ClientDraft(name = "Gamma", taxId = "02920288", phones = listOf(ContactDraft(value = "091 111111")), addresses = listOf(ContactDraft(value = "Komitas 5")))) as SaveClientResult.Saved).clientId
-        val model = PrinterModelDraft(brand = "HP", name = "M125", cartridges = listOf(CartridgeDraft("CF283A")))
-        apo.printers.savePrinter(ClientPrinterDraft(clientId = gamma, model = model, selectedCartridges = setOf(model.cartridges.single().key))) as SavePrinterResult.Saved
+        apo.addPrinter(gamma)
 
         // Armen: his own Delta, and Xerox attached with its code.
         delta = (armen.companies.register(AccountMode.OWNER, "Armen", CompanyDraft(name = "Delta")) as SaveCompanyResult.Saved).companyId
@@ -103,9 +97,9 @@ class SyncEngineTest {
     /** Armen's work: refill ×2 from Xerox's price list on Gamma's cartridge. */
     private suspend fun armenDoesTheWork(orderId: Long) {
         val client = armen.orders.observeOrder(orderId).first()!!.clientId
-        val printer = armen.printers.observeClientPrinters(client).first().single()
+        val printer = armen.clientItems.observeClientItems(client).first().single()
         val refill = armen.priceList.observeItemsFor(armenXerox).first().single()
-        armen.repairs.saveRepair(RepairDraft(orderId = orderId).withDevice(printer.id, printer.cartridges.single().id).plus(refill).plus(refill))
+        armen.repairs.saveRepair(RepairDraft(orderId = orderId).withDevice(printer.id, printer.parts.single().id).plus(refill).plus(refill))
     }
 
     @Test
@@ -172,10 +166,10 @@ class SyncEngineTest {
         val ownGamma = armen.clients.observeClientSummaries().first().single()
         assertEquals("Gamma", ownGamma.client.name)
         assertEquals("02920288", ownGamma.client.taxId)
-        armen.priceList.saveItem(PriceItemDraft(category = RepairCategory.CARTRIDGE, name = "Armen refill", priceDigits = "2500", costDigits = "700"))
+        armen.priceList.saveItem(PriceItemDraft(name = "Armen refill", priceDigits = "2500", costDigits = "700"))
         val myRefill = armen.priceList.observeItemsFor(delta).first().single()
-        val printer = armen.printers.observeClientPrinters(ownGamma.client.id).first().single()
-        armen.repairs.saveRepair(RepairDraft(orderId = orderId).withDevice(printer.id, printer.cartridges.single().id).plus(myRefill))
+        val printer = armen.clientItems.observeClientItems(ownGamma.client.id).first().single()
+        armen.repairs.saveRepair(RepairDraft(orderId = orderId).withDevice(printer.id, printer.parts.single().id).plus(myRefill))
         assertEquals(FinishOrderResult.FINISHED, armen.repairs.finishOrder(orderId, paidInCash = false))
         assertEquals(Money.ofDram(2_500), armen.clients.observeClientSummaries().first().single().charged)
         armenEngine.sync()
@@ -241,35 +235,34 @@ class SyncEngineTest {
     }
 
     @Test
-    fun twoPrintersOfOneModelStayTwoAndWorkGoesToTheRightOne() = runTest {
+    fun twoItemsOfOneModelStayTwoAndWorkGoesToTheRightOne() = runTest {
         setUp()
-        val model = PrinterModelDraft(brand = "HP", name = "M125", cartridges = listOf(CartridgeDraft("CF283A")))
-        apo.printers.savePrinter(ClientPrinterDraft(clientId = gamma, model = model, selectedCartridges = setOf(model.cartridges.single().key), location = "Accounting", serialNumber = "CNB8K12345"))
+        apo.addPrinter(gamma, place = "Accounting", serial = "CNB8K12345")
         apoEngine.sync()
         armenEngine.sync()
 
         val orderId = armenOrderId()
         val client = armen.orders.observeOrder(orderId).first()!!.clientId
-        val printers = armen.printers.observeClientPrinters(client).first()
+        val printers = armen.clientItems.observeClientItems(client).first()
         assertEquals(2, printers.size)
-        val accounting = printers.single { it.location == "Accounting" }
+        val accounting = printers.single { it.place == "Accounting" }
         // The serial goes to the master's phone too, so he can find the printer by scanning it.
         assertEquals("CNB8K12345", accounting.serialNumber)
-        assertEquals(listOf(accounting.id), armen.printers.findBySerial("cnb8k12345").map { it.printer.id })
+        assertEquals(listOf(accounting.id), armen.clientItems.findBySerial("cnb8k12345").map { it.item.id })
         val refill = armen.priceList.observeItemsFor(armenXerox).first().single()
-        armen.repairs.saveRepair(RepairDraft(orderId = orderId).withDevice(accounting.id, accounting.cartridges.single().id).plus(refill))
+        armen.repairs.saveRepair(RepairDraft(orderId = orderId).withDevice(accounting.id, accounting.parts.single().id).plus(refill))
         armen.repairs.finishOrder(orderId, paidInCash = false)
         armenEngine.sync()
         // A second pull must not merge or duplicate the printers.
         armenEngine.sync()
-        assertEquals(2, armen.printers.observeClientPrinters(client).first().size)
+        assertEquals(2, armen.clientItems.observeClientItems(client).first().size)
 
         apoEngine.sync()
         val device = apo.repairs.observeOrderWork(apoOrder().id).first().repairs.single().device!!
-        assertEquals("Accounting", device.printer.location)
+        assertEquals("Accounting", device.item.place)
         assertEquals("CF283A · HP M125 (Accounting)", device.name)
         // On Apo's phone the serial finds the printer and the order done on it.
-        val found = apo.printers.findBySerial("CNB8K12345").single()
-        assertEquals(listOf("Refill two cartridges"), apo.orders.observePrinterOrders(found.printer.id).first().map { it.description })
+        val found = apo.clientItems.findBySerial("CNB8K12345").single()
+        assertEquals(listOf("Refill two cartridges"), apo.orders.observeClientItemOrders(found.item.id).first().map { it.description })
     }
 }

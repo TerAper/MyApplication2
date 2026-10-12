@@ -15,13 +15,13 @@ data class RepairLine(
     val costTotal: Money get() = cost * quantity
 }
 
-/** What was worked on: a client's printer, or one of its cartridges. */
-data class RepairDevice(val printer: ClientPrinter, val cartridge: ClientPrinterCartridge? = null) {
-    /** "CF283A · HP LaserJet M125", or "… (Office)" so two printers of one model read differently. */
-    val name: String get() {
-        val model = printer.model.fullName + if (printer.location.isBlank()) "" else " (${printer.location})"
-        return cartridge?.let { "${it.cartridge.name} · $model" } ?: model
-    }
+/** What was worked on: a client's item, or one of its parts. */
+data class RepairDevice(val item: ClientItem, val part: ClientItemPart? = null) {
+    /** "CF283A · HP LaserJet M125", or "… (Office)" so two of one model read differently. */
+    val name: String get() = part?.let { "${it.item.title} · ${item.name}" } ?: item.name
+
+    /** The type of what was worked on, to offer its price-list group first. */
+    val typeId: Long get() = (part?.item ?: item.item).typeId
 }
 
 /** The work done during a visit on one device ([device] null = not a listed device). */
@@ -51,12 +51,12 @@ data class OrderWork(
     val hasWork: Boolean get() = repairs.any { it.lines.isNotEmpty() }
 }
 
-/** The repair form. [id] 0 = new. [cartridgeId] is a cartridge of printer [printerId]. */
+/** The repair form. [id] 0 = new. [itemPartId] is a part of client item [itemId]. */
 data class RepairDraft(
     val id: Long = 0,
     val orderId: Long,
-    val printerId: Long? = null,
-    val cartridgeId: Long? = null,
+    val itemId: Long? = null,
+    val itemPartId: Long? = null,
     val note: String = "",
     val lines: List<RepairLine> = emptyList(),
 ) {
@@ -69,9 +69,9 @@ data class RepairDraft(
         if (lines.isEmpty()) add(RepairDraftError.LINES_REQUIRED)
     }
 
-    /** Picking a cartridge also picks its printer; null printer = no device. */
-    fun withDevice(printerId: Long?, cartridgeId: Long? = null) =
-        copy(printerId = printerId, cartridgeId = cartridgeId.takeIf { printerId != null })
+    /** Picking a part also picks its item; null item = no device. */
+    fun withDevice(itemId: Long?, itemPartId: Long? = null) =
+        copy(itemId = itemId, itemPartId = itemPartId.takeIf { itemId != null })
 
     /** Adding the same price-list item again counts it twice instead of adding a second line. */
     fun plus(item: PriceItem): RepairDraft {
@@ -107,8 +107,8 @@ data class RepairDraft(
         fun from(repair: Repair) = RepairDraft(
             id = repair.id,
             orderId = repair.orderId,
-            printerId = repair.device?.printer?.id,
-            cartridgeId = repair.device?.cartridge?.id,
+            itemId = repair.device?.item?.id,
+            itemPartId = repair.device?.part?.id,
             note = repair.note,
             lines = repair.lines,
         )
@@ -116,10 +116,3 @@ data class RepairDraft(
 }
 
 enum class RepairDraftError { LINES_REQUIRED }
-
-/** Which price-list group fits a device: cartridge work for a cartridge, printer work for a printer. */
-fun RepairDraft.suggestedCategory(): RepairCategory? = when {
-    cartridgeId != null -> RepairCategory.CARTRIDGE
-    printerId != null -> RepairCategory.PRINTER
-    else -> null
-}

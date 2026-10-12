@@ -2,6 +2,7 @@ package com.teraper.printmaster.feature.catalog.list
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -12,9 +13,11 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -29,23 +32,25 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.teraper.printmaster.core.designsystem.component.PmEmptyState
+import com.teraper.printmaster.core.designsystem.component.PmFilterChip
+import com.teraper.printmaster.core.designsystem.component.PmPrimaryButton
 import com.teraper.printmaster.core.designsystem.component.PmSearchField
 import com.teraper.printmaster.core.designsystem.component.PmTopBar
-import com.teraper.printmaster.core.designsystem.component.typeLabel
 import com.teraper.printmaster.core.designsystem.icon.PmIcons
 import com.teraper.printmaster.core.designsystem.theme.PmTheme
-import com.teraper.printmaster.core.model.Cartridge
-import com.teraper.printmaster.core.model.CatalogModel
-import com.teraper.printmaster.core.model.ColorType
-import com.teraper.printmaster.core.model.PrintType
-import com.teraper.printmaster.core.model.PrinterModel
+import com.teraper.printmaster.core.model.CatalogEntry
+import com.teraper.printmaster.core.model.CatalogItem
+import com.teraper.printmaster.core.model.ItemField
+import com.teraper.printmaster.core.model.ItemRef
+import com.teraper.printmaster.core.model.ItemType
 import com.teraper.printmaster.feature.catalog.R
 
 @Composable
 internal fun CatalogRoute(
     onBack: () -> Unit,
-    onModelClick: (Long) -> Unit,
-    onAddModel: () -> Unit,
+    onItemClick: (Long) -> Unit,
+    onAddItem: (typeId: Long) -> Unit,
+    onOpenTypes: () -> Unit,
     viewModel: CatalogViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -54,9 +59,11 @@ internal fun CatalogRoute(
         state = state,
         query = query,
         onQueryChange = viewModel::onQueryChange,
+        onTypeFilter = viewModel::onTypeFilter,
         onBack = onBack,
-        onModelClick = onModelClick,
-        onAddModel = onAddModel,
+        onItemClick = onItemClick,
+        onAddItem = onAddItem,
+        onOpenTypes = onOpenTypes,
     )
 }
 
@@ -65,9 +72,11 @@ internal fun CatalogScreen(
     state: CatalogUiState,
     query: String,
     onQueryChange: (String) -> Unit,
+    onTypeFilter: (Long?) -> Unit,
     onBack: () -> Unit,
-    onModelClick: (Long) -> Unit,
-    onAddModel: () -> Unit,
+    onItemClick: (Long) -> Unit,
+    onAddItem: (typeId: Long) -> Unit,
+    onOpenTypes: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Box(modifier.fillMaxSize().background(PmTheme.colors.background)) {
@@ -76,7 +85,30 @@ internal fun CatalogScreen(
                 title = stringResource(R.string.feature_catalog_title),
                 navigationLabel = stringResource(R.string.feature_catalog_back),
                 onNavigate = onBack,
+                actions = {
+                    IconButton(onClick = onOpenTypes) {
+                        Icon(PmIcons.ItemTypes, contentDescription = stringResource(R.string.feature_catalog_types), tint = PmTheme.colors.primary)
+                    }
+                },
             )
+            if (state.isLoading) return@Column
+            if (state.types.isEmpty()) {
+                // Nothing to put in the catalog before the customer says what they work with.
+                Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                    PmEmptyState(
+                        icon = PmIcons.ItemTypes,
+                        title = stringResource(R.string.feature_catalog_no_types_title),
+                        message = stringResource(R.string.feature_catalog_no_types_message),
+                    )
+                    PmPrimaryButton(
+                        text = stringResource(R.string.feature_catalog_open_types),
+                        onClick = onOpenTypes,
+                        icon = PmIcons.ItemTypes,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+                return@Column
+            }
             if (state.totalCount > 0) {
                 PmSearchField(
                     query = query,
@@ -86,10 +118,20 @@ internal fun CatalogScreen(
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
                 )
             }
+            if (state.types.size > 1) {
+                Row(
+                    Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    PmFilterChip(text = stringResource(R.string.feature_catalog_all), selected = state.typeFilter == null, onClick = { onTypeFilter(null) })
+                    state.types.forEach { type ->
+                        PmFilterChip(text = type.name, selected = state.typeFilter == type.id, onClick = { onTypeFilter(type.id) })
+                    }
+                }
+            }
             when {
-                state.isLoading -> Unit
                 state.totalCount == 0 -> PmEmptyState(
-                    icon = PmIcons.Printer,
+                    icon = PmIcons.Catalog,
                     title = stringResource(R.string.feature_catalog_empty_title),
                     message = stringResource(R.string.feature_catalog_empty_message),
                 )
@@ -100,16 +142,16 @@ internal fun CatalogScreen(
                 )
                 else -> LazyColumn(contentPadding = PaddingValues(bottom = 96.dp)) {
                     state.groups.forEach { group ->
-                        item(key = "brand-${group.brand}") {
+                        item(key = "type-${group.type.id}") {
                             Text(
-                                group.brand.uppercase(),
+                                group.type.name.uppercase(),
                                 modifier = Modifier.padding(start = 18.dp, top = 14.dp, bottom = 6.dp),
                                 style = MaterialTheme.typography.labelSmall,
                                 color = PmTheme.colors.inkMuted,
                             )
                         }
-                        items(group.models, key = { it.model.id }) { entry ->
-                            ModelRow(entry, onClick = { onModelClick(entry.model.id) })
+                        items(group.items, key = { it.item.id }) { entry ->
+                            ItemRow(entry, onClick = { onItemClick(entry.item.id) })
                             HorizontalDivider(color = PmTheme.colors.surfaceMuted)
                         }
                     }
@@ -117,20 +159,25 @@ internal fun CatalogScreen(
             }
         }
 
-        ExtendedFloatingActionButton(
-            onClick = onAddModel,
-            modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp),
-            containerColor = PmTheme.colors.primary,
-            contentColor = PmTheme.colors.onPrimary,
-            icon = { Icon(PmIcons.Add, contentDescription = null) },
-            text = { Text(stringResource(R.string.feature_catalog_new_model)) },
-        )
+        if (state.types.isNotEmpty()) {
+            val filterType = state.types.firstOrNull { it.id == state.typeFilter }
+            ExtendedFloatingActionButton(
+                onClick = { onAddItem(filterType?.id ?: 0) },
+                modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp),
+                containerColor = PmTheme.colors.primary,
+                contentColor = PmTheme.colors.onPrimary,
+                icon = { Icon(PmIcons.Add, contentDescription = null) },
+                text = {
+                    Text(filterType?.let { stringResource(R.string.feature_catalog_new_item_of, it.name) } ?: stringResource(R.string.feature_catalog_new_item))
+                },
+            )
+        }
     }
 }
 
 @Composable
-private fun ModelRow(entry: CatalogModel, onClick: () -> Unit) {
-    val model = entry.model
+private fun ItemRow(entry: CatalogEntry, onClick: () -> Unit) {
+    val item = entry.item
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -141,23 +188,17 @@ private fun ModelRow(entry: CatalogModel, onClick: () -> Unit) {
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Column(Modifier.weight(1f)) {
-            Text(model.name, style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
-            Text(
-                buildList {
-                    add(model.typeLabel())
-                    if (entry.printerCount > 0) add(pluralStringResource(R.plurals.feature_catalog_printer_count, entry.printerCount, entry.printerCount))
-                }.joinToString(" · "),
-                style = MaterialTheme.typography.bodySmall,
-                color = PmTheme.colors.inkMuted,
-            )
-            if (model.cartridges.isNotEmpty()) {
-                Text(
-                    model.cartridges.joinToString(", ") { it.name },
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = PmTheme.colors.ink,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                )
+            Text(item.title, style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            val details = buildList {
+                item.details.takeIf { it.isNotEmpty() }?.let(::add)
+                if (entry.ownedCount > 0) add(pluralStringResource(R.plurals.feature_catalog_owned_count, entry.ownedCount, entry.ownedCount))
+            }
+            if (details.isNotEmpty()) {
+                Text(details.joinToString(" · "), style = MaterialTheme.typography.bodySmall, color = PmTheme.colors.inkMuted)
+            }
+            val links = (item.parts + item.fitsInto).joinToString(", ") { it.title }
+            if (links.isNotEmpty()) {
+                Text(links, style = MaterialTheme.typography.bodyMedium, color = PmTheme.colors.ink, maxLines = 2, overflow = TextOverflow.Ellipsis)
             }
         }
         Icon(PmIcons.Chevron, contentDescription = null, tint = PmTheme.colors.outlineStrong)
@@ -167,29 +208,30 @@ private fun ModelRow(entry: CatalogModel, onClick: () -> Unit) {
 @Preview(showBackground = true, widthDp = 390, heightDp = 760)
 @Composable
 private fun CatalogScreenPreview() {
-    fun model(id: Long, brand: String, name: String, vararg cartridges: String) =
-        PrinterModel(id, brand.length.toLong(), brand, name, PrintType.LASER, ColorType.MONO, cartridges.mapIndexed { i, c -> Cartridge(i.toLong(), c) })
+    val printer = ItemType(1, "Տպիչ", fields = listOf(ItemField(1, 1, "Բրենդ", inTitle = true), ItemField(2, 1, "Տպման տեսակ")))
+    val cartridge = ItemType(2, "Քարտրիջ", 1)
+    fun model(id: Long, brand: String, name: String, vararg parts: String) = CatalogItem(
+        id, printer, name, mapOf(1L to brand, 2L to "Լազերային"),
+        parts = parts.mapIndexed { i, p -> ItemRef(100L + i, 2, "Քարտրիջ", p) },
+    )
     PmTheme {
         CatalogScreen(
             state = CatalogUiState(
                 isLoading = false,
+                types = listOf(printer, cartridge),
                 totalCount = 3,
                 groups = listOf(
-                    BrandGroup("Canon", listOf(CatalogModel(model(1, "Canon", "i-SENSYS MF3010", "725"), 4))),
-                    BrandGroup(
-                        "HP",
-                        listOf(
-                            CatalogModel(model(2, "HP", "LaserJet M125", "CF283A", "CF283X"), 2),
-                            CatalogModel(model(3, "HP", "LaserJet P1102", "CE285A")),
-                        ),
-                    ),
+                    TypeGroup(printer, listOf(CatalogEntry(model(1, "Canon", "i-SENSYS MF3010", "725"), 4), CatalogEntry(model(2, "HP", "LaserJet M125", "CF283A", "CF283X"), 2))),
+                    TypeGroup(cartridge, listOf(CatalogEntry(CatalogItem(3, cartridge, "CF283A")))),
                 ),
             ),
             query = "",
             onQueryChange = {},
+            onTypeFilter = {},
             onBack = {},
-            onModelClick = {},
-            onAddModel = {},
+            onItemClick = {},
+            onAddItem = {},
+            onOpenTypes = {},
         )
     }
 }

@@ -7,8 +7,8 @@ import org.junit.Test
 
 class RepairTest {
 
-    private val refill = PriceItem(1, RepairCategory.CARTRIDGE, "Refill", price = Money.ofDram(3_000), cost = Money.ofDram(900))
-    private val chip = PriceItem(2, RepairCategory.CARTRIDGE, "Chip", price = Money.ofDram(2_500), cost = Money.ofDram(1_200))
+    private val refill = PriceItem(1, 2, "Refill", price = Money.ofDram(3_000), cost = Money.ofDram(900))
+    private val chip = PriceItem(2, 2, "Chip", price = Money.ofDram(2_500), cost = Money.ofDram(1_200))
 
     @Test
     fun sameItemTwiceCountsTwice() {
@@ -37,19 +37,21 @@ class RepairTest {
     }
 
     @Test
-    fun deviceAndSuggestedCategory() {
-        val none = RepairDraft(orderId = 1).withDevice(null, cartridgeId = 5)
-        assertNull(none.cartridgeId)
-        assertNull(none.suggestedCategory())
-        assertEquals(RepairCategory.PRINTER, none.withDevice(3).suggestedCategory())
-        assertEquals(RepairCategory.CARTRIDGE, none.withDevice(3, 5).suggestedCategory())
+    fun aPartIsOnlyKeptWithItsItem() {
+        val none = RepairDraft(orderId = 1).withDevice(null, itemPartId = 5)
+        assertNull(none.itemPartId)
+        assertEquals(5L, none.withDevice(3, 5).itemPartId)
     }
 
     @Test
-    fun deviceName() {
-        val model = PrinterModel(1, 1, "HP", "M125", PrintType.LASER, ColorType.MONO)
-        val printer = ClientPrinter(7, 1, model)
-        assertEquals("HP M125", RepairDevice(printer).name)
-        assertEquals("CF283A · HP M125", RepairDevice(printer, ClientPrinterCartridge(9, Cartridge(2, "CF283A"))).name)
+    fun deviceNameAndType() {
+        val printer = ItemType(1, "Printer", fields = listOf(ItemField(1, 1, "Brand", inTitle = true)))
+        val cartridge = CatalogItem(2, ItemType(2, "Cartridge", 1), "CF283A")
+        val owned = ClientItem(7, 1, CatalogItem(1, printer, "M125", mapOf(1L to "HP")))
+        assertEquals("HP M125", RepairDevice(owned).name)
+        assertEquals(1L, RepairDevice(owned).typeId)
+        val onPart = RepairDevice(owned.copy(place = "Office"), ClientItemPart(9, cartridge))
+        assertEquals("CF283A · HP M125 (Office)", onPart.name)
+        assertEquals(2L, onPart.typeId)
     }
 }

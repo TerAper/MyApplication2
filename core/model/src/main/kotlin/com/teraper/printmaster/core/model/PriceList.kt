@@ -1,9 +1,12 @@
 package com.teraper.printmaster.core.model
 
-/** One line of the price list: what the client pays ([price]) and what it costs the master ([cost]). */
+/**
+ * One line of the price list: what the client pays ([price]) and what it costs the master ([cost]).
+ * [typeId] is the item type it's work on (cartridge refill → Cartridge); null = general.
+ */
 data class PriceItem(
     val id: Long,
-    val category: RepairCategory,
+    val typeId: Long?,
     val name: String,
     val description: String = "",
     val price: Money,
@@ -15,7 +18,7 @@ data class PriceItem(
 /** The price-list item form. [id] 0 = new. Amounts are whole dram as typed. */
 data class PriceItemDraft(
     val id: Long = 0,
-    val category: RepairCategory = RepairCategory.CARTRIDGE,
+    val typeId: Long? = null,
     val name: String = "",
     val description: String = "",
     val priceDigits: String = "",
@@ -38,7 +41,7 @@ data class PriceItemDraft(
     companion object {
         fun from(item: PriceItem) = PriceItemDraft(
             id = item.id,
-            category = item.category,
+            typeId = item.typeId,
             name = item.name,
             description = item.description,
             priceDigits = item.price.dram.toString(),
@@ -54,7 +57,7 @@ data class PriceItemDraft(
 enum class PriceItemError { NAME_REQUIRED, PRICE_REQUIRED }
 
 object PriceListSearch {
-    /** Same name in the same category counts as a duplicate: "Заправка  HP" = "заправка hp". */
+    /** Same name in the same group counts as a duplicate: "Заправка  HP" = "заправка hp". */
     fun key(name: String): String = ClientSearch.normalizeText(name)
 
     /** True when every word of [query] is in the item's name or description. */

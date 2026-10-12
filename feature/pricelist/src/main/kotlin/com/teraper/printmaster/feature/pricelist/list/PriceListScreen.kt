@@ -35,26 +35,25 @@ import com.teraper.printmaster.core.designsystem.component.PmFilterChip
 import com.teraper.printmaster.core.designsystem.component.PmSearchField
 import com.teraper.printmaster.core.designsystem.component.PmTopBar
 import com.teraper.printmaster.core.designsystem.component.format
-import com.teraper.printmaster.core.designsystem.component.label
 import com.teraper.printmaster.core.designsystem.icon.PmIcons
 import com.teraper.printmaster.core.designsystem.theme.PmTheme
 import com.teraper.printmaster.core.model.Money
 import com.teraper.printmaster.core.model.PriceItem
-import com.teraper.printmaster.core.model.RepairCategory
+import com.teraper.printmaster.core.model.ItemType
 import com.teraper.printmaster.feature.pricelist.R
 
 @Composable
 internal fun PriceListRoute(
     onBack: () -> Unit,
     onItemClick: (Long) -> Unit,
-    onAddItem: (RepairCategory) -> Unit,
+    onAddItem: (typeId: Long) -> Unit,
     viewModel: PriceListViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     PriceListScreen(
         state = state,
         onQueryChange = viewModel::onQueryChange,
-        onCategoryClick = viewModel::onCategoryClick,
+        onGroupClick = viewModel::onGroupClick,
         onBack = onBack,
         onItemClick = onItemClick,
         onAddItem = onAddItem,
@@ -65,10 +64,10 @@ internal fun PriceListRoute(
 internal fun PriceListScreen(
     state: PriceListUiState,
     onQueryChange: (String) -> Unit,
-    onCategoryClick: (RepairCategory?) -> Unit,
+    onGroupClick: (Long?) -> Unit,
     onBack: () -> Unit,
     onItemClick: (Long) -> Unit,
-    onAddItem: (RepairCategory) -> Unit,
+    onAddItem: (typeId: Long) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Box(modifier.fillMaxSize().background(PmTheme.colors.background)) {
@@ -92,15 +91,12 @@ internal fun PriceListScreen(
                 ) {
                     PmFilterChip(
                         text = stringResource(R.string.feature_pricelist_all, state.totalCount),
-                        selected = state.category == null,
-                        onClick = { onCategoryClick(null) },
+                        selected = state.group == null,
+                        onClick = { onGroupClick(null) },
                     )
-                    RepairCategory.entries.forEach { category ->
-                        PmFilterChip(
-                            text = "${category.label()} ${state.counts[category] ?: 0}",
-                            selected = state.category == category,
-                            onClick = { onCategoryClick(category) },
-                        )
+                    state.chips.forEach { (group, count) ->
+                        val id = group.type?.id ?: PriceListUiState.GENERAL
+                        PmFilterChip(text = "${group.name()} $count", selected = state.group == id, onClick = { onGroupClick(id) })
                     }
                 }
             }
@@ -118,9 +114,9 @@ internal fun PriceListScreen(
                 )
                 else -> LazyColumn(contentPadding = PaddingValues(bottom = 96.dp)) {
                     state.groups.forEach { group ->
-                        item(key = "category-${group.category}") {
+                        item(key = "group-${group.type?.id}") {
                             Text(
-                                group.category.label().uppercase(),
+                                group.name().uppercase(),
                                 modifier = Modifier.padding(start = 18.dp, top = 14.dp, bottom = 6.dp),
                                 style = MaterialTheme.typography.labelSmall,
                                 color = PmTheme.colors.inkMuted,
@@ -136,7 +132,7 @@ internal fun PriceListScreen(
         }
 
         ExtendedFloatingActionButton(
-            onClick = { onAddItem(state.category ?: RepairCategory.CARTRIDGE) },
+            onClick = { onAddItem(state.group ?: PriceListUiState.GENERAL) },
             modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp),
             containerColor = PmTheme.colors.primary,
             contentColor = PmTheme.colors.onPrimary,
@@ -192,23 +188,29 @@ internal fun ProfitText(profit: Money, modifier: Modifier = Modifier) {
 @Composable
 private fun PriceListScreenPreview() {
     val cartridges = listOf(
-        PriceItem(1, RepairCategory.CARTRIDGE, "Լիցքավորում (սև)", "HP 85A, 83A, Canon 725", Money.ofDram(3_000), Money.ofDram(900)),
-        PriceItem(2, RepairCategory.CARTRIDGE, "Չիպի փոխարինում", price = Money.ofDram(2_500), cost = Money.ofDram(1_200)),
+        PriceItem(1, 2, "Լիցքավորում (սև)", "HP 85A, 83A, Canon 725", Money.ofDram(3_000), Money.ofDram(900)),
+        PriceItem(2, 2, "Չիպի փոխարինում", price = Money.ofDram(2_500), cost = Money.ofDram(1_200)),
     )
-    val printers = listOf(PriceItem(3, RepairCategory.PRINTER, "Թմբուկի փոխարինում", price = Money.ofDram(8_000), cost = Money.ofDram(4_500)))
+    val printers = listOf(PriceItem(3, 1, "Թմբուկի փոխարինում", price = Money.ofDram(8_000), cost = Money.ofDram(4_500)))
+    val cartridge = ItemType(2, "Քարտրիջ", 1)
+    val printer = ItemType(1, "Տպիչ")
     PmTheme {
         PriceListScreen(
             state = PriceListUiState(
                 isLoading = false,
                 totalCount = 3,
-                counts = mapOf(RepairCategory.CARTRIDGE to 2, RepairCategory.PRINTER to 1),
-                groups = listOf(PriceGroup(RepairCategory.CARTRIDGE, cartridges), PriceGroup(RepairCategory.PRINTER, printers)),
+                chips = listOf(PriceGroup(cartridge, cartridges) to 2, PriceGroup(printer, printers) to 1),
+                groups = listOf(PriceGroup(cartridge, cartridges), PriceGroup(printer, printers)),
             ),
             onQueryChange = {},
-            onCategoryClick = {},
+            onGroupClick = {},
             onBack = {},
             onItemClick = {},
             onAddItem = {},
         )
     }
 }
+
+/** The type's name, or "General" for work not tied to a type. */
+@Composable
+private fun PriceGroup.name(): String = type?.name ?: stringResource(R.string.feature_pricelist_general)

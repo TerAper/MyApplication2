@@ -5,7 +5,6 @@ import androidx.room.Insert
 import androidx.room.Query
 import androidx.room.Update
 import com.teraper.printmaster.core.database.entity.RepairPartEntity
-import com.teraper.printmaster.core.model.RepairCategory
 import kotlinx.coroutines.flow.Flow
 
 /** The price list (table repair_parts). Sorting by name is done in Kotlin, for Armenian letters. */
@@ -36,8 +35,8 @@ interface PriceListDao {
     @Query("SELECT * FROM repair_parts WHERE id = :id")
     suspend fun getPart(id: Long): RepairPartEntity?
 
-    @Query("SELECT * FROM repair_parts WHERE category = :category AND archived = 0 AND attached_company_id IS NULL")
-    suspend fun getPartsIn(category: RepairCategory): List<RepairPartEntity>
+    @Query("SELECT * FROM repair_parts WHERE type_id IS :typeId AND archived = 0 AND attached_company_id IS NULL")
+    suspend fun getPartsIn(typeId: Long?): List<RepairPartEntity>
 
     @Insert
     suspend fun insert(part: RepairPartEntity): Long

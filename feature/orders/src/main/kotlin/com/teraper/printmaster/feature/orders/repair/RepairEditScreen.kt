@@ -52,17 +52,15 @@ import com.teraper.printmaster.core.designsystem.component.PmTopBar
 import com.teraper.printmaster.core.designsystem.component.format
 import com.teraper.printmaster.core.designsystem.icon.PmIcons
 import com.teraper.printmaster.core.designsystem.theme.PmTheme
-import com.teraper.printmaster.core.model.Cartridge
-import com.teraper.printmaster.core.model.ClientPrinter
-import com.teraper.printmaster.core.model.ClientPrinterCartridge
-import com.teraper.printmaster.core.model.ColorType
+import com.teraper.printmaster.core.model.CatalogItem
+import com.teraper.printmaster.core.model.ClientItem
+import com.teraper.printmaster.core.model.ClientItemPart
+import com.teraper.printmaster.core.model.ItemField
+import com.teraper.printmaster.core.model.ItemType
 import com.teraper.printmaster.core.model.Money
-import com.teraper.printmaster.core.model.PrintType
-import com.teraper.printmaster.core.model.PrinterModel
 import com.teraper.printmaster.core.model.RepairDraft
 import com.teraper.printmaster.core.model.RepairDraftError
 import com.teraper.printmaster.core.model.RepairLine
-import com.teraper.printmaster.core.model.RepairCategory
 import com.teraper.printmaster.core.model.PriceItem
 import com.teraper.printmaster.feature.orders.R
 
@@ -90,7 +88,7 @@ internal fun RepairEditRoute(onClose: () -> Unit, viewModel: RepairEditViewModel
             onLinePriceClick = viewModel::onLinePriceClick,
             onLinePriceChange = viewModel::onLinePriceChange,
             onOpenPicker = viewModel::onOpenPicker,
-            onPickerCategoryClick = viewModel::onPickerCategoryClick,
+            onPickerGroupClick = viewModel::onPickerGroupClick,
             onPickerQueryChange = viewModel::onPickerQueryChange,
             onPickItem = viewModel::onPickItem,
             onClosePicker = viewModel::onClosePicker,
@@ -113,7 +111,7 @@ internal data class RepairEditActions(
     val onLinePriceClick: (Int) -> Unit = {},
     val onLinePriceChange: (Int, String) -> Unit = { _, _ -> },
     val onOpenPicker: () -> Unit = {},
-    val onPickerCategoryClick: (RepairCategory?) -> Unit = {},
+    val onPickerGroupClick: (Long?) -> Unit = {},
     val onPickerQueryChange: (String) -> Unit = {},
     val onPickItem: (PriceItem) -> Unit = {},
     val onClosePicker: () -> Unit = {},
@@ -150,7 +148,7 @@ internal fun RepairEditScreen(state: RepairEditUiState, actions: RepairEditActio
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             SectionTitle(stringResource(R.string.feature_orders_repair_section_device))
-            DeviceCard(state.printers, draft, actions.onDeviceClick)
+            DeviceCard(state.items, draft, actions.onDeviceClick)
 
             SectionTitle(stringResource(R.string.feature_orders_repair_section_work))
             if (draft.lines.isNotEmpty()) {
@@ -228,7 +226,9 @@ internal fun RepairEditScreen(state: RepairEditUiState, actions: RepairEditActio
             items = state.pickerItems,
             priceListIsEmpty = state.priceListIsEmpty,
             quantities = draft.quantities(),
-            onCategoryClick = actions.onPickerCategoryClick,
+            types = state.pickerTypes,
+            hasGeneral = state.hasGeneralPrices,
+            onGroupClick = actions.onPickerGroupClick,
             onQueryChange = actions.onPickerQueryChange,
             onPick = actions.onPickItem,
             onAddCustom = actions.onAddCustomClick,
@@ -273,29 +273,29 @@ internal fun RepairEditScreen(state: RepairEditUiState, actions: RepairEditActio
     }
 }
 
-/** The client's printers; picking one shows its cartridges to pick from. */
+/** The client's items; picking one shows its parts to pick from. */
 @Composable
-private fun DeviceCard(printers: List<ClientPrinter>, draft: RepairDraft, onDeviceClick: (Long?, Long?) -> Unit) {
+private fun DeviceCard(items: List<ClientItem>, draft: RepairDraft, onDeviceClick: (Long?, Long?) -> Unit) {
     PmCard(Modifier.fillMaxWidth()) {
-        printers.forEach { printer ->
-            val selected = draft.printerId == printer.id
+        items.forEach { item ->
+            val selected = draft.itemId == item.id
             ChoiceRow(
-                title = printer.model.fullName,
-                subtitle = printer.location,
+                title = item.item.title,
+                subtitle = listOf(item.item.type.name, item.place).filter { it.isNotBlank() }.joinToString(" · "),
                 selected = selected,
-                onClick = { onDeviceClick(printer.id, null) },
+                onClick = { onDeviceClick(item.id, null) },
             )
-            if (selected && printer.cartridges.isNotEmpty()) {
+            if (selected && item.parts.isNotEmpty()) {
                 FlowRow(
                     Modifier.fillMaxWidth().padding(start = 50.dp, end = 14.dp, bottom = 10.dp),
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    printer.cartridges.forEach { cartridge ->
+                    item.parts.forEach { part ->
                         PmFilterChip(
-                            text = cartridge.cartridge.name,
-                            selected = draft.cartridgeId == cartridge.id,
-                            onClick = { onDeviceClick(printer.id, cartridge.id) },
+                            text = part.item.title,
+                            selected = draft.itemPartId == part.id,
+                            onClick = { onDeviceClick(item.id, part.id) },
                         )
                     }
                 }
@@ -304,8 +304,8 @@ private fun DeviceCard(printers: List<ClientPrinter>, draft: RepairDraft, onDevi
         }
         ChoiceRow(
             title = stringResource(R.string.feature_orders_repair_no_device),
-            subtitle = if (printers.isEmpty()) stringResource(R.string.feature_orders_repair_no_printers) else "",
-            selected = draft.printerId == null,
+            subtitle = if (items.isEmpty()) stringResource(R.string.feature_orders_repair_no_items) else "",
+            selected = draft.itemId == null,
             onClick = { onDeviceClick(null, null) },
         )
     }
@@ -319,7 +319,7 @@ private fun ChoiceRow(title: String, subtitle: String, selected: Boolean, onClic
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Icon(
-            if (selected) PmIcons.Check else PmIcons.Printer,
+            if (selected) PmIcons.Check else PmIcons.Item,
             contentDescription = null,
             tint = if (selected) PmTheme.colors.primary else PmTheme.colors.outlineStrong,
             modifier = Modifier.size(24.dp),
@@ -460,10 +460,11 @@ private fun SectionTitle(text: String) {
 @Preview(showBackground = true, widthDp = 390, heightDp = 860)
 @Composable
 private fun RepairEditScreenPreview() {
-    val model = PrinterModel(1, 1, "HP", "LaserJet M125", PrintType.LASER, ColorType.MONO)
-    val printers = listOf(
-        ClientPrinter(1, 1, model, "Հաշվապահություն", cartridges = listOf(ClientPrinterCartridge(11, Cartridge(1, "CF283A")))),
-        ClientPrinter(2, 1, model.copy(brand = "Canon", name = "MF3010"), "Տնօրեն"),
+    val printer = ItemType(1, "Տպիչ", fields = listOf(ItemField(1, 1, "Բրենդ", inTitle = true)))
+    val cartridge = CatalogItem(3, ItemType(2, "Քարտրիջ", 1), "CF283A")
+    val items = listOf(
+        ClientItem(1, 1, CatalogItem(1, printer, "LaserJet M125", mapOf(1L to "HP")), "Հաշվապահություն", parts = listOf(ClientItemPart(11, cartridge))),
+        ClientItem(2, 1, CatalogItem(2, printer, "MF3010", mapOf(1L to "Canon")), "Տնօրեն"),
     )
     PmTheme {
         RepairEditScreen(
@@ -472,15 +473,15 @@ private fun RepairEditScreenPreview() {
                     isLoading = false,
                     draft = RepairDraft(
                         orderId = 1,
-                        printerId = 1,
-                        cartridgeId = 11,
+                        itemId = 1,
+                        itemPartId = 11,
                         lines = listOf(
                             RepairLine(1, "Լիցքավորում 85A", Money.ofDram(3_000), Money.ofDram(900), 2),
                             RepairLine(2, "Չիպ", Money.ofDram(2_500), Money.ofDram(1_200)),
                         ),
                     ),
                 ),
-                printers = printers,
+                items = items,
             ),
             actions = RepairEditActions(),
         )

@@ -5,19 +5,19 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.teraper.printmaster.core.data.repository.OrdersRepository
 import com.teraper.printmaster.core.data.repository.PriceListRepository
-import com.teraper.printmaster.core.data.repository.PrintersRepository
+import com.teraper.printmaster.core.data.repository.CatalogRepository
+import com.teraper.printmaster.core.data.repository.ClientItemsRepository
 import com.teraper.printmaster.core.data.repository.RepairsRepository
 import com.teraper.printmaster.core.data.repository.SaveRepairResult
-import com.teraper.printmaster.core.model.ClientPrinter
+import com.teraper.printmaster.core.model.ClientItem
+import com.teraper.printmaster.core.model.ItemType
 import com.teraper.printmaster.core.model.Money
 import com.teraper.printmaster.core.model.PriceItem
 import com.teraper.printmaster.core.model.PriceItemDraft
 import com.teraper.printmaster.core.model.PriceListSearch
-import com.teraper.printmaster.core.model.RepairCategory
 import com.teraper.printmaster.core.model.RepairDraft
 import com.teraper.printmaster.core.model.RepairDraftError
 import com.teraper.printmaster.core.model.RepairLine
-import com.teraper.printmaster.core.model.suggestedCategory
 import com.teraper.printmaster.feature.orders.navigation.ORDER_ID_ARG
 import com.teraper.printmaster.feature.orders.navigation.REPAIR_ID_ARG
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -37,8 +37,15 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
-/** The price-list sheet: open or not, and how it is filtered. */
-data class PricePicker(val category: RepairCategory? = null, val query: String = "")
+/**
+ * The price-list sheet: open or not, and how it is filtered. [group] is an item type's id,
+ * [PricePicker.GENERAL] for work not tied to a type, null = everything.
+ */
+data class PricePicker(val group: Long? = null, val query: String = "") {
+    companion object {
+        const val GENERAL = 0L
+    }
+}
 
 data class RepairForm(
     val isLoading: Boolean = true,
@@ -53,9 +60,12 @@ data class RepairForm(
 
 data class RepairEditUiState(
     val form: RepairForm,
-    val printers: List<ClientPrinter> = emptyList(),
+    val items: List<ClientItem> = emptyList(),
     /** Items shown on the open price-list sheet. */
     val pickerItems: List<PriceItem> = emptyList(),
+    /** The price list's groups: types that have prices, and whether some prices have no type. */
+    val pickerTypes: List<ItemType> = emptyList(),
+    val hasGeneralPrices: Boolean = false,
     val priceListIsEmpty: Boolean = false,
 ) {
     val isNew: Boolean get() = form.draft.isNew
@@ -80,7 +90,8 @@ sealed interface RepairEditEvent {
 class RepairEditViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     ordersRepository: OrdersRepository,
-    printersRepository: PrintersRepository,
+    clientItemsRepository: ClientItemsRepository,
+    catalogRepository: CatalogRepository,
     priceListRepository: PriceListRepository,
     private val repairsRepository: RepairsRepository,
 ) : ViewModel() {
@@ -97,21 +108,24 @@ class RepairEditViewModel @Inject constructor(
     private val _events = Channel<RepairEditEvent>(Channel.BUFFERED)
     val events: Flow<RepairEditEvent> = _events.receiveAsFlow()
 
-    private val printers = clientId.filterNotNull().flatMapLatest { printersRepository.observeClientPrinters(it) }
+    private val clientItems = clientId.filterNotNull().flatMapLatest { clientItemsRepository.observeClientItems(it) }
         .stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
     val uiState: StateFlow<RepairEditUiState> = combine(
         form,
-        printers,
+        clientItems,
         // An attached company's order is priced from that company's list.
         companyId.filterNotNull().flatMapLatest { priceListRepository.observeItemsFor(it) },
-    ) { form, printers, items ->
+        catalogRepository.observeTypes(),
+    ) { form, clientItems, items, types ->
         RepairEditUiState(
             form = form,
-            printers = printers.orEmpty(),
+            items = clientItems.orEmpty(),
             pickerItems = form.picker?.let { picker ->
-                items.filter { (picker.category == null || it.category == picker.category) && PriceListSearch.matches(it, picker.query) }
+                items.filter { it.inGroup(picker.group) && PriceListSearch.matches(it, picker.query) }
             }.orEmpty(),
+            pickerTypes = types.filter { type -> items.any { it.typeId == type.id } },
+            hasGeneralPrices = items.any { it.typeId == null },
             priceListIsEmpty = items.isEmpty(),
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), RepairEditUiState(form.value))
@@ -125,7 +139,7 @@ class RepairEditViewModel @Inject constructor(
             }
             clientId.value = order.clientId
             companyId.value = order.companyId
-            val clientPrinters = printers.filterNotNull().first()
+            val owned = clientItems.filterNotNull().first()
             initialDraft = if (repairId != 0L) {
                 val repair = repairsRepository.observeRepair(repairId).first()
                 if (repair == null) {
@@ -134,19 +148,19 @@ class RepairEditViewModel @Inject constructor(
                 }
                 RepairDraft.from(repair)
             } else {
-                // A client with one printer: that's almost always the one being fixed.
-                clientPrinters.singleOrNull()?.let { initialDraft.withDevice(it.id) } ?: initialDraft
+                // A client with one item: that's almost always the one worked on.
+                owned.singleOrNull()?.let { initialDraft.withDevice(it.id) } ?: initialDraft
             }
             form.update { it.copy(isLoading = false, draft = initialDraft) }
         }
     }
 
     /** Tapping the selected device again clears it. */
-    fun onDeviceClick(printerId: Long?, cartridgeId: Long? = null) = editDraft { draft ->
-        if (draft.printerId == printerId && draft.cartridgeId == cartridgeId && printerId != null) {
-            if (cartridgeId != null) draft.withDevice(printerId) else draft.withDevice(null)
+    fun onDeviceClick(itemId: Long?, partId: Long? = null) = editDraft { draft ->
+        if (draft.itemId == itemId && draft.itemPartId == partId && itemId != null) {
+            if (partId != null) draft.withDevice(itemId) else draft.withDevice(null)
         } else {
-            draft.withDevice(printerId, cartridgeId)
+            draft.withDevice(itemId, partId)
         }
     }
 
@@ -154,10 +168,16 @@ class RepairEditViewModel @Inject constructor(
 
     fun onQuantityChange(index: Int, quantity: Int) = editDraft { it.withQuantity(index, quantity) }
 
-    fun onOpenPicker() = form.update { it.copy(picker = PricePicker(category = it.draft.suggestedCategory())) }
+    /** Opens on the prices for the chosen item or part's type, when there are some. */
+    fun onOpenPicker() {
+        val state = uiState.value
+        val device = state.items.firstOrNull { it.id == state.form.draft.itemId }
+        val typeId = (device?.parts?.firstOrNull { it.id == state.form.draft.itemPartId }?.item ?: device?.item)?.typeId
+        form.update { it.copy(picker = PricePicker(group = typeId?.takeIf { id -> state.pickerTypes.any { t -> t.id == id } })) }
+    }
 
-    fun onPickerCategoryClick(category: RepairCategory?) =
-        form.update { it.copy(picker = it.picker?.copy(category = if (it.picker.category == category) null else category)) }
+    fun onPickerGroupClick(group: Long?) =
+        form.update { it.copy(picker = it.picker?.copy(group = if (it.picker.group == group) null else group)) }
 
     fun onPickerQueryChange(query: String) = form.update { it.copy(picker = it.picker?.copy(query = query)) }
 
@@ -242,4 +262,10 @@ class RepairEditViewModel @Inject constructor(
             errors = if (triedToSave) draft.validate() else emptySet(),
         )
     }
+}
+
+private fun PriceItem.inGroup(group: Long?): Boolean = when (group) {
+    null -> true
+    PricePicker.GENERAL -> typeId == null
+    else -> typeId == group
 }

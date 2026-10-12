@@ -35,7 +35,9 @@ import androidx.compose.material.icons.rounded.PhotoCamera
 import androidx.compose.material.icons.rounded.PhotoLibrary
 import androidx.compose.material.icons.rounded.Place
 import androidx.compose.material.icons.rounded.PlayArrow
-import androidx.compose.material.icons.rounded.Print
+import androidx.compose.material.icons.rounded.Category
+import androidx.compose.material.icons.rounded.Inventory2
+import androidx.compose.material.icons.rounded.AccountTree
 import androidx.compose.material.icons.rounded.Remove
 import androidx.compose.material.icons.rounded.Search
 import androidx.compose.material.icons.rounded.Sell
@@ -69,7 +71,10 @@ object PmIcons {
     val Delete: ImageVector = Icons.Rounded.Delete
     val Backspace: ImageVector = Icons.AutoMirrored.Rounded.Backspace
 
-    val Printer: ImageVector = Icons.Rounded.Print
+    /** A client's thing or a catalog item, whatever its type. */
+    val Item: ImageVector = Icons.Rounded.Inventory2
+    val Catalog: ImageVector = Icons.Rounded.Category
+    val ItemTypes: ImageVector = Icons.Rounded.AccountTree
     val Chevron: ImageVector = Icons.AutoMirrored.Rounded.KeyboardArrowRight
     val PriceList: ImageVector = Icons.Rounded.Sell
     val Reports: ImageVector = Icons.Rounded.BarChart

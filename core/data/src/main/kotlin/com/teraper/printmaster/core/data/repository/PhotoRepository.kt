@@ -4,7 +4,7 @@ import com.teraper.printmaster.core.model.Photo
 import com.teraper.printmaster.core.model.PhotoOwner
 import kotlinx.coroutines.flow.Flow
 
-/** Photos of printers, cartridges and orders, kept small on the phone. */
+/** Photos of client items, their parts, orders and receipts, kept small on the phone. */
 interface PhotoRepository {
 
     fun observePhotos(owner: PhotoOwner, ownerIds: List<Long>): Flow<List<Photo>>
@@ -17,6 +17,6 @@ interface PhotoRepository {
 
     suspend fun delete(photoId: Long)
 
-    /** Removes photos whose printer, cartridge or order is gone, and files no row points to. */
+    /** Removes photos whose item, part, order or expense is gone, and files no row points to. */
     suspend fun cleanUp()
 }

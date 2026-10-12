@@ -37,7 +37,7 @@ class ExpensesViewModelsTest {
     private val clock = Clock.fixed(Instant.parse("2026-10-08T08:00:00Z"), ZoneOffset.UTC)
     private val today = LocalDate.of(2026, 10, 8)
 
-    private fun expense(id: Long, date: LocalDate, dram: Long, category: ExpenseCategory = ExpenseCategory.PARTS) =
+    private fun expense(id: Long, date: LocalDate, dram: Long, category: ExpenseCategory = ExpenseCategory.GOODS) =
         Expense(id, date, Money.ofDram(dram), category)
 
     private fun TestScope.collect(flow: StateFlow<*>) = backgroundScope.launch(UnconfinedTestDispatcher()) { flow.collect {} }
@@ -46,7 +46,7 @@ class ExpensesViewModelsTest {
     fun listGroupsByDayNewestFirstAndSwitchesMonths() = runTest {
         val repo = FakeExpensesRepository(
             listOf(
-                expense(1, today.minusDays(3), 2_000, ExpenseCategory.TONER),
+                expense(1, today.minusDays(3), 2_000, ExpenseCategory.MATERIALS),
                 expense(2, today, 500, ExpenseCategory.TRANSPORT),
                 expense(3, today, 1_000),
                 expense(4, LocalDate.of(2026, 9, 20), 7_000),
@@ -79,7 +79,7 @@ class ExpensesViewModelsTest {
         assertEquals(setOf(ExpenseError.AMOUNT_REQUIRED), vm.uiState.value.form.errors)
 
         vm.onAmountChange("0015a00")
-        vm.onCategoryChange(ExpenseCategory.TONER)
+        vm.onCategoryChange(ExpenseCategory.MATERIALS)
         vm.onNoteChange("Toner HP 85A")
         assertTrue(vm.uiState.value.form.errors.isEmpty())
         vm.onSave()
@@ -88,7 +88,7 @@ class ExpensesViewModelsTest {
         val saved = repo.expenses.value.single()
         assertEquals(Money.ofDram(1_500), saved.amount)
         assertEquals(today, saved.date)
-        assertEquals(ExpenseCategory.TONER, saved.category)
+        assertEquals(ExpenseCategory.MATERIALS, saved.category)
     }
 
     @Test

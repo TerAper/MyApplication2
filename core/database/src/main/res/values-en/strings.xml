@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="core_database_type_printer">Printer</string>
+    <string name="core_database_type_cartridge">Cartridge</string>
+    <string name="core_database_type_chip">Chip</string>
+    <string name="core_database_field_brand">Brand</string>
+    <string name="core_database_field_print">Print type</string>
+    <string name="core_database_field_color">Color</string>
+    <string name="core_database_print_laser">Laser</string>
+    <string name="core_database_print_ink">Inkjet</string>
+    <string name="core_database_color_mono">Black/white</string>
+    <string name="core_database_color_color">Color</string>
+</resources>

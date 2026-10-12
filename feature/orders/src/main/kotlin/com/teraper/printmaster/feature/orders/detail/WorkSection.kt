@@ -33,7 +33,7 @@ import com.teraper.printmaster.core.model.OrderWork
 import com.teraper.printmaster.core.model.Repair
 import com.teraper.printmaster.feature.orders.R
 
-/** What was done on the visit: one card per device, then the totals. */
+/** What was done on the visit: one card per item worked on, then the totals. */
 @Composable
 internal fun WorkSection(work: OrderWork, canEdit: Boolean, onOpenRepair: (repairId: Long) -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -88,7 +88,7 @@ private fun RepairCard(repair: Repair, onClick: (() -> Unit)?) {
                         repair.device?.name ?: stringResource(R.string.feature_orders_repair_no_device),
                         style = MaterialTheme.typography.titleSmall,
                     )
-                    repair.device?.printer?.location?.takeIf { it.isNotBlank() }?.let {
+                    repair.device?.item?.place?.takeIf { it.isNotBlank() }?.let {
                         Text(it, style = MaterialTheme.typography.bodySmall, color = PmTheme.colors.inkMuted)
                     }
                 }

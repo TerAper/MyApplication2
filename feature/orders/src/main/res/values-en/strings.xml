@@ -30,7 +30,7 @@
     <string name="feature_orders_master">Master</string>
     <string name="feature_orders_not_assigned">Not assigned</string>
     <string name="feature_orders_what">WHAT TO DO (OPTIONAL)</string>
-    <string name="feature_orders_what_hint">e.g. refill 2 cartridges</string>
+    <string name="feature_orders_what_hint">e.g. a short note about the job</string>
     <string name="feature_orders_create">Create · %1$s</string>
     <string name="feature_orders_discard_title">Discard changes?</string>
     <string name="feature_orders_discard">Discard</string>
@@ -50,7 +50,7 @@
     <string name="feature_orders_delete_blocked_message">This order was already charged or paid. Reopen or cancel it instead.</string>
     <string name="feature_orders_repair_new">Work done</string>
     <string name="feature_orders_repair_edit">Work</string>
-    <string name="feature_orders_repair_section_device">DEVICE</string>
+    <string name="feature_orders_repair_section_device">ITEM</string>
     <string name="feature_orders_repair_section_work">WORK AND PARTS</string>
     <string name="feature_orders_repair_no_lines">Add at least one item, from the price list or by hand.</string>
     <string name="feature_orders_repair_from_price_list">Price list</string>
@@ -58,8 +58,8 @@
     <string name="feature_orders_repair_other_item_long">Other item (not in the price list)</string>
     <string name="feature_orders_repair_note">Note (optional)</string>
     <string name="feature_orders_repair_note_hint">e.g. drum replaced</string>
-    <string name="feature_orders_repair_no_device">No device</string>
-    <string name="feature_orders_repair_no_printers">Add printers in the client card to pick them here.</string>
+    <string name="feature_orders_repair_no_device">No item</string>
+    <string name="feature_orders_repair_no_items">Add the client\'s items in the client card to pick them here.</string>
     <string name="feature_orders_repair_less">One less</string>
     <string name="feature_orders_repair_more">One more</string>
     <string name="feature_orders_repair_item_name">Name</string>
@@ -78,7 +78,7 @@
     <string name="feature_orders_repair_price_list_empty">The price list is empty. Fill it in More → Price list, or add an item by hand.</string>
     <string name="feature_orders_work_title">WORK DONE</string>
     <string name="feature_orders_work_add_more">Add</string>
-    <string name="feature_orders_work_empty">Record what you did: pick the printer or cartridge and the price-list items. Finishing then charges the client.</string>
+    <string name="feature_orders_work_empty">Record what you did: pick the item or its part and the price-list items. Finishing then charges the client.</string>
     <string name="feature_orders_work_add">Add work</string>
     <string name="feature_orders_work_total">Total</string>
     <string name="feature_orders_work_cost">Cost</string>
@@ -118,7 +118,7 @@
     <string name="feature_orders_ho_asked">%1$s asks you to do this order</string>
     <string name="feature_orders_ho_asked_hint">You work for %1$s: it charges its client. For you it\'s history.</string>
     <string name="feature_orders_ho_for_them">You do this for %1$s</string>
-    <string name="feature_orders_ho_for_them_hint">%1$s (owner %2$s) charges its client. You see the client\'s contacts and printers, not what they owe.</string>
+    <string name="feature_orders_ho_for_them_hint">%1$s (owner %2$s) charges its client. You see the client\'s contacts and items, not what they owe.</string>
     <string name="feature_orders_ho_yours_from">Your order, given by %1$s</string>
     <string name="feature_orders_ho_yours_from_hint">Your price list, your money. %1$s sees only that it\'s done, or given back.</string>
     <string name="feature_orders_ho_declined">%1$s turned it down</string>
@@ -132,4 +132,5 @@
     <string name="feature_orders_ho_for_us_hint">When he finishes, the work comes here and you charge the client.</string>
     <string name="feature_orders_given_label">Give it to the master as his order</string>
     <string name="feature_orders_given_hint">On: his price and money, here only history. Off: he works for you and you charge the client.</string>
+    <string name="feature_orders_repair_general">General</string>
 </resources>

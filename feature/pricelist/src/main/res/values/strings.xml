@@ -16,7 +16,7 @@
     <string name="feature_pricelist_delete">Ջնջել</string>
     <string name="feature_pricelist_save">Պահպանել</string>
     <string name="feature_pricelist_name">Անվանում</string>
-    <string name="feature_pricelist_name_hint">օր.՝ Լիցքավորում 85A</string>
+    <string name="feature_pricelist_name_hint">օր.՝ Ախտորոշում</string>
     <string name="feature_pricelist_error_name">Նշեք անվանումը</string>
     <string name="feature_pricelist_error_taken">Այս անունով կետ արդեն կա «%1$s» խմբում</string>
     <string name="feature_pricelist_description">Նկարագրություն (ըստ ցանկության)</string>
@@ -24,7 +24,7 @@
     <string name="feature_pricelist_price">Գին</string>
     <string name="feature_pricelist_cost">Ինքնարժեք</string>
     <string name="feature_pricelist_error_price">Նշեք գինը</string>
-    <string name="feature_pricelist_cost_help">Ինքնարժեքը ձեր ծախսն է (փոշի, չիպ, պահեստամաս)։ Հաճախորդը այն չի տեսնում․ այն պետք է շահույթը հաշվելու համար։</string>
+    <string name="feature_pricelist_cost_help">Ինքնարժեքը ձեր ծախսն է (նյութ, պահեստամաս)։ Հաճախորդը այն չի տեսնում․ այն պետք է շահույթը հաշվելու համար։</string>
     <string name="feature_pricelist_profit">Շահույթ</string>
     <string name="feature_pricelist_margin">գնի %1$d%%-ը</string>
     <string name="feature_pricelist_discard_title">Չպահպանե՞լ փոփոխությունները</string>
@@ -32,4 +32,6 @@
     <string name="feature_pricelist_keep_editing">Շարունակել</string>
     <string name="feature_pricelist_delete_title">Ջնջե՞լ կետը գնացուցակից</string>
     <string name="feature_pricelist_delete_message">Արդեն կատարված աշխատանքներում այն կմնա նույն անունով և գնով։</string>
+    <string name="feature_pricelist_general">Ընդհանուր</string>
+    <string name="feature_pricelist_for_type">Ինչի համար</string>
 </resources>

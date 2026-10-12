@@ -70,8 +70,8 @@ internal fun ClientDetailRoute(
     onEdit: (Long) -> Unit,
     onRecordPayment: (Long) -> Unit,
     onAddCharge: (Long) -> Unit,
-    onAddPrinter: (clientId: Long) -> Unit,
-    onPrinterClick: (clientId: Long, printerId: Long) -> Unit,
+    onAddItem: (clientId: Long) -> Unit,
+    onItemClick: (clientId: Long, clientItemId: Long) -> Unit,
     onNewOrder: (clientId: Long) -> Unit,
     onOrderClick: (orderId: Long) -> Unit,
     onOpenEntry: (isCharge: Boolean, id: Long) -> Unit,
@@ -104,8 +104,8 @@ internal fun ClientDetailRoute(
         onAddCharge = onAddCharge,
         // Every row opens its own page: full note, file data, move or delete there.
         onEntryClick = { entry -> onOpenEntry(entry is LedgerEntry.Charge, entry.id) },
-        onAddPrinter = onAddPrinter,
-        onPrinterClick = onPrinterClick,
+        onAddItem = onAddItem,
+        onItemClick = onItemClick,
         onNewOrder = onNewOrder,
         onOrderClick = onOrderClick,
     )
@@ -127,8 +127,8 @@ internal fun ClientDetailScreen(
     onRecordPayment: (Long) -> Unit = {},
     onAddCharge: (Long) -> Unit = {},
     onEntryClick: (LedgerEntry) -> Unit = {},
-    onAddPrinter: (Long) -> Unit = {},
-    onPrinterClick: (Long, Long) -> Unit = { _, _ -> },
+    onAddItem: (Long) -> Unit = {},
+    onItemClick: (Long, Long) -> Unit = { _, _ -> },
     onNewOrder: (Long) -> Unit = {},
     onOrderClick: (Long) -> Unit = {},
     modifier: Modifier = Modifier,
@@ -168,8 +168,8 @@ internal fun ClientDetailScreen(
                 onRecordPayment = { onRecordPayment(state.summary.client.id) },
                 onAddCharge = { onAddCharge(state.summary.client.id) },
                 onEntryClick = onEntryClick,
-                onAddPrinter = { onAddPrinter(state.summary.client.id) },
-                onPrinterClick = { onPrinterClick(state.summary.client.id, it) },
+                onAddItem = { onAddItem(state.summary.client.id) },
+                onItemClick = { onItemClick(state.summary.client.id, it) },
                 onNewOrder = { onNewOrder(state.summary.client.id) },
                 onOrderClick = onOrderClick,
             )
@@ -214,7 +214,7 @@ internal data class CallActions(
     val onShowAll: () -> Unit = {},
 )
 
-/** Adding and removing photos of printers and cartridges. */
+/** Adding and removing photos of client items and their parts. */
 internal data class PhotoActions(
     val onAdd: (PhotoOwner, Long, String) -> Unit = { _, _, _ -> },
     val onDelete: (Photo) -> Unit = {},
@@ -233,8 +233,8 @@ private fun ClientDetailContent(
     onRecordPayment: () -> Unit,
     onAddCharge: () -> Unit,
     onEntryClick: (LedgerEntry) -> Unit,
-    onAddPrinter: () -> Unit,
-    onPrinterClick: (Long) -> Unit,
+    onAddItem: () -> Unit,
+    onItemClick: (Long) -> Unit,
     onNewOrder: () -> Unit,
     onOrderClick: (Long) -> Unit,
 ) {
@@ -304,7 +304,7 @@ private fun ClientDetailContent(
                             stringResource(
                                 when (tab) {
                                     ClientTab.INFO -> R.string.feature_clients_tab_info
-                                    ClientTab.PRINTERS -> R.string.feature_clients_tab_printers
+                                    ClientTab.ITEMS -> R.string.feature_clients_tab_items
                                     ClientTab.ORDERS -> R.string.feature_clients_tab_orders
                                     ClientTab.FINANCE -> R.string.feature_clients_tab_finance
                                 },
@@ -323,8 +323,8 @@ private fun ClientDetailContent(
 
         if (state.tab == ClientTab.FINANCE) {
             FinanceSection(summary, state.ledger, onRecordPayment, onAddCharge, onEntryClick)
-        } else if (state.tab == ClientTab.PRINTERS) {
-            PrintersSection(state.printers, onAddPrinter, onPrinterClick, state.printerPhotos, state.cartridgePhotos, photoActions)
+        } else if (state.tab == ClientTab.ITEMS) {
+            ItemsSection(state.items, onAddItem, onItemClick, state.itemPhotos, state.partPhotos, photoActions)
         } else if (state.tab == ClientTab.ORDERS) {
             OrdersSection(state.orders, state.today, onNewOrder, onOrderClick)
         } else {
@@ -478,7 +478,7 @@ private fun ClientDetailScreenPreview() {
                         phones = listOf(ClientPhone(1, "091 123456", "Հաշվապահ"), ClientPhone(2, "010 123456", "")),
                         addresses = listOf(ClientAddress(1, "Երևան, Կոմիտասի 5, գրասենյակ 12", "")),
                     ),
-                    printerCount = 3,
+                    itemCount = 3,
                     charged = Money.ofDram(420_000),
                     paid = Money.ofDram(240_000),
                 ),

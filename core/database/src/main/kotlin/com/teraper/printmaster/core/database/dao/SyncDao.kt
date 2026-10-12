@@ -69,9 +69,9 @@ interface SyncDao {
     suspend fun attachAllParts(companyId: Long)
 
     @Query(
-        "UPDATE repair_parts SET category = :category, name = :name, description = :description, price_minor = :priceMinor, archived = :archived WHERE id = :id",
+        "UPDATE repair_parts SET type_id = :typeId, name = :name, description = :description, price_minor = :priceMinor, archived = :archived WHERE id = :id",
     )
-    suspend fun updatePart(id: Long, category: String, name: String, description: String, priceMinor: Long, archived: Boolean)
+    suspend fun updatePart(id: Long, typeId: Long?, name: String, description: String, priceMinor: Long, archived: Boolean)
 
     // Masters
 
@@ -112,20 +112,14 @@ interface SyncDao {
     @Query("UPDATE clients SET attached_company_id = :companyId WHERE id = :id")
     suspend fun setClientAttachedCompany(id: Long, companyId: Long?)
 
-    @Query("SELECT id FROM client_printers WHERE client_id = :clientId")
-    suspend fun getClientPrinterIds(clientId: Long): List<Long>
+    @Query("UPDATE client_items SET sync_id = :syncId WHERE id = :id")
+    suspend fun setClientItemSyncId(id: Long, syncId: String)
 
-    @Query("UPDATE client_printers SET sync_id = :syncId WHERE id = :id")
-    suspend fun setClientPrinterSyncId(id: Long, syncId: String)
+    @Query("UPDATE client_items SET place = :place WHERE id = :id")
+    suspend fun setClientItemPlace(id: Long, place: String)
 
-    @Query("UPDATE client_printers SET location = :location WHERE id = :id")
-    suspend fun setClientPrinterLocation(id: Long, location: String)
-
-    @Query("UPDATE client_printers SET serial_number = :serial, serial_key = :key WHERE id = :id")
-    suspend fun setClientPrinterSerial(id: Long, serial: String?, key: String?)
-
-    @Query("DELETE FROM client_printers WHERE client_id = :clientId")
-    suspend fun deleteClientPrinters(clientId: Long)
+    @Query("UPDATE client_items SET serial_number = :serial, serial_key = :key WHERE id = :id")
+    suspend fun setClientItemSerial(id: Long, serial: String?, key: String?)
 
     @Query("DELETE FROM repairs WHERE order_id = :orderId")
     suspend fun deleteRepairsOf(orderId: Long)

@@ -9,8 +9,8 @@ import com.teraper.printmaster.core.database.dao.RepairDao
 import com.teraper.printmaster.core.database.dao.RepairWithItems
 import com.teraper.printmaster.core.database.entity.ChargeEntity
 import com.teraper.printmaster.core.model.ClientSearch
-import com.teraper.printmaster.core.database.entity.ClientPrinterCartridgeEntity
-import com.teraper.printmaster.core.database.entity.ClientPrinterEntity
+import com.teraper.printmaster.core.database.entity.ClientItemEntity
+import com.teraper.printmaster.core.database.entity.ClientItemPartEntity
 import com.teraper.printmaster.core.database.entity.ClientAddressEntity
 import com.teraper.printmaster.core.database.entity.ClientPhoneEntity
 import com.teraper.printmaster.core.database.entity.ClientEntity
@@ -20,7 +20,7 @@ import com.teraper.printmaster.core.database.entity.RepairEntity
 import com.teraper.printmaster.core.database.entity.RepairItemEntity
 import com.teraper.printmaster.core.model.ChargeSource
 import com.teraper.printmaster.core.model.CompanyKind
-import com.teraper.printmaster.core.model.ClientPrinter
+import com.teraper.printmaster.core.model.ClientItem
 import com.teraper.printmaster.core.model.Money
 import com.teraper.printmaster.core.model.OrderStatus
 import com.teraper.printmaster.core.model.OrderWork
@@ -49,24 +49,24 @@ internal class OfflineRepairsRepository @Inject constructor(
     private val repairDao: RepairDao,
     private val orderDao: OrderDao,
     private val ledgerDao: LedgerDao,
-    private val printers: PrintersRepository,
+    private val clientItems: ClientItemsRepository,
     private val clock: Clock,
     private val analytics: AppAnalytics,
 ) : RepairsRepository {
 
-    /** The client's printers, to show which device each repair was on. */
-    private fun printersOfOrder(orderId: Long): Flow<List<ClientPrinter>> =
+    /** The client's items, to show which one each repair was on. */
+    private fun itemsOfOrder(orderId: Long): Flow<List<ClientItem>> =
         orderDao.observeOrder(orderId).map { it?.order?.clientId }.distinctUntilChanged().flatMapLatest { clientId ->
-            if (clientId == null) flowOf(emptyList()) else printers.observeClientPrinters(clientId)
+            if (clientId == null) flowOf(emptyList()) else clientItems.observeClientItems(clientId)
         }
 
     override fun observeOrderWork(orderId: Long): Flow<OrderWork> = combine(
         repairDao.observeRepairs(orderId),
-        printersOfOrder(orderId),
+        itemsOfOrder(orderId),
         repairDao.observeChargeCount(orderId),
         repairDao.observeCashPaid(orderId),
-    ) { repairs, printers, charges, cash ->
-        OrderWork(repairs.map { it.toModel(printers) }, isBilled = charges > 0, paidCash = Money(cash))
+    ) { repairs, items, charges, cash ->
+        OrderWork(repairs.map { it.toModel(items) }, isBilled = charges > 0, paidCash = Money(cash))
     }
 
     override fun observeRepair(id: Long): Flow<Repair?> =
@@ -74,7 +74,7 @@ internal class OfflineRepairsRepository @Inject constructor(
             if (row == null) {
                 flowOf(null)
             } else {
-                printersOfOrder(row.repair.orderId).map { row.toModel(it) }
+                itemsOfOrder(row.repair.orderId).map { row.toModel(it) }
             }
         }
 
@@ -86,15 +86,15 @@ internal class OfflineRepairsRepository @Inject constructor(
             if (order == null || !order.isOpen() || repairDao.countCharges(order.id) > 0) {
                 return@withTransaction SaveRepairResult.Locked
             }
-            // A device must be one of this client's printers; anything else is dropped.
-            val printer = draft.printerId?.let { printers.getPrinter(it) }?.takeIf { it.clientId == order.clientId }
-            val cartridgeId = draft.cartridgeId?.takeIf { id -> printer?.cartridges?.any { it.id == id } == true }
+            // A device must be one of this client's items; anything else is dropped.
+            val item = draft.itemId?.let { clientItems.getClientItem(it) }?.takeIf { it.clientId == order.clientId }
+            val partId = draft.itemPartId?.takeIf { id -> item?.parts?.any { it.id == id } == true }
             val repairId = if (draft.isNew) {
                 repairDao.insertRepair(
                     RepairEntity(
                         orderId = order.id,
-                        clientPrinterId = printer?.id,
-                        clientPrinterCartridgeId = cartridgeId,
+                        clientItemId = item?.id,
+                        clientItemPartId = partId,
                         note = draft.note.trim(),
                         createdAt = clock.millis(),
                     ),
@@ -102,7 +102,7 @@ internal class OfflineRepairsRepository @Inject constructor(
             } else {
                 val existing = repairDao.getRepair(draft.id)
                 if (existing == null || existing.orderId != order.id) return@withTransaction SaveRepairResult.Locked
-                repairDao.updateRepair(existing.copy(clientPrinterId = printer?.id, clientPrinterCartridgeId = cartridgeId, note = draft.note.trim()))
+                repairDao.updateRepair(existing.copy(clientItemId = item?.id, clientItemPartId = partId, note = draft.note.trim()))
                 repairDao.deleteItems(existing.id)
                 existing.id
             }
@@ -124,16 +124,16 @@ internal class OfflineRepairsRepository @Inject constructor(
     override suspend fun finishOrder(orderId: Long, paidInCash: Boolean, finishedAt: Instant?): FinishOrderResult {
         // Device names for the charge notes, read before the transaction (it only reads them).
         val clientId = orderDao.getOrder(orderId)?.clientId ?: return FinishOrderResult.NOT_FOUND
-        val clientPrinters = printers.observeClientPrinters(clientId).first()
-        val result = db.withTransaction { finish(orderId, paidInCash, clientPrinters, finishedAt ?: clock.instant()) }
+        val items = clientItems.observeClientItems(clientId).first()
+        val result = db.withTransaction { finish(orderId, paidInCash, items, finishedAt ?: clock.instant()) }
         if (result == FinishOrderResult.FINISHED) analytics.log("order_finished", mapOf("cash" to paidInCash, "from_master" to (finishedAt != null)))
         return result
     }
 
-    private suspend fun finish(orderId: Long, paidInCash: Boolean, clientPrinters: List<ClientPrinter>, finishedAt: Instant): FinishOrderResult {
+    private suspend fun finish(orderId: Long, paidInCash: Boolean, items: List<ClientItem>, finishedAt: Instant): FinishOrderResult {
         val order = orderDao.getOrder(orderId) ?: return FinishOrderResult.NOT_FOUND
         if (!order.isOpen()) return FinishOrderResult.NOT_OPEN
-        val repairs = repairDao.getRepairs(orderId).map { it.toModel(clientPrinters) }.filter { it.total.isPositive }
+        val repairs = repairDao.getRepairs(orderId).map { it.toModel(items) }.filter { it.total.isPositive }
         if (repairs.isEmpty()) return FinishOrderResult.NO_WORK
 
         val today = finishedAt.atZone(clock.zone).toLocalDate().toEpochDay()
@@ -225,32 +225,32 @@ internal class OfflineRepairsRepository @Inject constructor(
         val phone = source.phones.firstOrNull { it.id == order.phoneId }?.let { p -> contacts.phones.firstOrNull { it.number == p.number } }
         val address = source.addresses.firstOrNull { it.id == order.addressId }?.let { a -> contacts.addresses.firstOrNull { it.address == a.address } }
 
-        // Printers: the own client's of the same model and place, or copies; the work points at them.
-        val ownPrinters = sync.getClientPrinterIds(clientId).mapNotNull { catalog.getClientPrinter(it) }.toMutableList()
-        val printerMap = HashMap<Long, Long>()
-        val cartridgeMap = HashMap<Long, Long>()
-        for (printer in sync.getClientPrinterIds(order.clientId).mapNotNull { catalog.getClientPrinter(it) }) {
-            val same = ownPrinters.firstOrNull { it.printer.modelId == printer.printer.modelId && it.printer.location == printer.printer.location }
-            val targetId = same?.printer?.id ?: catalog.insertClientPrinter(
-                ClientPrinterEntity(
-                    clientId = clientId, modelId = printer.printer.modelId, location = printer.printer.location, note = printer.printer.note,
-                    serialNumber = printer.printer.serialNumber, serialKey = printer.printer.serialKey,
+        // Items: the own client's of the same model and place, or copies; the work points at them.
+        val ownItems = catalog.getClientItems(clientId).toMutableList()
+        val itemMap = HashMap<Long, Long>()
+        val partMap = HashMap<Long, Long>()
+        for (item in catalog.getClientItems(order.clientId)) {
+            val same = ownItems.firstOrNull { it.itemId == item.itemId && it.place == item.place }
+            val targetId = same?.id ?: catalog.insertClientItem(
+                ClientItemEntity(
+                    clientId = clientId, itemId = item.itemId, place = item.place, note = item.note,
+                    serialNumber = item.serialNumber, serialKey = item.serialKey,
                 ),
-            )
-            val existing = same?.cartridges?.map { it.row }.orEmpty()
-            val missing = printer.cartridges.map { it.row }.filter { c -> existing.none { it.cartridgeId == c.cartridgeId } }
-            catalog.insertClientPrinterCartridges(missing.map { ClientPrinterCartridgeEntity(clientPrinterId = targetId, cartridgeId = it.cartridgeId) })
-            val rows = catalog.getClientPrinterCartridges(targetId)
-            printerMap[printer.printer.id] = targetId
-            printer.cartridges.forEach { c -> rows.firstOrNull { it.cartridgeId == c.row.cartridgeId }?.let { cartridgeMap[c.row.id] = it.id } }
-            if (same == null) catalog.getClientPrinter(targetId)?.let { ownPrinters += it }
+            ).also { id -> ownItems += item.copy(id = id, clientId = clientId, syncId = null) }
+            val parts = catalog.getClientItemParts(item.id)
+            val existing = catalog.getClientItemParts(targetId)
+            val missing = parts.filter { p -> existing.none { it.itemId == p.itemId } }
+            catalog.insertClientItemParts(missing.map { ClientItemPartEntity(clientItemId = targetId, itemId = it.itemId) })
+            val rows = catalog.getClientItemParts(targetId)
+            itemMap[item.id] = targetId
+            parts.forEach { p -> rows.firstOrNull { it.itemId == p.itemId }?.let { partMap[p.id] = it.id } }
         }
         repairDao.getRepairs(order.id).forEach { r ->
             val repair = r.repair
             repairDao.updateRepair(
                 repair.copy(
-                    clientPrinterId = repair.clientPrinterId?.let { printerMap[it] },
-                    clientPrinterCartridgeId = repair.clientPrinterCartridgeId?.let { cartridgeMap[it] },
+                    clientItemId = repair.clientItemId?.let { itemMap[it] },
+                    clientItemPartId = repair.clientItemPartId?.let { partMap[it] },
                 ),
             )
         }
@@ -286,12 +286,12 @@ internal class OfflineRepairsRepository @Inject constructor(
 
 private fun OrderEntity.isOpen() = status == OrderStatus.NEW || status == OrderStatus.IN_PROGRESS
 
-private fun RepairWithItems.toModel(printers: List<ClientPrinter>): Repair {
-    val printer = printers.firstOrNull { it.id == repair.clientPrinterId }
+private fun RepairWithItems.toModel(clientItems: List<ClientItem>): Repair {
+    val item = clientItems.firstOrNull { it.id == repair.clientItemId }
     return Repair(
         id = repair.id,
         orderId = repair.orderId,
-        device = printer?.let { p -> RepairDevice(p, p.cartridges.firstOrNull { it.id == repair.clientPrinterCartridgeId }) },
+        device = item?.let { i -> RepairDevice(i, i.parts.firstOrNull { it.id == repair.clientItemPartId }) },
         note = repair.note,
         lines = items.sortedBy { it.id }.map { RepairLine(it.partId, it.name, Money(it.priceMinor), Money(it.costMinor), it.quantity) },
     )

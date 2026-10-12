@@ -17,25 +17,26 @@ import com.teraper.printmaster.core.database.entity.CompanyMemberEntity
 import com.teraper.printmaster.core.database.entity.CompanyEntity
 import com.teraper.printmaster.core.database.entity.ClientEntity
 import com.teraper.printmaster.core.database.entity.ClientPhoneEntity
-import com.teraper.printmaster.core.database.entity.ClientPrinterCartridgeEntity
-import com.teraper.printmaster.core.database.entity.ClientPrinterEntity
+import com.teraper.printmaster.core.database.entity.ClientItemEntity
+import com.teraper.printmaster.core.database.entity.ClientItemPartEntity
 import com.teraper.printmaster.core.database.entity.OrderEntity
 import com.teraper.printmaster.core.database.entity.RepairEntity
 import com.teraper.printmaster.core.database.entity.RepairItemEntity
 import com.teraper.printmaster.core.database.entity.RepairPartEntity
 import com.teraper.printmaster.core.database.entity.SyncOutboxEntity
 import com.teraper.printmaster.core.database.entity.SyncStateEntity
-import com.teraper.printmaster.core.model.CartridgeDraft
-import com.teraper.printmaster.core.model.CatalogNames
+import com.teraper.printmaster.core.model.ClientItem
+import com.teraper.printmaster.core.model.LinkDraft
 import com.teraper.printmaster.core.model.OrderStatus
-import com.teraper.printmaster.core.model.PrinterModelDraft
+import com.teraper.printmaster.core.model.RepairDevice
 import com.teraper.printmaster.core.model.SerialNumbers
 import com.teraper.printmaster.core.model.SharedChanges
 import com.teraper.printmaster.core.model.SharedClient
 import com.teraper.printmaster.core.model.SharedContact
 import com.teraper.printmaster.core.model.SharedLine
 import com.teraper.printmaster.core.model.SharedOrder
-import com.teraper.printmaster.core.model.SharedPrinter
+import com.teraper.printmaster.core.model.SharedItem
+import com.teraper.printmaster.core.model.SharedPart
 import com.teraper.printmaster.core.model.SharedRepair
 import com.teraper.printmaster.core.model.SharedPriceItem
 import com.teraper.printmaster.core.model.SyncReport
@@ -209,16 +210,17 @@ class SyncEngine @Inject internal constructor(
         // A client added on a master's phone is marked, so later edits still go out as "from master".
         val createdHere = isMember && (client.syncId == null || client.needsReview)
         if (createdHere && !client.needsReview) sync.setNeedsReview(client.id, true)
-        val printers = sync.getClientPrinterIds(clientId).mapNotNull { catalogDao.getClientPrinter(it) }.map { p ->
-            SharedPrinter(
-                brand = p.model.brand.name,
-                model = p.model.model.name,
-                printType = p.model.model.printType,
-                colorType = p.model.model.colorType,
-                cartridges = p.cartridges.map { it.cartridge.cartridge.name },
-                location = p.printer.location,
-                id = p.printer.syncId ?: newId().also { sync.setClientPrinterSyncId(p.printer.id, it) },
-                serialNumber = p.printer.serialNumber.orEmpty(),
+        val items = clientItems(clientId).map { owned ->
+            val type = owned.item.type
+            SharedItem(
+                type = type.name,
+                name = owned.item.name,
+                fields = type.fields.mapNotNull { f -> owned.item.values[f.id]?.let { f.name to it } }.toMap(),
+                titleFields = type.titleFields.map { it.name },
+                parts = owned.parts.map { SharedPart(it.item.type.name, it.item.title) },
+                place = owned.place,
+                id = clientItemSyncId(owned.id),
+                serialNumber = owned.serialNumber,
             )
         }
         return SharedClient(
@@ -228,7 +230,7 @@ class SyncEngine @Inject internal constructor(
             taxId = client.taxId,
             phones = row.phones.sortedBy { it.id }.map { SharedContact(it.number, it.label) },
             addresses = row.addresses.sortedBy { it.id }.map { SharedContact(it.address, it.label, it.mapLink) },
-            printers = printers,
+            items = items,
             createdByMaster = createdHere,
             visibleTo = if (isMember) listOfNotNull(backend.myUid) else sync.getMemberUidsOfClient(clientId, company.id),
         )
@@ -241,9 +243,7 @@ class SyncEngine @Inject internal constructor(
             SharedRepair(
                 id = repair.syncId ?: newId().also { sync.setRepairSyncId(repair.id, it) },
                 device = deviceName(repair),
-                printerId = repair.clientPrinterId?.let { id ->
-                    catalogDao.getClientPrinter(id)?.printer?.let { it.syncId ?: newId().also { new -> sync.setClientPrinterSyncId(it.id, new) } }
-                },
+                itemId = repair.clientItemId?.let { clientItemSyncId(it) },
                 note = repair.note,
                 lines = r.items.map { item ->
                     SharedLine(item.partId?.let { partSyncId(it) }, item.name, item.priceMinor, item.quantity)
@@ -287,11 +287,20 @@ class SyncEngine @Inject internal constructor(
 
     /** "CF283A · HP LaserJet M125 (Office)", the same text on both phones. */
     private suspend fun deviceName(repair: RepairEntity): String? {
-        val printer = repair.clientPrinterId?.let { catalogDao.getClientPrinter(it) } ?: return null
-        val model = CatalogNames.clean("${printer.model.brand.name} ${printer.model.model.name}") +
-            if (printer.printer.location.isBlank()) "" else " (${printer.printer.location})"
-        val cartridge = printer.cartridges.firstOrNull { it.row.id == repair.clientPrinterCartridgeId }?.cartridge?.cartridge?.name
-        return cartridge?.let { "$it · $model" } ?: model
+        val row = repair.clientItemId?.let { catalogDao.getClientItem(it) } ?: return null
+        val item = catalogWriter.snapshot().clientItem(row, catalogDao.getClientItemParts(row.id)) ?: return null
+        return RepairDevice(item, item.parts.firstOrNull { it.id == repair.clientItemPartId }).name
+    }
+
+    /** The client's items, put together with the catalog. */
+    private suspend fun clientItems(clientId: Long): List<ClientItem> {
+        val snapshot = catalogWriter.snapshot()
+        return catalogDao.getClientItems(clientId).mapNotNull { snapshot.clientItem(it, catalogDao.getClientItemParts(it.id)) }
+    }
+
+    private suspend fun clientItemSyncId(id: Long): String {
+        val row = checkNotNull(catalogDao.getClientItem(id))
+        return row.syncId ?: newId().also { sync.setClientItemSyncId(id, it) }
     }
 
     private suspend fun partSyncId(partId: Long): String? {
@@ -303,7 +312,7 @@ class SyncEngine @Inject internal constructor(
         val part = sync.getAllParts().firstOrNull { it.id == partId } ?: return null
         return SharedPriceItem(
             id = part.syncId ?: newId().also { sync.setPartSyncId(part.id, it) },
-            category = part.category,
+            type = part.typeId?.let { id -> catalogDao.getTypes().firstOrNull { it.id == id }?.name },
             name = part.name,
             description = part.description,
             priceMinor = part.priceMinor,
@@ -404,7 +413,7 @@ class SyncEngine @Inject internal constructor(
             clientDao.updateClient(existing.copy(name = shared.name, type = shared.type))
         }
         replaceContacts(id, shared)
-        replacePrinters(id, shared.printers)
+        replaceItems(id, shared.items)
         return existing == null
     }
 
@@ -425,31 +434,39 @@ class SyncEngine @Inject internal constructor(
         )
     }
 
-    /** Printers are matched by their own id, so two printers of one model stay two. */
-    private suspend fun replacePrinters(clientId: Long, printers: List<SharedPrinter>) {
-        val existing = sync.getClientPrinterIds(clientId).mapNotNull { catalogDao.getClientPrinter(it) }
-        val wanted = printers.map { it.id }.toSet()
-        // Printers added on this phone and never shared (no id) are kept.
-        existing.filter { it.printer.syncId != null && it.printer.syncId !in wanted }.forEach { catalogDao.deleteClientPrinter(it.printer.id) }
-        for (printer in printers) {
-            val same = existing.firstOrNull { it.printer.syncId == printer.id }
+    /**
+     * Items are matched by their own id, so two of one model stay two. A type or field this phone
+     * doesn't have yet is made by name; the model is found or added to this phone's catalog.
+     */
+    private suspend fun replaceItems(clientId: Long, items: List<SharedItem>) {
+        val existing = catalogDao.getClientItems(clientId)
+        val wanted = items.map { it.id }.toSet()
+        // Items added on this phone and never shared (no id) are kept.
+        existing.filter { it.syncId != null && it.syncId !in wanted }.forEach { catalogDao.deleteClientItem(it.id) }
+        for (item in items) {
+            val same = existing.firstOrNull { it.syncId == item.id }
             if (same != null) {
-                if (same.printer.location != printer.location) sync.setClientPrinterLocation(same.printer.id, printer.location)
-                if (same.printer.serialNumber.orEmpty() != printer.serialNumber) {
-                    sync.setClientPrinterSerial(same.printer.id, printer.serialNumber.ifEmpty { null }, SerialNumbers.key(printer.serialNumber).ifEmpty { null })
+                if (same.place != item.place) sync.setClientItemPlace(same.id, item.place)
+                if (same.serialNumber.orEmpty() != item.serialNumber) {
+                    sync.setClientItemSerial(same.id, item.serialNumber.ifEmpty { null }, SerialNumbers.key(item.serialNumber).ifEmpty { null })
                 }
                 continue
             }
-            val cartridges = printer.cartridges.map { CartridgeDraft(it) }
-            val modelId = catalogWriter.findOrCreateModel(PrinterModelDraft(brand = printer.brand, name = printer.model, printType = printer.printType, colorType = printer.colorType))
-            val cartridgeIds = catalogWriter.linkCartridges(modelId, cartridges, exact = false)
-            val printerId = catalogDao.insertClientPrinter(
-                ClientPrinterEntity(
-                    clientId = clientId, modelId = modelId, location = printer.location, syncId = printer.id.ifEmpty { null },
-                    serialNumber = printer.serialNumber.ifEmpty { null }, serialKey = SerialNumbers.key(printer.serialNumber).ifEmpty { null },
+            val typeId = catalogWriter.typeId(item.type)
+            val values = item.fields.mapKeys { (name, _) -> catalogWriter.fieldId(typeId, name, inTitle = name in item.titleFields) }
+            val type = checkNotNull(catalogWriter.snapshot().types[typeId])
+            val modelId = catalogWriter.findOrCreateItem(typeId, catalogWriter.title(type, item.name, values), values, item.name)
+            val partIds = item.parts.map { part ->
+                val partType = catalogWriter.typeId(part.type, parentId = typeId)
+                catalogWriter.linkParts(modelId, listOf(LinkDraft(typeId = partType, title = part.name)), exact = false).values.single()
+            }
+            val clientItemId = catalogDao.insertClientItem(
+                ClientItemEntity(
+                    clientId = clientId, itemId = modelId, place = item.place, syncId = item.id.ifEmpty { null },
+                    serialNumber = item.serialNumber.ifEmpty { null }, serialKey = SerialNumbers.key(item.serialNumber).ifEmpty { null },
                 ),
             )
-            catalogDao.insertClientPrinterCartridges(cartridgeIds.values.map { ClientPrinterCartridgeEntity(clientPrinterId = printerId, cartridgeId = it) })
+            catalogDao.insertClientItemParts(partIds.distinct().map { ClientItemPartEntity(clientItemId = clientItemId, itemId = it) })
         }
     }
 
@@ -485,20 +502,19 @@ class SyncEngine @Inject internal constructor(
     private suspend fun replaceWork(orderId: Long, order: SharedOrder) {
         val local = orderDao.getOrder(orderId) ?: return
         sync.deleteRepairsOf(orderId)
-        val printers = sync.getClientPrinterIds(local.clientId).mapNotNull { catalogDao.getClientPrinter(it) }
+        val items = clientItems(local.clientId)
         for (repair in order.work) {
-            val byId = repair.printerId?.let { id -> printers.firstOrNull { it.printer.syncId == id } }
+            val byId = repair.itemId?.let { id -> items.firstOrNull { item -> catalogDao.getClientItem(item.id)?.syncId == id } }
             val device = if (byId != null) {
-                val cartridgeId = byId.cartridges.firstOrNull { c -> repair.device?.startsWith("${c.cartridge.cartridge.name} · ") == true }?.row?.id
-                Triple(repair.device.orEmpty(), byId.printer.id, cartridgeId)
+                RepairDevice(byId, byId.parts.firstOrNull { p -> repair.device?.startsWith("${p.item.title} · ") == true })
             } else {
-                repair.device?.let { name -> devices(printers).firstOrNull { it.first == name } }
+                repair.device?.let { name -> devices(items).firstOrNull { it.name == name } }
             }
             val repairId = repairDao.insertRepair(
                 RepairEntity(
                     orderId = orderId,
-                    clientPrinterId = device?.second,
-                    clientPrinterCartridgeId = device?.third,
+                    clientItemId = device?.item?.id,
+                    clientItemPartId = device?.part?.id,
                     note = repair.note,
                     createdAt = clock.millis(),
                     syncId = repair.id,
@@ -513,12 +529,8 @@ class SyncEngine @Inject internal constructor(
         }
     }
 
-    /** Every device name of the client's printers → (printer id, cartridge id). */
-    private fun devices(printers: List<com.teraper.printmaster.core.database.model.ClientPrinterWithDetails>) = printers.flatMap { p ->
-        val model = CatalogNames.clean("${p.model.brand.name} ${p.model.model.name}") +
-            if (p.printer.location.isBlank()) "" else " (${p.printer.location})"
-        listOf(Triple(model, p.printer.id, null as Long?)) + p.cartridges.map { Triple("${it.cartridge.cartridge.name} · $model", p.printer.id, it.row.id) }
-    }
+    /** Every device of the client: each item, and each item with one of its parts. */
+    private fun devices(items: List<ClientItem>) = items.flatMap { item -> listOf(RepairDevice(item)) + item.parts.map { RepairDevice(item, it) } }
 
     /** An attached company's price list item, kept apart from the user's own list. */
     private suspend fun applyPrice(item: SharedPriceItem, attachedCompanyId: Long) {
@@ -526,13 +538,13 @@ class SyncEngine @Inject internal constructor(
         if (existing == null) {
             sync.insertPart(
                 RepairPartEntity(
-                    category = item.category, name = item.name, description = item.description,
+                    typeId = item.type?.let { catalogWriter.typeId(it) }, name = item.name, description = item.description,
                     priceMinor = item.priceMinor, costMinor = 0, archived = item.archived, syncId = item.id,
                     attachedCompanyId = attachedCompanyId,
                 ),
             )
         } else {
-            sync.updatePart(existing.id, item.category.name, item.name, item.description, item.priceMinor, item.archived)
+            sync.updatePart(existing.id, item.type?.let { catalogWriter.typeId(it) }, item.name, item.description, item.priceMinor, item.archived)
         }
     }
 
