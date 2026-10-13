@@ -20,6 +20,7 @@ import com.teraper.printmaster.core.model.ItemRef
 import com.teraper.printmaster.core.model.ItemTitles
 import com.teraper.printmaster.core.model.ItemType
 import com.teraper.printmaster.core.model.LinkDraft
+import com.teraper.printmaster.core.model.Money
 import javax.inject.Inject
 
 /** The whole catalog put together: types with fields, items with values and links. */
@@ -95,7 +96,10 @@ internal class CatalogSnapshot(val types: Map<Long, ItemType>, val items: Map<Lo
             val valuesByItem = values.groupBy({ it.itemId }, { it.fieldId to it.value })
             val bare = items.mapNotNull { row ->
                 val type = typeMap[row.typeId] ?: return@mapNotNull null
-                row.id to CatalogItem(row.id, type, row.name, valuesByItem[row.id].orEmpty().toMap())
+                row.id to CatalogItem(
+                    row.id, type, row.name, valuesByItem[row.id].orEmpty().toMap(),
+                    barcode = row.barcode.orEmpty(), price = Money(row.priceMinor), cost = Money(row.costMinor),
+                )
             }.toMap()
             val refs = bare.mapValues { it.value.ref() }
             val byTitle = compareBy<ItemRef> { CatalogNames.codeKey(it.title) }

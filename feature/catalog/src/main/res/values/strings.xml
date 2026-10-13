@@ -90,6 +90,23 @@
     <string name="feature_catalog_open_part">Բացել %1$s</string>
     <string name="feature_catalog_has_photos">Ունի լուսանկարներ</string>
     <string name="feature_catalog_has_photos_help">Հաճախորդի մոտ կարելի է լուսանկարներ ավելացնել։</string>
+    <string name="feature_catalog_section_sale">ՎԱՃԱՌՔ</string>
+    <string name="feature_catalog_sale_help">Գին ունեցող ապրանքը կառաջարկվի աշխատանք գրանցելիս՝ որպես ապրանք։</string>
+    <string name="feature_catalog_price">Գին, ֏</string>
+    <string name="feature_catalog_cost">Ինքնարժեք, ֏</string>
+    <string name="feature_catalog_profit">Շահույթ՝ %1$s</string>
+    <string name="feature_catalog_barcode">Շտրիխ-կոդ</string>
+    <string name="feature_catalog_barcode_hint">Սկանավորեք կամ գրեք</string>
+    <string name="feature_catalog_barcode_taken">Այս շտրիխ-կոդն արդեն կա՝ %1$s</string>
+    <string name="feature_catalog_scan">Սկանավորել շտրիխ-կոդը</string>
+    <string name="feature_catalog_scan_unavailable">Այս հեռախոսը չի կարող սկանավորել (Google Play ծառայություններ չկան)։ Գրեք կոդը։</string>
+    <string name="feature_catalog_section_photos">ԼՈՒՍԱՆԿԱՐՆԵՐ</string>
+    <string name="feature_catalog_photos_save_first">Նախ պահպանեք, հետո ավելացրեք լուսանկարներ։</string>
+    <string name="feature_catalog_photo_add">Ավելացնել լուսանկար</string>
+    <string name="feature_catalog_photo_camera">Տեսախցիկ</string>
+    <string name="feature_catalog_photo_gallery">Պատկերասրահ</string>
+    <string name="feature_catalog_photo_delete">Ջնջել լուսանկարը</string>
+    <string name="feature_catalog_photo_close">Փակել</string>
     <!-- Templates (made by the template table) -->
     <string name="feature_catalog_tpl_printers">Տպիչների սպասարկում</string>
     <string name="feature_catalog_tpl_clothes">Հագուստի խանութ</string>

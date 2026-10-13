@@ -20,12 +20,15 @@ internal const val TYPE_ID_ARG = "typeId"
 fun NavController.navigateToPriceList() = navigate(PriceListDestination)
 
 /** Price-list screens; the app puts them inside the More tab. */
-fun NavGraphBuilder.priceListScreens(navController: NavController) {
+/** [onOpenCatalogItem] / [onNewCatalogItem] open the Catalog's item form (goods are priced there); wired by the app. */
+fun NavGraphBuilder.priceListScreens(navController: NavController, onOpenCatalogItem: (Long) -> Unit, onNewCatalogItem: () -> Unit) {
     composable<PriceListDestination> {
         PriceListRoute(
             onBack = navController::popBackStack,
             onItemClick = { navController.navigate(PriceItemEditDestination(itemId = it)) },
             onAddItem = { navController.navigate(PriceItemEditDestination(typeId = it)) },
+            onOpenGoods = onOpenCatalogItem,
+            onAddGoods = onNewCatalogItem,
         )
     }
     composable<PriceItemEditDestination> {

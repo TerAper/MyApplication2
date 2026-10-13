@@ -174,8 +174,14 @@ data class RepairEntity(
             childColumns = ["part_id"],
             onDelete = ForeignKey.SET_NULL,
         ),
+        ForeignKey(
+            entity = ItemEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["item_id"],
+            onDelete = ForeignKey.SET_NULL,
+        ),
     ],
-    indices = [Index(value = ["repair_id"]), Index(value = ["part_id"])],
+    indices = [Index(value = ["repair_id"]), Index(value = ["part_id"]), Index(value = ["item_id"])],
 )
 data class RepairItemEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
@@ -185,4 +191,6 @@ data class RepairItemEntity(
     @ColumnInfo(name = "price_minor") val priceMinor: Long,
     @ColumnInfo(name = "cost_minor") val costMinor: Long,
     val quantity: Int,
+    /** Goods sold from the catalog; null = a service from the price list or a typed line. */
+    @ColumnInfo(name = "item_id") val itemId: Long? = null,
 )

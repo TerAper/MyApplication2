@@ -2,6 +2,7 @@ package com.teraper.printmaster.feature.orders
 
 import androidx.lifecycle.SavedStateHandle
 import com.teraper.printmaster.core.model.CatalogItem
+import com.teraper.printmaster.core.model.CatalogEntry
 import com.teraper.printmaster.core.model.ClientItem
 import com.teraper.printmaster.core.model.ClientItemPart
 import com.teraper.printmaster.core.model.ItemType
@@ -147,5 +148,28 @@ class RepairViewModelsTest {
         vm.onConfirmReopen()
         assertEquals(listOf(1L), repairs.reopened)
         assertFalse(loaded().work.isBilled)
+    }
+
+    @Test
+    fun goodsThatFitTheChosenPartComeFirstAndAreAddedAsGoods() = runTest {
+        val fitting = CatalogItem(3, cartridgeType, "CF283A", price = Money.ofDram(12_000), cost = Money.ofDram(7_000))
+        val other = CatalogItem(4, cartridgeType, "CE285A", price = Money.ofDram(9_000))
+        val notSold = CatalogItem(5, cartridgeType, "Q2612A")
+        catalog.entries.value = listOf(CatalogEntry(other), CatalogEntry(fitting), CatalogEntry(notSold))
+        val vm = editVm()
+        backgroundScope.launch(UnconfinedTestDispatcher()) { vm.uiState.collect {} }
+        assertTrue(vm.uiState.value.goodsAvailable)
+
+        vm.onDeviceClick(5, 50)
+        vm.onOpenPicker()
+        vm.onPickerGoods(true)
+        assertEquals(listOf("CF283A", "CE285A"), vm.uiState.value.pickerGoods.map { it.name })
+        assertEquals(setOf(3L), vm.uiState.value.fittingGoods)
+
+        vm.onPickGoods(fitting)
+        val line = vm.uiState.value.form.draft.lines.single()
+        assertEquals(3L, line.itemId)
+        assertEquals(Money.ofDram(12_000), line.price)
+        assertEquals(Money.ofDram(7_000), line.cost)
     }
 }

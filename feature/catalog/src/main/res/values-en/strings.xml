@@ -90,6 +90,23 @@
     <string name="feature_catalog_open_part">Open %1$s</string>
     <string name="feature_catalog_has_photos">Has photos</string>
     <string name="feature_catalog_has_photos_help">Photos can be added to it on a client.</string>
+    <string name="feature_catalog_section_sale">SELLING</string>
+    <string name="feature_catalog_sale_help">With a price it is offered as goods when work is written down.</string>
+    <string name="feature_catalog_price">Price, ֏</string>
+    <string name="feature_catalog_cost">Cost, ֏</string>
+    <string name="feature_catalog_profit">Profit %1$s</string>
+    <string name="feature_catalog_barcode">Barcode</string>
+    <string name="feature_catalog_barcode_hint">Scan or type it</string>
+    <string name="feature_catalog_barcode_taken">This barcode is already on %1$s</string>
+    <string name="feature_catalog_scan">Scan the barcode</string>
+    <string name="feature_catalog_scan_unavailable">This phone can\'t scan (Google Play services missing). Type the code.</string>
+    <string name="feature_catalog_section_photos">PHOTOS</string>
+    <string name="feature_catalog_photos_save_first">Save first, then add photos.</string>
+    <string name="feature_catalog_photo_add">Add photo</string>
+    <string name="feature_catalog_photo_camera">Camera</string>
+    <string name="feature_catalog_photo_gallery">Gallery</string>
+    <string name="feature_catalog_photo_delete">Delete photo</string>
+    <string name="feature_catalog_photo_close">Close</string>
     <!-- Templates (made by the template table) -->
     <string name="feature_catalog_tpl_printers">Printer service</string>
     <string name="feature_catalog_tpl_clothes">Clothes shop</string>

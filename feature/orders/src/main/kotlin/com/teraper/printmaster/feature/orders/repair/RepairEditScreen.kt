@@ -91,6 +91,8 @@ internal fun RepairEditRoute(onClose: () -> Unit, viewModel: RepairEditViewModel
             onPickerGroupClick = viewModel::onPickerGroupClick,
             onPickerQueryChange = viewModel::onPickerQueryChange,
             onPickItem = viewModel::onPickItem,
+            onPickGoods = viewModel::onPickGoods,
+            onPickerGoods = viewModel::onPickerGoods,
             onClosePicker = viewModel::onClosePicker,
             onAddCustomClick = viewModel::onAddCustomClick,
             onAddCustomLine = viewModel::onAddCustomLine,
@@ -114,6 +116,8 @@ internal data class RepairEditActions(
     val onPickerGroupClick: (Long?) -> Unit = {},
     val onPickerQueryChange: (String) -> Unit = {},
     val onPickItem: (PriceItem) -> Unit = {},
+    val onPickGoods: (CatalogItem) -> Unit = {},
+    val onPickerGoods: (Boolean) -> Unit = {},
     val onClosePicker: () -> Unit = {},
     val onAddCustomClick: () -> Unit = {},
     val onAddCustomLine: (String, String, String) -> Unit = { _, _, _ -> },
@@ -233,6 +237,12 @@ internal fun RepairEditScreen(state: RepairEditUiState, actions: RepairEditActio
             onPick = actions.onPickItem,
             onAddCustom = actions.onAddCustomClick,
             onDismiss = actions.onClosePicker,
+            goodsAvailable = state.goodsAvailable,
+            goods = state.pickerGoods,
+            fittingGoods = state.fittingGoods,
+            goodsQuantities = draft.goodsQuantities(),
+            onGoodsMode = actions.onPickerGoods,
+            onPickGoods = actions.onPickGoods,
         )
     }
 

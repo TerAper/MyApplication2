@@ -40,8 +40,8 @@ import com.teraper.printmaster.core.model.ItemField
 import com.teraper.printmaster.core.model.ItemType
 import com.teraper.printmaster.core.model.SerialMatch
 import com.teraper.printmaster.feature.clients.R
-import com.teraper.printmaster.feature.clients.common.ScanOutcome
-import com.teraper.printmaster.feature.clients.common.rememberSerialScanner
+import com.teraper.printmaster.core.designsystem.component.ScanOutcome
+import com.teraper.printmaster.core.designsystem.component.rememberCodeScanner
 import java.time.LocalDate
 
 @Composable
@@ -53,7 +53,7 @@ internal fun SerialSearchRoute(
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val query by viewModel.query.collectAsStateWithLifecycle()
-    val scan = rememberSerialScanner { outcome ->
+    val scan = rememberCodeScanner { outcome ->
         when (outcome) {
             is ScanOutcome.Read -> viewModel.onScanned(outcome.text)
             ScanOutcome.Unavailable -> viewModel.onScanUnavailable()

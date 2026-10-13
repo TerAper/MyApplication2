@@ -82,7 +82,8 @@ data class ItemRef(val id: Long, val typeId: Long, val typeName: String, val tit
 
 /**
  * A real model in the catalog. [values] by field id. [fitsInto] are items of the parent type it
- * goes into; [parts] are items of child types that go into it.
+ * goes into; [parts] are items of child types that go into it. [price] is what a client pays for
+ * it and [cost] what it costs you, for selling it as goods; zero = not sold.
  */
 data class CatalogItem(
     val id: Long,
@@ -91,7 +92,14 @@ data class CatalogItem(
     val values: Map<Long, String> = emptyMap(),
     val fitsInto: List<ItemRef> = emptyList(),
     val parts: List<ItemRef> = emptyList(),
+    /** As printed under the bars; empty = none. */
+    val barcode: String = "",
+    val price: Money = Money.ZERO,
+    val cost: Money = Money.ZERO,
 ) {
+    /** Has a price: offered as goods when work is written down. */
+    val isGoods: Boolean get() = price.isPositive
+
     val typeId: Long get() = type.id
 
     /** Title fields, then the name: "HP LaserJet M125". */
@@ -258,7 +266,7 @@ object CatalogSearch {
         val names = listOf(item.title) + item.parts.map { it.title } + item.fitsInto.map { it.title }
         val text = (names + item.type.name + item.values.values).joinToString(" ") { ClientSearch.normalizeText(it) }
         // Codes without spaces too, so "cf283" finds "CF 283A".
-        val codes = names.joinToString(" ") { CatalogNames.codeKey(it) } + " " + CatalogNames.codeKey(item.name)
+        val codes = names.joinToString(" ") { CatalogNames.codeKey(it) } + " " + CatalogNames.codeKey(item.name) + " " + CatalogNames.codeKey(item.barcode)
         return words.all { it in text || CatalogNames.codeKey(it) in codes }
     }
 }

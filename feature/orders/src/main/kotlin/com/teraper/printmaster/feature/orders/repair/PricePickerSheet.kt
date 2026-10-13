@@ -28,6 +28,11 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.teraper.printmaster.core.designsystem.component.AmountText
+import com.teraper.printmaster.core.designsystem.component.TagTone
+import com.teraper.printmaster.core.designsystem.component.PmTag
+import com.teraper.printmaster.core.designsystem.component.PmSegmentedButtons
+import com.teraper.printmaster.core.model.Money
+import com.teraper.printmaster.core.model.CatalogItem
 import com.teraper.printmaster.core.designsystem.component.PmFilterChip
 import com.teraper.printmaster.core.designsystem.component.PmSearchField
 import com.teraper.printmaster.core.designsystem.icon.PmIcons
@@ -54,6 +59,12 @@ internal fun PricePickerSheet(
     onPick: (PriceItem) -> Unit,
     onAddCustom: () -> Unit,
     onDismiss: () -> Unit,
+    goodsAvailable: Boolean = false,
+    goods: List<CatalogItem> = emptyList(),
+    fittingGoods: Set<Long> = emptySet(),
+    goodsQuantities: Map<Long, Int> = emptyMap(),
+    onGoodsMode: (Boolean) -> Unit = {},
+    onPickGoods: (CatalogItem) -> Unit = {},
 ) {
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -65,7 +76,23 @@ internal fun PricePickerSheet(
                 Text(stringResource(R.string.feature_orders_repair_price_list), Modifier.weight(1f), style = MaterialTheme.typography.titleLarge)
                 TextButton(onClick = onDismiss) { Text(stringResource(R.string.feature_orders_repair_done)) }
             }
-            if (!priceListIsEmpty) {
+            if (goodsAvailable) {
+                // Services from the price list, or goods (catalog items with a price).
+                PmSegmentedButtons(
+                    options = listOf(false, true),
+                    selected = picker.goods,
+                    onSelect = onGoodsMode,
+                    label = { stringResource(if (it) R.string.feature_orders_repair_goods else R.string.feature_orders_repair_services) },
+                )
+            }
+            if (picker.goods) {
+                PmSearchField(
+                    query = picker.query,
+                    onQueryChange = onQueryChange,
+                    placeholder = stringResource(R.string.feature_orders_repair_search_hint),
+                    clearLabel = stringResource(R.string.feature_orders_repair_clear_search),
+                )
+            } else if (!priceListIsEmpty) {
                 PmSearchField(
                     query = picker.query,
                     onQueryChange = onQueryChange,
@@ -91,6 +118,22 @@ internal fun PricePickerSheet(
                 }
             }
         }
+        if (picker.goods) {
+            LazyColumn(Modifier.padding(top = 8.dp)) {
+                items(goods, key = { it.id }) { item ->
+                    PickRow(
+                        name = item.title,
+                        details = listOf(item.type.name, item.details).filter { it.isNotBlank() }.joinToString(" · "),
+                        price = item.price,
+                        quantity = goodsQuantities[item.id] ?: 0,
+                        fits = item.id in fittingGoods,
+                        onClick = { onPickGoods(item) },
+                    )
+                    HorizontalDivider(color = PmTheme.colors.surfaceMuted)
+                }
+            }
+            return@ModalBottomSheet
+        }
         LazyColumn(Modifier.padding(top = 8.dp)) {
             if (priceListIsEmpty) {
                 item {
@@ -103,7 +146,7 @@ internal fun PricePickerSheet(
                 }
             }
             items(items, key = { it.id }) { item ->
-                PickRow(item, quantities[item.id] ?: 0, onClick = { onPick(item) })
+                PickRow(item.name, item.description, item.price, quantities[item.id] ?: 0, fits = false, onClick = { onPick(item) })
                 HorizontalDivider(color = PmTheme.colors.surfaceMuted)
             }
             item {
@@ -125,19 +168,20 @@ internal fun PricePickerSheet(
 }
 
 @Composable
-private fun PickRow(item: PriceItem, quantity: Int, onClick: () -> Unit) {
+private fun PickRow(name: String, details: String, price: Money, quantity: Int, fits: Boolean, onClick: () -> Unit) {
     Row(
         Modifier.fillMaxWidth().clickable(onClick = onClick).padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Column(Modifier.weight(1f)) {
-            Text(item.name, style = MaterialTheme.typography.titleSmall, maxLines = 2, overflow = TextOverflow.Ellipsis)
-            if (item.description.isNotBlank()) {
-                Text(item.description, style = MaterialTheme.typography.bodySmall, color = PmTheme.colors.inkMuted, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            Text(name, style = MaterialTheme.typography.titleSmall, maxLines = 2, overflow = TextOverflow.Ellipsis)
+            if (details.isNotBlank()) {
+                Text(details, style = MaterialTheme.typography.bodySmall, color = PmTheme.colors.inkMuted, maxLines = 1, overflow = TextOverflow.Ellipsis)
             }
+            if (fits) PmTag(stringResource(R.string.feature_orders_repair_fits), TagTone.Paid)
         }
-        AmountText(item.price, style = MaterialTheme.typography.titleSmall)
+        AmountText(price, style = MaterialTheme.typography.titleSmall)
         // How many are already added; a plus when none.
         Box(
             Modifier.size(32.dp).background(

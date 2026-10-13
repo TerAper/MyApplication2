@@ -67,12 +67,20 @@ data class ItemFieldEntity(
             onDelete = ForeignKey.RESTRICT,
         ),
     ],
-    indices = [Index(value = ["type_id"])],
+    indices = [Index(value = ["type_id"]), Index(value = ["barcode_key"])],
 )
 data class ItemEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     @ColumnInfo(name = "type_id") val typeId: Long,
     val name: String,
+    /** As printed under the bars; null = none. */
+    val barcode: String? = null,
+    /** [barcode] for finding: letters and digits only, upper case. */
+    @ColumnInfo(name = "barcode_key") val barcodeKey: String? = null,
+    /** What a client pays for it as goods; 0 = not sold. */
+    @ColumnInfo(name = "price_minor", defaultValue = "0") val priceMinor: Long = 0,
+    /** What it costs you. */
+    @ColumnInfo(name = "cost_minor", defaultValue = "0") val costMinor: Long = 0,
 )
 
 /** The value of one field of one item. */

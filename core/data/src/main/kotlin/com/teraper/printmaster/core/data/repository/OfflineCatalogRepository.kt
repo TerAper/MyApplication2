@@ -130,11 +130,25 @@ internal class OfflineCatalogRepository @Inject constructor(
             if (snapshot.find(type.id, writer.title(type, clean.name, values), excludeId = clean.id) != null) {
                 return@withTransaction SaveItemResult.NameTaken
             }
+            // One barcode is one product: scanning it must find a single item.
+            val barcodeKey = SerialNumbers.key(clean.barcode).ifEmpty { null }
+            snapshot.items.values.firstOrNull { it.id != clean.id && barcodeKey != null && SerialNumbers.key(it.barcode) == barcodeKey }?.let {
+                return@withTransaction SaveItemResult.BarcodeTaken(it.title)
+            }
+            val row = ItemEntity(
+                id = clean.id,
+                typeId = type.id,
+                name = clean.name,
+                barcode = clean.barcode.ifEmpty { null },
+                barcodeKey = barcodeKey,
+                priceMinor = clean.price.minor,
+                costMinor = clean.cost.minor,
+            )
             val itemId = if (clean.isNew) {
-                dao.insertItem(ItemEntity(typeId = type.id, name = clean.name))
+                dao.insertItem(row)
             } else {
                 dao.getItem(clean.id) ?: return@withTransaction SaveItemResult.Invalid(errors)
-                dao.updateItem(ItemEntity(id = clean.id, typeId = type.id, name = clean.name))
+                dao.updateItem(row)
                 clean.id
             }
             writer.setValues(itemId, values)
@@ -143,6 +157,11 @@ internal class OfflineCatalogRepository @Inject constructor(
             writer.linkParts(itemId, clean.parts.filter { link -> snapshot.types[link.typeId]?.parentId == type.id }, exact = true)
             SaveItemResult.Saved(itemId)
         }
+    }
+
+    override suspend fun findByBarcode(code: String): CatalogItem? {
+        val key = SerialNumbers.key(code).ifEmpty { return null }
+        return writer.snapshot().items.values.firstOrNull { SerialNumbers.key(it.barcode) == key }
     }
 
     override suspend fun deleteItem(id: Long): DeleteResult = db.withTransaction {

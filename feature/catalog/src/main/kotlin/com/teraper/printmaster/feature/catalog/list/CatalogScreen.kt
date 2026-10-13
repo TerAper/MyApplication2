@@ -31,6 +31,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.teraper.printmaster.core.designsystem.component.AmountText
+import com.teraper.printmaster.core.designsystem.component.LocalShowMoney
 import com.teraper.printmaster.core.designsystem.component.PmEmptyState
 import com.teraper.printmaster.core.designsystem.component.PmFilterChip
 import com.teraper.printmaster.core.designsystem.component.PmPrimaryButton
@@ -205,6 +207,7 @@ private fun ItemRow(entry: CatalogEntry, onClick: () -> Unit) {
                 Text(links, style = MaterialTheme.typography.bodyMedium, color = PmTheme.colors.ink, maxLines = 2, overflow = TextOverflow.Ellipsis)
             }
         }
+        if (item.isGoods && LocalShowMoney.current) AmountText(item.price, style = MaterialTheme.typography.bodyMedium)
         Icon(PmIcons.Chevron, contentDescription = null, tint = PmTheme.colors.outlineStrong)
     }
 }

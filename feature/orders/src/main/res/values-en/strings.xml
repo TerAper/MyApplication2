@@ -133,4 +133,7 @@
     <string name="feature_orders_given_label">Give it to the master as his order</string>
     <string name="feature_orders_given_hint">On: his price and money, here only history. Off: he works for you and you charge the client.</string>
     <string name="feature_orders_repair_general">General</string>
+    <string name="feature_orders_repair_services">Services</string>
+    <string name="feature_orders_repair_goods">Goods</string>
+    <string name="feature_orders_repair_fits">Fits</string>
 </resources>

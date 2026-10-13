@@ -25,6 +25,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.text.input.KeyboardType
+import com.teraper.printmaster.core.designsystem.component.LocalShowMoney
+import com.teraper.printmaster.core.designsystem.component.PhotoStripLabels
+import com.teraper.printmaster.core.designsystem.component.PmPhotoStrip
+import com.teraper.printmaster.core.designsystem.component.ScanOutcome
+import com.teraper.printmaster.core.designsystem.component.format
+import com.teraper.printmaster.core.designsystem.component.rememberCodeScanner
+import com.teraper.printmaster.core.model.Photo
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -67,6 +75,13 @@ internal fun ItemEditRoute(
         }
     }
     BackHandler(onBack = viewModel::onCloseRequest)
+    val scanBarcode = rememberCodeScanner { outcome ->
+        when (outcome) {
+            is ScanOutcome.Read -> viewModel.onBarcodeScanned(outcome.text)
+            ScanOutcome.Unavailable -> viewModel.onScanUnavailable()
+            ScanOutcome.Closed -> Unit
+        }
+    }
     ItemEditScreen(
         state = state,
         actions = ItemEditActions(
@@ -75,6 +90,12 @@ internal fun ItemEditRoute(
             onTypeChange = viewModel::onTypeChange,
             onNameChange = viewModel::onNameChange,
             onValueChange = viewModel::onValueChange,
+            onPriceChange = viewModel::onPriceChange,
+            onCostChange = viewModel::onCostChange,
+            onBarcodeChange = viewModel::onBarcodeChange,
+            onScanBarcode = scanBarcode,
+            onAddPhoto = viewModel::onAddPhoto,
+            onDeletePhoto = viewModel::onDeletePhoto,
             onLinkQueryChange = viewModel::onLinkQueryChange,
             onAddLink = viewModel::onAddLink,
             onRemoveLink = viewModel::onRemoveLink,
@@ -94,6 +115,12 @@ internal data class ItemEditActions(
     val onTypeChange: (Long) -> Unit = {},
     val onNameChange: (String) -> Unit = {},
     val onValueChange: (Long, String) -> Unit = { _, _ -> },
+    val onPriceChange: (String) -> Unit = {},
+    val onCostChange: (String) -> Unit = {},
+    val onBarcodeChange: (String) -> Unit = {},
+    val onScanBarcode: () -> Unit = {},
+    val onAddPhoto: (String) -> Unit = {},
+    val onDeletePhoto: (Photo) -> Unit = {},
     val onLinkQueryChange: (Long, String) -> Unit = { _, _ -> },
     val onAddLink: (LinkSection, ItemRef?) -> Unit = { _, _ -> },
     val onRemoveLink: (LinkSection, String) -> Unit = { _, _ -> },
@@ -170,6 +197,9 @@ internal fun ItemEditScreen(
             if (otherFields.isNotEmpty()) {
                 PmItemFields(otherFields, draft.values, actions.onValueChange, suggestions = state.suggestions)
             }
+
+            SaleSection(state, actions)
+            PhotosSection(state, actions)
 
             state.sections.forEach { section -> LinkSectionView(section, actions) }
 
@@ -268,6 +298,76 @@ private fun LinkSectionView(section: LinkSection, actions: ItemEditActions) {
         Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             section.candidates.forEach { ref -> PmFilterChip(text = ref.title, selected = false, onClick = { actions.onAddLink(section, ref) }) }
         }
+    }
+}
+
+/** Price and cost (goods offered when work is written down) and the barcode that finds it. */
+@Composable
+private fun SaleSection(state: ItemEditUiState, actions: ItemEditActions) {
+    val draft = state.form.draft
+    SectionTitle(stringResource(R.string.feature_catalog_section_sale))
+    if (LocalShowMoney.current) {
+        Text(stringResource(R.string.feature_catalog_sale_help), style = MaterialTheme.typography.bodySmall, color = PmTheme.colors.inkMuted)
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            PmTextField(
+                value = draft.priceDigits,
+                onValueChange = actions.onPriceChange,
+                label = stringResource(R.string.feature_catalog_price),
+                keyboardType = KeyboardType.Number,
+                modifier = Modifier.weight(1f),
+            )
+            PmTextField(
+                value = draft.costDigits,
+                onValueChange = actions.onCostChange,
+                label = stringResource(R.string.feature_catalog_cost),
+                keyboardType = KeyboardType.Number,
+                modifier = Modifier.weight(1f),
+            )
+        }
+        if (draft.price.isPositive) {
+            Text(
+                stringResource(R.string.feature_catalog_profit, (draft.price - draft.cost).format()),
+                style = MaterialTheme.typography.bodySmall,
+                color = if ((draft.price - draft.cost).isNegative) PmTheme.colors.error else PmTheme.colors.paid,
+            )
+        }
+    }
+    PmTextField(
+        value = draft.barcode,
+        onValueChange = actions.onBarcodeChange,
+        label = stringResource(R.string.feature_catalog_barcode),
+        placeholder = stringResource(R.string.feature_catalog_barcode_hint),
+        error = state.form.barcodeTakenBy?.let { stringResource(R.string.feature_catalog_barcode_taken, it) },
+        capitalization = KeyboardCapitalization.Characters,
+        trailingIcon = {
+            IconButton(onClick = actions.onScanBarcode) {
+                Icon(PmIcons.Scan, contentDescription = stringResource(R.string.feature_catalog_scan), tint = PmTheme.colors.primary)
+            }
+        },
+    )
+    if (state.form.scanUnavailable) {
+        Text(stringResource(R.string.feature_catalog_scan_unavailable), style = MaterialTheme.typography.bodySmall, color = PmTheme.colors.error)
+    }
+}
+
+@Composable
+private fun PhotosSection(state: ItemEditUiState, actions: ItemEditActions) {
+    SectionTitle(stringResource(R.string.feature_catalog_section_photos))
+    if (state.isNew) {
+        Text(stringResource(R.string.feature_catalog_photos_save_first), style = MaterialTheme.typography.bodySmall, color = PmTheme.colors.inkMuted)
+    } else {
+        PmPhotoStrip(
+            photos = state.photos,
+            labels = PhotoStripLabels(
+                add = stringResource(R.string.feature_catalog_photo_add),
+                camera = stringResource(R.string.feature_catalog_photo_camera),
+                gallery = stringResource(R.string.feature_catalog_photo_gallery),
+                delete = stringResource(R.string.feature_catalog_photo_delete),
+                close = stringResource(R.string.feature_catalog_photo_close),
+            ),
+            onAdd = actions.onAddPhoto,
+            onDelete = actions.onDeletePhoto,
+        )
     }
 }
 

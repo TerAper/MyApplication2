@@ -150,4 +150,28 @@ class ItemsTest {
         assertFalse(StockMatch.fits(exact, stock(7)))
         assertEquals("Size 30 · Boy", wanted.title)
     }
+
+    @Test
+    fun goodsHaveAPriceAndAreFoundByBarcode() {
+        val draft = ItemDraft(typeId = 2, name = "CF283A").withPrice("12 000 ֏").withCost("007000")
+        assertEquals(Money.ofDram(12_000), draft.price)
+        assertEquals(Money.ofDram(7_000), draft.cost)
+        val item = CatalogItem(5, cartridge, "CF283A", barcode = "4 006381 333931", price = draft.price, cost = draft.cost)
+        assertTrue(item.isGoods)
+        assertFalse(item.copy(price = Money.ZERO).isGoods)
+        assertTrue(CatalogSearch.matches(item, "4006381333931"))
+        assertEquals("12000", ItemDraft.from(item).priceDigits)
+    }
+
+    @Test
+    fun theSameGoodsTwiceCountsTwiceAndKeepsItsCatalogItem() {
+        val toner = CatalogItem(9, cartridge, "Toner 85A", price = Money.ofDram(3_000), cost = Money.ofDram(1_000))
+        val draft = RepairDraft(orderId = 1).plus(toner).plus(toner)
+        assertEquals(1, draft.lines.size)
+        assertEquals(2, draft.lines.single().quantity)
+        assertEquals(9L, draft.lines.single().itemId)
+        assertEquals(Money.ofDram(6_000), draft.total)
+        assertEquals(Money.ofDram(4_000), draft.profit)
+        assertEquals(mapOf(9L to 2), draft.goodsQuantities())
+    }
 }

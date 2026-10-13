@@ -141,4 +141,20 @@ class OfflineRepairsRepositoryTest {
         assertEquals(FinishOrderResult.NO_WORK, repairs.finishOrder(orderId, paidInCash = false))
         assertEquals(FinishOrderResult.NOT_FOUND, repairs.finishOrder(999, paidInCash = false))
     }
+
+    @Test
+    fun goodsLinesKeepTheirCatalogItem() = runTest {
+        val cartridgeType = repos.printerTypes().second
+        val goodsId = (
+            repos.catalog.saveItem(
+                com.teraper.printmaster.core.model.ItemDraft(typeId = cartridgeType, name = "Toner 85A").withPrice("3000").withCost("1000"),
+            ) as com.teraper.printmaster.core.data.repository.SaveItemResult.Saved
+            ).itemId
+        val goods = repos.catalog.observeItem(goodsId).first()!!
+        val id = (addWork(RepairDraft(orderId = orderId).plus(goods).plus(goods)) as SaveRepairResult.Saved).repairId
+        val line = repairs.observeRepair(id).first()!!.lines.single()
+        assertEquals(goodsId, line.itemId)
+        assertEquals(2, line.quantity)
+        assertEquals(1_000L, line.cost.dram)
+    }
 }

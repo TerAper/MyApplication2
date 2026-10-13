@@ -33,6 +33,7 @@ import com.teraper.printmaster.core.designsystem.component.AmountText
 import com.teraper.printmaster.core.designsystem.component.PmEmptyState
 import com.teraper.printmaster.core.designsystem.component.PmFilterChip
 import com.teraper.printmaster.core.designsystem.component.PmSearchField
+import com.teraper.printmaster.core.designsystem.component.PmSegmentedButtons
 import com.teraper.printmaster.core.designsystem.component.PmTopBar
 import com.teraper.printmaster.core.designsystem.component.format
 import com.teraper.printmaster.core.designsystem.icon.PmIcons
@@ -47,6 +48,8 @@ internal fun PriceListRoute(
     onBack: () -> Unit,
     onItemClick: (Long) -> Unit,
     onAddItem: (typeId: Long) -> Unit,
+    onOpenGoods: (Long) -> Unit,
+    onAddGoods: () -> Unit,
     viewModel: PriceListViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -57,6 +60,9 @@ internal fun PriceListRoute(
         onBack = onBack,
         onItemClick = onItemClick,
         onAddItem = onAddItem,
+        onShowGoods = viewModel::onShowGoods,
+        onOpenGoods = onOpenGoods,
+        onAddGoods = onAddGoods,
     )
 }
 
@@ -69,6 +75,9 @@ internal fun PriceListScreen(
     onItemClick: (Long) -> Unit,
     onAddItem: (typeId: Long) -> Unit,
     modifier: Modifier = Modifier,
+    onShowGoods: (Boolean) -> Unit = {},
+    onOpenGoods: (Long) -> Unit = {},
+    onAddGoods: () -> Unit = {},
 ) {
     Box(modifier.fillMaxSize().background(PmTheme.colors.background)) {
         Column(Modifier.fillMaxSize()) {
@@ -77,7 +86,17 @@ internal fun PriceListScreen(
                 navigationLabel = stringResource(R.string.feature_pricelist_back),
                 onNavigate = onBack,
             )
-            if (state.totalCount > 0) {
+            // Services are priced here; goods are catalog items with a price.
+            PmSegmentedButtons(
+                options = listOf(false, true),
+                selected = state.showGoods,
+                onSelect = onShowGoods,
+                label = { stringResource(if (it) R.string.feature_pricelist_goods else R.string.feature_pricelist_services) },
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+            )
+            if (state.showGoods) {
+                GoodsList(state, onQueryChange, onOpenGoods)
+            } else if (state.totalCount > 0) {
                 PmSearchField(
                     query = state.query,
                     onQueryChange = onQueryChange,
@@ -100,7 +119,7 @@ internal fun PriceListScreen(
                     }
                 }
             }
-            when {
+            if (!state.showGoods) when {
                 state.isLoading -> Unit
                 state.totalCount == 0 -> PmEmptyState(
                     icon = PmIcons.PriceList,
@@ -132,13 +151,58 @@ internal fun PriceListScreen(
         }
 
         ExtendedFloatingActionButton(
-            onClick = { onAddItem(state.group ?: PriceListUiState.GENERAL) },
+            onClick = { if (state.showGoods) onAddGoods() else onAddItem(state.group ?: PriceListUiState.GENERAL) },
             modifier = Modifier.align(Alignment.BottomEnd).padding(16.dp),
             containerColor = PmTheme.colors.primary,
             contentColor = PmTheme.colors.onPrimary,
             icon = { Icon(PmIcons.Add, contentDescription = null) },
             text = { Text(stringResource(R.string.feature_pricelist_add)) },
         )
+    }
+}
+
+/** Catalog items with a price; tapping one opens it in the catalog, where its price is set. */
+@Composable
+private fun GoodsList(state: PriceListUiState, onQueryChange: (String) -> Unit, onOpenGoods: (Long) -> Unit) {
+    if (state.goodsCount == 0) {
+        PmEmptyState(
+            icon = PmIcons.Catalog,
+            title = stringResource(R.string.feature_pricelist_goods_empty_title),
+            message = stringResource(R.string.feature_pricelist_goods_empty_message),
+        )
+        return
+    }
+    PmSearchField(
+        query = state.query,
+        onQueryChange = onQueryChange,
+        placeholder = stringResource(R.string.feature_pricelist_search_hint),
+        clearLabel = stringResource(R.string.feature_pricelist_clear_search),
+        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+    )
+    LazyColumn(contentPadding = PaddingValues(bottom = 96.dp)) {
+        items(state.goods, key = { it.id }) { item ->
+            Row(
+                Modifier.fillMaxWidth().background(PmTheme.colors.surface).clickable { onOpenGoods(item.id) }.padding(horizontal = 16.dp, vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                Column(Modifier.weight(1f)) {
+                    Text(item.title, style = MaterialTheme.typography.titleSmall, maxLines = 2, overflow = TextOverflow.Ellipsis)
+                    Text(
+                        listOf(item.type.name, item.details).filter { it.isNotBlank() }.joinToString(" · "),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = PmTheme.colors.inkMuted,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                }
+                Column(horizontalAlignment = Alignment.End) {
+                    AmountText(item.price, style = MaterialTheme.typography.titleSmall)
+                    if (!item.cost.isZero) ProfitText(item.price - item.cost)
+                }
+            }
+            HorizontalDivider(color = PmTheme.colors.surfaceMuted)
+        }
     }
 }
 

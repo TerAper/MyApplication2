@@ -6,7 +6,7 @@
     <string name="feature_pricelist_clear_search">Մաքրել</string>
     <string name="feature_pricelist_all">Բոլորը %1$d</string>
     <string name="feature_pricelist_empty_title">Գնացուցակը դատարկ է</string>
-    <string name="feature_pricelist_empty_message">Ավելացրեք ծառայություններն ու պահեստամասերը՝ գնով և ինքնարժեքով։ Այցի ժամանակ դրանք կընտրեք այստեղից։</string>
+    <string name="feature_pricelist_empty_message">Ավելացրեք ձեր ծառայությունները (աշխատանքը)՝ գնով և ինքնարժեքով։ Ապրանքները գին են ստանում կատալոգում։</string>
     <string name="feature_pricelist_no_results">Ոչինչ չի գտնվել</string>
     <string name="feature_pricelist_add">Ավելացնել</string>
     <string name="feature_pricelist_new_item">Նոր կետ</string>
@@ -34,4 +34,8 @@
     <string name="feature_pricelist_delete_message">Արդեն կատարված աշխատանքներում այն կմնա նույն անունով և գնով։</string>
     <string name="feature_pricelist_general">Ընդհանուր</string>
     <string name="feature_pricelist_for_type">Ինչի համար</string>
+    <string name="feature_pricelist_services">Ծառայություններ</string>
+    <string name="feature_pricelist_goods">Ապրանքներ</string>
+    <string name="feature_pricelist_goods_empty_title">Ապրանքներ դեռ չկան</string>
+    <string name="feature_pricelist_goods_empty_message">Կատալոգում ապրանքին գին նշեք, և այն կհայտնվի այստեղ ու աշխատանք գրանցելիս։</string>
 </resources>

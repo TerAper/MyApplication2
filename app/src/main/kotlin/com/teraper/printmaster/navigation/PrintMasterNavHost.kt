@@ -115,7 +115,11 @@ fun PrintMasterNavHost(navController: NavHostController, modifier: Modifier = Mo
                 },
             ),
         ) {
-            priceListScreens(navController)
+            priceListScreens(
+                navController,
+                onOpenCatalogItem = { navController.navigate(ItemEditDestination(itemId = it)) },
+                onNewCatalogItem = { navController.navigate(ItemEditDestination()) },
+            )
             catalogScreens(navController, onOpenClient = navController::openClientFromOtherTab)
             accountScreens(navController)
             settingsScreens(navController)

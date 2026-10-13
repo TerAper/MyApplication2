@@ -116,6 +116,8 @@ import com.teraper.printmaster.core.database.entity.SyncStateEntity
         // 15: one-of-a-kind client items and parts described by values (ClientProfilesMigration, by hand).
         // 16: a type can have no photos.
         AutoMigration(from = 15, to = 16),
+        // 17: catalog items' barcode, price and cost; goods on work lines.
+        AutoMigration(from = 16, to = 17),
     ],
 )
 abstract class PrintMasterDatabase : RoomDatabase() {
@@ -134,7 +136,7 @@ abstract class PrintMasterDatabase : RoomDatabase() {
     abstract fun expenseDao(): ExpenseDao
 
     companion object {
-        const val VERSION = 16
+        const val VERSION = 17
 
         /** Oldest version a backup file may have; older ones only existed on development phones. */
         const val OLDEST_RESTORABLE_VERSION = 2

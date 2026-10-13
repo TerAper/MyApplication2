@@ -325,4 +325,19 @@ class OfflineCatalogRepositoryTest {
         items.saveClientItem(ClientItemDraft.from(items.getClientItem(id)!!).copy(serialNumber = " "))
         assertTrue(items.findBySerial("CNB8K12345").isEmpty())
     }
+
+    @Test
+    fun goodsKeepPriceCostAndAUniqueBarcode() = runTest {
+        val id = (catalog.saveItem(ItemDraft(typeId = cartridge, name = "CF283A", barcode = " 4006381333931 ").withPrice("12000").withCost("7000")) as SaveItemResult.Saved).itemId
+        val item = catalog.observeItem(id).first()!!
+        assertEquals("4006381333931", item.barcode)
+        assertEquals(12_000L, item.price.dram)
+        assertEquals(7_000L, item.cost.dram)
+        assertEquals(id, catalog.findByBarcode("4 006381-333931")?.id)
+        assertEquals(null, catalog.findByBarcode("123"))
+        assertEquals(
+            SaveItemResult.BarcodeTaken("CF283A"),
+            catalog.saveItem(ItemDraft(typeId = cartridge, name = "CE285A", barcode = "4006381333931")),
+        )
+    }
 }

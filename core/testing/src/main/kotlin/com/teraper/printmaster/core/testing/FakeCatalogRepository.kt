@@ -69,4 +69,7 @@ class FakeCatalogRepository(types: List<ItemType> = emptyList(), items: List<Cat
         if (deleteResult == DeleteResult.DELETED) deletedItems += id
         return deleteResult
     }
+
+    override suspend fun findByBarcode(code: String): CatalogItem? =
+        entries.value.map { it.item }.firstOrNull { it.barcode.isNotEmpty() && it.barcode.equals(code.trim(), ignoreCase = true) }
 }

@@ -1,8 +1,9 @@
 package com.teraper.printmaster.core.model
 
 /**
- * One line of work or parts in a repair. Name, price and cost are copied from the price
- * list ([partId]) when added, so later price changes don't rewrite finished jobs.
+ * One line of work or goods in a repair. Name, price and cost are copied from the price list
+ * ([partId], a service) or the catalog ([itemId], goods) when added, so later price changes don't
+ * rewrite finished jobs.
  */
 data class RepairLine(
     val partId: Long?,
@@ -10,6 +11,7 @@ data class RepairLine(
     val price: Money,
     val cost: Money = Money.ZERO,
     val quantity: Int = 1,
+    val itemId: Long? = null,
 ) {
     val total: Money get() = price * quantity
     val costTotal: Money get() = cost * quantity
@@ -83,6 +85,16 @@ data class RepairDraft(
         }
     }
 
+    /** Goods from the catalog: the same item again counts twice. */
+    fun plus(goods: CatalogItem): RepairDraft {
+        val index = lines.indexOfFirst { it.itemId == goods.id }
+        return if (index >= 0) {
+            withQuantity(index, lines[index].quantity + 1)
+        } else {
+            copy(lines = lines + RepairLine(partId = null, name = goods.title, price = goods.price, cost = goods.cost, itemId = goods.id))
+        }
+    }
+
     fun plus(line: RepairLine) = copy(lines = lines + line)
 
     /** Zero or less removes the line. */
@@ -100,6 +112,9 @@ data class RepairDraft(
 
     /** How many of each price-list item is already added, to show on the picker. */
     fun quantities(): Map<Long, Int> = lines.filter { it.partId != null }.associate { it.partId!! to it.quantity }
+
+    /** How many of each catalog item (goods) is already added. */
+    fun goodsQuantities(): Map<Long, Int> = lines.filter { it.itemId != null }.associate { it.itemId!! to it.quantity }
 
     companion object {
         const val MAX_QUANTITY = 999

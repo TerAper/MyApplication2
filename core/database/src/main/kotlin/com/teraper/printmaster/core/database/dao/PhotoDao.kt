@@ -32,7 +32,8 @@ interface PhotoDao {
           (owner_type = 'CLIENT_ITEM' AND owner_id NOT IN (SELECT id FROM client_items)) OR
           (owner_type = 'CLIENT_ITEM_PART' AND owner_id NOT IN (SELECT id FROM client_item_parts)) OR
           (owner_type = 'ORDER' AND owner_id NOT IN (SELECT id FROM orders)) OR
-          (owner_type = 'EXPENSE' AND owner_id NOT IN (SELECT id FROM expenses))
+          (owner_type = 'EXPENSE' AND owner_id NOT IN (SELECT id FROM expenses)) OR
+          (owner_type = 'CATALOG_ITEM' AND owner_id NOT IN (SELECT id FROM items))
         """,
     )
     suspend fun getOrphans(): List<PhotoEntity>

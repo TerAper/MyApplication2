@@ -5,6 +5,8 @@ import androidx.lifecycle.viewModelScope
 import com.teraper.printmaster.core.data.repository.PriceListRepository
 import com.teraper.printmaster.core.model.PriceItem
 import com.teraper.printmaster.core.model.PriceListSearch
+import com.teraper.printmaster.core.model.CatalogItem
+import com.teraper.printmaster.core.model.CatalogSearch
 import com.teraper.printmaster.core.model.ItemType
 import com.teraper.printmaster.core.data.repository.CatalogRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -28,6 +30,10 @@ data class PriceListUiState(
     val group: Long? = null,
     val query: String = "",
     val groups: List<PriceGroup> = emptyList(),
+    /** Goods side: catalog items with a price (matching the search). */
+    val showGoods: Boolean = false,
+    val goods: List<CatalogItem> = emptyList(),
+    val goodsCount: Int = 0,
 ) {
     companion object {
         const val GENERAL = 0L
@@ -42,7 +48,13 @@ class PriceListViewModel @Inject constructor(
 
     private val filter = MutableStateFlow(PriceListUiState())
 
-    val uiState: StateFlow<PriceListUiState> = combine(priceListRepository.observeItems(), catalogRepository.observeTypes(), filter) { items, types, filter ->
+    val uiState: StateFlow<PriceListUiState> = combine(
+        priceListRepository.observeItems(),
+        catalogRepository.observeTypes(),
+        filter,
+        catalogRepository.observeCatalog(),
+    ) { items, types, filter, catalog ->
+        val allGoods = catalog.map { it.item }.filter { it.isGoods }
         // Type order (parents, then their parts), general work last.
         val all = types.map { type -> PriceGroup(type, items.filter { it.typeId == type.id }) } +
             PriceGroup(null, items.filter { item -> types.none { it.id == item.typeId } })
@@ -54,10 +66,15 @@ class PriceListViewModel @Inject constructor(
             groups = all.filter(inGroup)
                 .map { group -> group.copy(items = group.items.filter { PriceListSearch.matches(it, filter.query) }) }
                 .filter { it.items.isNotEmpty() },
+            goodsCount = allGoods.size,
+            goods = allGoods.filter { CatalogSearch.matches(it, filter.query) },
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), PriceListUiState())
 
     fun onQueryChange(query: String) = filter.update { it.copy(query = query) }
+
+    /** Services (the price list) or goods (catalog items with a price). */
+    fun onShowGoods(show: Boolean) = filter.update { it.copy(showGoods = show) }
 
     /** Tapping the selected group again shows all. */
     fun onGroupClick(group: Long?) = filter.update { it.copy(group = if (it.group == group) null else group) }

@@ -10,6 +10,10 @@ import com.teraper.printmaster.core.data.repository.ClientItemsRepository
 import com.teraper.printmaster.core.data.repository.RepairsRepository
 import com.teraper.printmaster.core.data.repository.SaveRepairResult
 import com.teraper.printmaster.core.model.ClientItem
+import com.teraper.printmaster.core.model.StockMatch
+import com.teraper.printmaster.core.model.CatalogSearch
+import com.teraper.printmaster.core.model.CatalogItem
+import com.teraper.printmaster.core.model.CatalogEntry
 import com.teraper.printmaster.core.model.ItemType
 import com.teraper.printmaster.core.model.Money
 import com.teraper.printmaster.core.model.PriceItem
@@ -41,7 +45,7 @@ import javax.inject.Inject
  * The price-list sheet: open or not, and how it is filtered. [group] is an item type's id,
  * [PricePicker.GENERAL] for work not tied to a type, null = everything.
  */
-data class PricePicker(val group: Long? = null, val query: String = "") {
+data class PricePicker(val group: Long? = null, val query: String = "", val goods: Boolean = false) {
     companion object {
         const val GENERAL = 0L
     }
@@ -66,6 +70,12 @@ data class RepairEditUiState(
     /** The price list's groups: types that have prices, and whether some prices have no type. */
     val pickerTypes: List<ItemType> = emptyList(),
     val hasGeneralPrices: Boolean = false,
+    /** Catalog items with a price, for the Goods side of the sheet; those that fit the device first. */
+    val pickerGoods: List<CatalogItem> = emptyList(),
+    /** Of [pickerGoods], the ids that fit the chosen item or part. */
+    val fittingGoods: Set<Long> = emptySet(),
+    /** Goods can be sold on this order: an own company's, with priced catalog items. */
+    val goodsAvailable: Boolean = false,
     val priceListIsEmpty: Boolean = false,
 ) {
     val isNew: Boolean get() = form.draft.isNew
@@ -104,6 +114,8 @@ class RepairEditViewModel @Inject constructor(
     private val form = MutableStateFlow(RepairForm(draft = initialDraft))
     private val clientId = MutableStateFlow<Long?>(null)
     private val companyId = MutableStateFlow<Long?>(null)
+    /** Another owner's order is priced from their list only: no goods from this phone's catalog. */
+    private val ownOrder = MutableStateFlow(false)
 
     private val _events = Channel<RepairEditEvent>(Channel.BUFFERED)
     val events: Flow<RepairEditEvent> = _events.receiveAsFlow()
@@ -116,8 +128,11 @@ class RepairEditViewModel @Inject constructor(
         clientItems,
         // An attached company's order is priced from that company's list.
         companyId.filterNotNull().flatMapLatest { priceListRepository.observeItemsFor(it) },
-        catalogRepository.observeTypes(),
-    ) { form, clientItems, items, types ->
+        combine(catalogRepository.observeTypes(), catalogRepository.observeCatalog(), ownOrder, ::Catalog),
+    ) { form, clientItems, items, catalog ->
+        val types = catalog.types
+        val goods = if (catalog.own) catalog.entries.map { it.item }.filter { it.isGoods } else emptyList()
+        val fitting = fittingGoods(form.draft, clientItems.orEmpty(), goods)
         RepairEditUiState(
             form = form,
             items = clientItems.orEmpty(),
@@ -127,6 +142,11 @@ class RepairEditViewModel @Inject constructor(
             pickerTypes = types.filter { type -> items.any { it.typeId == type.id } },
             hasGeneralPrices = items.any { it.typeId == null },
             priceListIsEmpty = items.isEmpty(),
+            goodsAvailable = goods.isNotEmpty(),
+            fittingGoods = fitting,
+            pickerGoods = form.picker?.takeIf { it.goods }?.let { picker ->
+                goods.filter { CatalogSearch.matches(it, picker.query) }.sortedByDescending { it.id in fitting }
+            }.orEmpty(),
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), RepairEditUiState(form.value))
 
@@ -139,6 +159,7 @@ class RepairEditViewModel @Inject constructor(
             }
             clientId.value = order.clientId
             companyId.value = order.companyId
+            ownOrder.value = !order.fromAttachedCompany
             val owned = clientItems.filterNotNull().first()
             initialDraft = if (repairId != 0L) {
                 val repair = repairsRepository.observeRepair(repairId).first()
@@ -182,6 +203,11 @@ class RepairEditViewModel @Inject constructor(
     fun onPickerQueryChange(query: String) = form.update { it.copy(picker = it.picker?.copy(query = query)) }
 
     fun onPickItem(item: PriceItem) = editDraft { it.plus(item) }
+
+    fun onPickGoods(goods: CatalogItem) = editDraft { it.plus(goods) }
+
+    /** Services (price list) or goods (catalog items with a price). */
+    fun onPickerGoods(goods: Boolean) = form.update { it.copy(picker = it.picker?.copy(goods = goods)) }
 
     fun onClosePicker() = form.update { it.copy(picker = null) }
 
@@ -268,4 +294,22 @@ private fun PriceItem.inGroup(group: Long?): Boolean = when (group) {
     null -> true
     PricePicker.GENERAL -> typeId == null
     else -> typeId == group
+}
+
+private class Catalog(val types: List<ItemType>, val entries: List<CatalogEntry>, val own: Boolean)
+
+/**
+ * Goods that fit what the work is on: the chosen part itself (or ones matching what a described
+ * part asks for), else the parts the chosen item's model takes.
+ */
+private fun fittingGoods(draft: RepairDraft, items: List<ClientItem>, goods: List<CatalogItem>): Set<Long> {
+    val item = items.firstOrNull { it.id == draft.itemId } ?: return emptySet()
+    val part = item.parts.firstOrNull { it.id == draft.itemPartId }
+    return when {
+        part != null -> goods.filter { StockMatch.fits(part, it) }.mapTo(mutableSetOf()) { it.id }
+        else -> {
+            val modelParts = item.item?.parts.orEmpty().mapTo(mutableSetOf()) { it.id }
+            goods.filter { g -> g.id in modelParts || item.parts.any { StockMatch.fits(it, g) } }.mapTo(mutableSetOf()) { it.id }
+        }
+    }
 }

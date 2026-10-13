@@ -63,7 +63,7 @@ class CatalogViewModelsTest {
     )
 
     private fun TestScope.itemVm(itemId: Long = 0, typeId: Long = 0) =
-        ItemEditViewModel(SavedStateHandle(mapOf("itemId" to itemId, "typeId" to typeId)), repo).also { vm ->
+        ItemEditViewModel(SavedStateHandle(mapOf("itemId" to itemId, "typeId" to typeId)), repo, com.teraper.printmaster.core.testing.FakePhotoRepository()).also { vm ->
             backgroundScope.launch(UnconfinedTestDispatcher()) { vm.uiState.collect {} }
         }
 
@@ -134,7 +134,7 @@ class CatalogViewModelsTest {
 
     @Test
     fun aNewPartMadeFromItsItemGoesIntoIt() = runTest {
-        val vm = ItemEditViewModel(SavedStateHandle(mapOf("itemId" to 0L, "typeId" to cartridge.id, "intoId" to 2L)), repo)
+        val vm = ItemEditViewModel(SavedStateHandle(mapOf("itemId" to 0L, "typeId" to cartridge.id, "intoId" to 2L)), repo, com.teraper.printmaster.core.testing.FakePhotoRepository())
         backgroundScope.launch(UnconfinedTestDispatcher()) { vm.uiState.collect {} }
         assertEquals(listOf("HP M125"), vm.uiState.value.form.draft.fitsInto.map { it.title })
         assertFalse(vm.uiState.value.form.hasChanges)
@@ -212,5 +212,21 @@ class CatalogViewModelsTest {
         assertEquals(listOf(shoes), repo.templates)
         assertEquals(1, vm.uiState.value.added)
         assertFalse(vm.uiState.value.showTemplates)
+    }
+
+    @Test
+    fun priceCostAndABarcodeAlreadyUsedAreShown() = runTest {
+        repo.entries.value = repo.entries.value + CatalogEntry(CatalogItem(30, cartridge, "CF283X", barcode = "4006381333931"))
+        val vm = itemVm(itemId = 20)
+        vm.onPriceChange("12 000")
+        vm.onCostChange("7000")
+        assertEquals("12000", vm.uiState.value.form.draft.priceDigits)
+        vm.onBarcodeScanned(" 4006381333931 ")
+        assertEquals("CF283X", vm.uiState.value.form.barcodeTakenBy)
+
+        repo.saveItemResult = com.teraper.printmaster.core.data.repository.SaveItemResult.BarcodeTaken("CF283X")
+        vm.onSave()
+        assertEquals("CF283X", vm.uiState.value.form.barcodeTakenBy)
+        assertFalse(vm.uiState.value.form.isSaving)
     }
 }

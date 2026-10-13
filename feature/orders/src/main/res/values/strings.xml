@@ -133,4 +133,7 @@
     <string name="feature_orders_given_label">Տալ վարպետին որպես իր պատվեր</string>
     <string name="feature_orders_given_hint">Միացված՝ նրա գինը և գումարը, այստեղ միայն պատմություն։ Անջատված՝ աշխատում է Ձեզ համար, և Դուք եք գանձում։</string>
     <string name="feature_orders_repair_general">Ընդհանուր</string>
+    <string name="feature_orders_repair_services">Ծառայություններ</string>
+    <string name="feature_orders_repair_goods">Ապրանքներ</string>
+    <string name="feature_orders_repair_fits">Համապատասխանում է</string>
 </resources>

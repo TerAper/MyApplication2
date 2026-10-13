@@ -5,7 +5,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.teraper.printmaster.core.data.repository.CatalogRepository
 import com.teraper.printmaster.core.data.repository.DeleteResult
+import com.teraper.printmaster.core.data.repository.PhotoRepository
 import com.teraper.printmaster.core.data.repository.SaveItemResult
+import com.teraper.printmaster.core.model.Photo
+import com.teraper.printmaster.core.model.PhotoOwner
 import com.teraper.printmaster.core.designsystem.component.usedValues
 import com.teraper.printmaster.core.model.CatalogEntry
 import com.teraper.printmaster.core.model.CatalogSearch
@@ -45,6 +48,10 @@ data class ItemForm(
     /** Only filled after the first Save tap. */
     val errors: Set<ItemDraftError> = emptySet(),
     val nameTaken: Boolean = false,
+    /** Another item has this barcode: its title. */
+    val barcodeTakenBy: String? = null,
+    /** The phone can't scan (no Google Play services). */
+    val scanUnavailable: Boolean = false,
     val isSaving: Boolean = false,
     val hasChanges: Boolean = false,
     val dialog: ItemEditDialog? = null,
@@ -61,6 +68,7 @@ data class ItemEditUiState(
     /** Values used before in each text field of this type. */
     val suggestions: Map<Long, List<String>> = emptyMap(),
     val owners: List<ItemOwner> = emptyList(),
+    val photos: List<Photo> = emptyList(),
     /** A new part made from its item's form: its type is set. */
     val typeLocked: Boolean = false,
 ) {
@@ -82,6 +90,7 @@ sealed interface ItemEditEvent {
 class ItemEditViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val catalogRepository: CatalogRepository,
+    private val photoRepository: PhotoRepository,
 ) : ViewModel() {
 
     /** 0 until the item is saved for the first time. */
@@ -100,7 +109,8 @@ class ItemEditViewModel @Inject constructor(
         catalogRepository.observeTypes(),
         catalogRepository.observeCatalog(),
         itemId.flatMapLatest { id -> if (id != 0L) catalogRepository.observeOwners(id) else flowOf(emptyList()) },
-    ) { form, types, catalog, owners ->
+        itemId.flatMapLatest { id -> if (id != 0L) photoRepository.observePhotos(PhotoOwner.CATALOG_ITEM, listOf(id)) else flowOf(emptyList()) },
+    ) { form, types, catalog, owners, photos ->
         val type = types.firstOrNull { it.id == form.draft.typeId }
         ItemEditUiState(
             form = form,
@@ -110,6 +120,7 @@ class ItemEditViewModel @Inject constructor(
             sections = type?.let { sections(it, types, catalog, form) }.orEmpty(),
             suggestions = type?.let { t -> usedValues(catalog.map { it.item }.filter { it.typeId == t.id }, t.fields) }.orEmpty(),
             owners = owners,
+            photos = photos,
             typeLocked = intoId != 0L,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ItemEditUiState(form.value))
@@ -146,6 +157,37 @@ class ItemEditViewModel @Inject constructor(
     fun onNameChange(name: String) = editDraft { it.copy(name = name) }
 
     fun onValueChange(fieldId: Long, value: String) = editDraft { it.withValue(fieldId, value) }
+
+    fun onPriceChange(text: String) = editDraft { it.withPrice(text) }
+
+    fun onCostChange(text: String) = editDraft { it.withCost(text) }
+
+    fun onBarcodeChange(code: String) {
+        editDraft { it.copy(barcode = code) }
+        form.update { it.copy(barcodeTakenBy = null) }
+    }
+
+    /** A scanned barcode: and if another item has it, say so right away. */
+    fun onBarcodeScanned(code: String) {
+        form.update { it.copy(scanUnavailable = false) }
+        onBarcodeChange(code.trim())
+        viewModelScope.launch {
+            val other = catalogRepository.findByBarcode(code)?.takeIf { it.id != itemId.value }
+            form.update { it.copy(barcodeTakenBy = other?.title) }
+        }
+    }
+
+    fun onScanUnavailable() = form.update { it.copy(scanUnavailable = true) }
+
+    /** Photos go on a saved item. */
+    fun onAddPhoto(uri: String) {
+        val id = itemId.value.takeIf { it != 0L } ?: return
+        viewModelScope.launch { photoRepository.add(PhotoOwner.CATALOG_ITEM, id, uri) }
+    }
+
+    fun onDeletePhoto(photo: Photo) {
+        viewModelScope.launch { photoRepository.delete(photo.id) }
+    }
 
     fun onLinkQueryChange(typeId: Long, query: String) = form.update { it.copy(linkQueries = it.linkQueries + (typeId to query)) }
 
@@ -199,6 +241,10 @@ class ItemEditViewModel @Inject constructor(
             }
             is SaveItemResult.Invalid -> {
                 form.update { it.copy(isSaving = false, errors = result.errors) }
+                false
+            }
+            is SaveItemResult.BarcodeTaken -> {
+                form.update { it.copy(isSaving = false, barcodeTakenBy = result.title) }
                 false
             }
             SaveItemResult.NameTaken -> {

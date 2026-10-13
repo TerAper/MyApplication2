@@ -57,8 +57,8 @@ import com.teraper.printmaster.core.model.ItemRef
 import com.teraper.printmaster.core.model.ItemTitles
 import com.teraper.printmaster.core.model.ItemType
 import com.teraper.printmaster.feature.clients.R
-import com.teraper.printmaster.feature.clients.common.ScanOutcome
-import com.teraper.printmaster.feature.clients.common.rememberSerialScanner
+import com.teraper.printmaster.core.designsystem.component.ScanOutcome
+import com.teraper.printmaster.core.designsystem.component.rememberCodeScanner
 import java.time.LocalDate
 
 @Composable
@@ -77,7 +77,7 @@ internal fun ClientItemEditRoute(
         }
     }
     BackHandler(onBack = viewModel::onCloseRequest)
-    val scanSerial = rememberSerialScanner { outcome ->
+    val scanSerial = rememberCodeScanner { outcome ->
         when (outcome) {
             is ScanOutcome.Read -> viewModel.onSerialScanned(outcome.text)
             ScanOutcome.Unavailable -> viewModel.onScanUnavailable()

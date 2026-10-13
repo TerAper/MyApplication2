@@ -1,4 +1,4 @@
-package com.teraper.printmaster.feature.clients.common
+package com.teraper.printmaster.core.designsystem.component
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
@@ -18,11 +18,11 @@ sealed interface ScanOutcome {
 }
 
 /**
- * Scans the barcode or QR code on a printer's label with Google's scanner (it shows its own
+ * Scans a barcode or QR code (a serial label, a product's barcode) with Google's scanner (it shows its own
  * camera screen, so the app needs no camera permission). Returns a function that starts a scan.
  */
 @Composable
-internal fun rememberSerialScanner(onResult: (ScanOutcome) -> Unit): () -> Unit {
+fun rememberCodeScanner(onResult: (ScanOutcome) -> Unit): () -> Unit {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     return {

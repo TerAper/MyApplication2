@@ -105,7 +105,7 @@ internal class OfflineRepairsRepository @Inject constructor(
                 existing.id
             }
             repairDao.insertItems(
-                draft.lines.map { RepairItemEntity(repairId = repairId, partId = it.partId, name = it.name.trim(), priceMinor = it.price.minor, costMinor = it.cost.minor, quantity = it.quantity) },
+                draft.lines.map { RepairItemEntity(repairId = repairId, partId = it.partId, name = it.name.trim(), priceMinor = it.price.minor, costMinor = it.cost.minor, quantity = it.quantity, itemId = it.itemId) },
             )
             if (order.status == OrderStatus.NEW) orderDao.setStatus(order.id, OrderStatus.IN_PROGRESS)
             SaveRepairResult.Saved(repairId)
@@ -297,7 +297,7 @@ private fun RepairWithItems.toModel(clientItems: List<ClientItem>): Repair {
         orderId = repair.orderId,
         device = item?.let { i -> RepairDevice(i, i.parts.firstOrNull { it.id == repair.clientItemPartId }) },
         note = repair.note,
-        lines = items.sortedBy { it.id }.map { RepairLine(it.partId, it.name, Money(it.priceMinor), Money(it.costMinor), it.quantity) },
+        lines = items.sortedBy { it.id }.map { RepairLine(it.partId, it.name, Money(it.priceMinor), Money(it.costMinor), it.quantity, it.itemId) },
     )
 }
 

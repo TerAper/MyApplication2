@@ -82,8 +82,18 @@ data class ItemDraft(
     val values: Map<Long, String> = emptyMap(),
     val fitsInto: List<LinkDraft> = emptyList(),
     val parts: List<LinkDraft> = emptyList(),
+    val barcode: String = "",
+    /** Whole dram as typed; empty = not sold as goods. */
+    val priceDigits: String = "",
+    val costDigits: String = "",
 ) {
     val isNew: Boolean get() = id == 0L
+    val price: Money get() = Money.ofDram(priceDigits.toLongOrNull() ?: 0L)
+    val cost: Money get() = Money.ofDram(costDigits.toLongOrNull() ?: 0L)
+
+    fun withPrice(text: String) = copy(priceDigits = PriceItemDraft.amountDigits(text))
+
+    fun withCost(text: String) = copy(costDigits = PriceItemDraft.amountDigits(text))
 
     fun validate(): Set<ItemDraftError> = buildSet {
         if (typeId == 0L) add(ItemDraftError.TYPE_REQUIRED)
@@ -98,6 +108,7 @@ data class ItemDraft(
     /** Trimmed name and values; empty and repeated links dropped. */
     fun normalized(): ItemDraft = copy(
         name = CatalogNames.clean(name),
+        barcode = barcode.trim(),
         values = values.mapValues { CatalogNames.clean(it.value) }.filterValues { it.isNotEmpty() },
         fitsInto = fitsInto.clean(),
         parts = parts.clean(),
@@ -120,6 +131,9 @@ data class ItemDraft(
             values = item.values,
             fitsInto = item.fitsInto.map(LinkDraft::from),
             parts = item.parts.map(LinkDraft::from),
+            barcode = item.barcode,
+            priceDigits = item.price.dram.takeIf { it > 0 }?.toString().orEmpty(),
+            costDigits = item.cost.dram.takeIf { it > 0 }?.toString().orEmpty(),
         )
     }
 }

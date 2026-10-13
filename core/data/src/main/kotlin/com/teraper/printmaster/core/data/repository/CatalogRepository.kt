@@ -37,6 +37,9 @@ interface CatalogRepository {
     suspend fun saveItem(draft: ItemDraft): SaveItemResult
 
     suspend fun deleteItem(id: Long): DeleteResult
+
+    /** The catalog item with this barcode, however it was typed or scanned. */
+    suspend fun findByBarcode(code: String): CatalogItem?
 }
 
 sealed interface SaveTypeResult {
@@ -51,6 +54,9 @@ sealed interface SaveItemResult {
     data class Invalid(val errors: Set<ItemDraftError>) : SaveItemResult
     /** Another item of this type has the same title. */
     data object NameTaken : SaveItemResult
+
+    /** Another item ([title]) already has this barcode. */
+    data class BarcodeTaken(val title: String) : SaveItemResult
 }
 
 enum class DeleteResult { DELETED, IN_USE, NOT_FOUND }

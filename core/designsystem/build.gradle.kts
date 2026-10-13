@@ -11,6 +11,9 @@ dependencies {
     api(projects.core.model)
     api(libs.androidx.compose.material3)
     api(libs.androidx.compose.material.icons.extended)
+    // Google's barcode scanner: its own camera screen, no camera permission for the app.
+    implementation(libs.play.services.code.scanner)
+    implementation(libs.kotlinx.coroutines.play.services)
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.core.ktx)
 }

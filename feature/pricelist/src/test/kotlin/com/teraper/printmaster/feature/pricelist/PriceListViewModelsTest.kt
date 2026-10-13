@@ -111,4 +111,18 @@ class PriceListViewModelsTest {
         assertEquals(PriceItemEditEvent.Close, vm.events.first())
         assertFalse(repo.items.value.any { it.id == 1L })
     }
+
+    @Test
+    fun theGoodsSideListsCatalogItemsWithAPrice() = runTest {
+        catalog.entries.value = listOf(
+            com.teraper.printmaster.core.model.CatalogEntry(com.teraper.printmaster.core.model.CatalogItem(1, cartridge, "CF283A", price = Money.ofDram(12_000))),
+            com.teraper.printmaster.core.model.CatalogEntry(com.teraper.printmaster.core.model.CatalogItem(2, cartridge, "Not sold")),
+        )
+        val vm = PriceListViewModel(repo, catalog)
+        backgroundScope.launch(UnconfinedTestDispatcher()) { vm.uiState.collect {} }
+        vm.onShowGoods(true)
+        assertTrue(vm.uiState.value.showGoods)
+        assertEquals(listOf("CF283A"), vm.uiState.value.goods.map { it.name })
+        assertEquals(1, vm.uiState.value.goodsCount)
+    }
 }

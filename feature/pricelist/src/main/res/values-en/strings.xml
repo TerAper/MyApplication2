@@ -6,7 +6,7 @@
     <string name="feature_pricelist_clear_search">Clear</string>
     <string name="feature_pricelist_all">All %1$d</string>
     <string name="feature_pricelist_empty_title">The price list is empty</string>
-    <string name="feature_pricelist_empty_message">Add your services and parts with price and cost. During a visit you will pick them from here.</string>
+    <string name="feature_pricelist_empty_message">Add your services (work) with price and cost. Goods get their price in the catalog.</string>
     <string name="feature_pricelist_no_results">Nothing found</string>
     <string name="feature_pricelist_add">Add</string>
     <string name="feature_pricelist_new_item">New item</string>
@@ -34,4 +34,8 @@
     <string name="feature_pricelist_delete_message">Finished jobs keep its name and price as they were.</string>
     <string name="feature_pricelist_general">General</string>
     <string name="feature_pricelist_for_type">Work on</string>
+    <string name="feature_pricelist_services">Services</string>
+    <string name="feature_pricelist_goods">Goods</string>
+    <string name="feature_pricelist_goods_empty_title">No goods yet</string>
+    <string name="feature_pricelist_goods_empty_message">Give a catalog item a price and it shows here and when work is written down.</string>
 </resources>
