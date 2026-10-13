@@ -17,7 +17,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -86,19 +86,23 @@ internal fun CatalogScreen(
                 navigationLabel = stringResource(R.string.feature_catalog_back),
                 onNavigate = onBack,
                 actions = {
-                    IconButton(onClick = onOpenTypes) {
-                        Icon(PmIcons.ItemTypes, contentDescription = stringResource(R.string.feature_catalog_types), tint = PmTheme.colors.primary)
+                    // Types and templates: a labelled button, so it's found without guessing an icon.
+                    TextButton(onClick = onOpenTypes) {
+                        Icon(PmIcons.ItemTypes, contentDescription = null, tint = PmTheme.colors.primary, modifier = Modifier.padding(end = 6.dp))
+                        Text(stringResource(R.string.feature_catalog_types), color = PmTheme.colors.primary, style = MaterialTheme.typography.labelLarge)
                     }
                 },
             )
             if (state.isLoading) return@Column
             if (state.types.isEmpty()) {
                 // Nothing to put in the catalog before the customer says what they work with.
-                Column(Modifier.fillMaxWidth().padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                Column(Modifier.fillMaxSize().padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                    // The whole empty state (its big icon too) opens Types and templates.
                     PmEmptyState(
                         icon = PmIcons.ItemTypes,
                         title = stringResource(R.string.feature_catalog_no_types_title),
                         message = stringResource(R.string.feature_catalog_no_types_message),
+                        modifier = Modifier.weight(1f).clickable(onClick = onOpenTypes),
                     )
                     PmPrimaryButton(
                         text = stringResource(R.string.feature_catalog_open_types),
