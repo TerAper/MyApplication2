@@ -28,6 +28,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -251,7 +252,7 @@ class OfflineCatalogRepositoryTest {
     @Test
     fun aChildIsKeptOnTheClientWithItsShoesBySizeAndWithoutSerials() = runTest {
         val child = saveType(
-            ItemTypeDraft(name = "Child", fields = listOf(FieldDraft(name = "Birth", kind = FieldKind.DATE)), hasSerial = false, perClient = true),
+            ItemTypeDraft(name = "Child", fields = listOf(FieldDraft(name = "Birth", kind = FieldKind.DATE)), hasSerial = false, perClient = true, hasPhotos = false),
         )
         val shoe = saveType(
             ItemTypeDraft(
@@ -281,6 +282,8 @@ class OfflineCatalogRepositoryTest {
 
         val david = items.observeClientItems(clientId).first().single()
         assertNull(david.item)
+        assertFalse(david.type.hasPhotos)
+        assertTrue(david.parts.all { it.type.hasPhotos })
         assertEquals("David", david.title)
         assertEquals(mapOf(birth to "2019-03-12"), david.values)
         assertEquals("", david.serialNumber)

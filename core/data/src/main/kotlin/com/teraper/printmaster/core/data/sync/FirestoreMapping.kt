@@ -29,7 +29,7 @@ internal object FirestoreMapping {
                     mapOf("type" to p.type, "name" to p.name, "fields" to p.fields, "serial" to p.serialNumber, "fieldDefs" to p.fieldDefs.map { f -> f.toMap() })
                 },
                 "fieldDefs" to it.fieldDefs.map { f -> f.toMap() },
-                "place" to it.place, "id" to it.id, "serial" to it.serialNumber, "perClient" to it.perClient, "hasSerial" to it.hasSerial,
+                "place" to it.place, "id" to it.id, "serial" to it.serialNumber, "perClient" to it.perClient, "hasSerial" to it.hasSerial, "hasPhotos" to it.hasPhotos,
             )
         },
         "createdByMaster" to createdByMaster,
@@ -56,6 +56,7 @@ internal object FirestoreMapping {
                 serialNumber = it.string("serial"),
                 perClient = it["perClient"] == true,
                 hasSerial = it["hasSerial"] != false,
+                hasPhotos = it["hasPhotos"] != false,
             )
         },
         createdByMaster = d["createdByMaster"] == true,

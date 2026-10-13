@@ -23,6 +23,7 @@ data class ItemTypeDraft(
     val fields: List<FieldDraft> = emptyList(),
     val hasSerial: Boolean = true,
     val perClient: Boolean = false,
+    val hasPhotos: Boolean = true,
 ) {
     val isNew: Boolean get() = id == 0L
 
@@ -41,7 +42,7 @@ data class ItemTypeDraft(
     )
 
     companion object {
-        fun from(type: ItemType) = ItemTypeDraft(type.id, type.name, type.parentId, type.fields.map(FieldDraft::from), type.hasSerial, type.perClient)
+        fun from(type: ItemType) = ItemTypeDraft(type.id, type.name, type.parentId, type.fields.map(FieldDraft::from), type.hasSerial, type.perClient, type.hasPhotos)
     }
 }
 
@@ -54,6 +55,7 @@ data class TypeTemplate(
     val fields: List<FieldDraft> = emptyList(),
     val hasSerial: Boolean = true,
     val perClient: Boolean = false,
+    val hasPhotos: Boolean = true,
 )
 
 data class ItemTemplate(val key: String, val name: String, val types: List<TypeTemplate>)

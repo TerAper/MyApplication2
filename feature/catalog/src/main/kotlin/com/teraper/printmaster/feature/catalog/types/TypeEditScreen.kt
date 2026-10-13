@@ -71,6 +71,7 @@ internal fun TypeEditRoute(
             onParentChange = viewModel::onParentChange,
             onHasSerialChange = viewModel::onHasSerialChange,
             onPerClientChange = viewModel::onPerClientChange,
+            onHasPhotosChange = viewModel::onHasPhotosChange,
             onFieldChange = viewModel::onFieldChange,
             onRemoveField = viewModel::onRemoveField,
             onSave = viewModel::onSave,
@@ -88,6 +89,7 @@ internal data class TypeEditActions(
     val onParentChange: (Long?) -> Unit = {},
     val onHasSerialChange: (Boolean) -> Unit = {},
     val onPerClientChange: (Boolean) -> Unit = {},
+    val onHasPhotosChange: (Boolean) -> Unit = {},
     val onFieldChange: (Int, FieldDraft) -> Unit = { _, _ -> },
     val onRemoveField: (Int) -> Unit = {},
     val onSave: () -> Unit = {},
@@ -151,6 +153,7 @@ internal fun TypeEditScreen(
             }
 
             SwitchRow(stringResource(R.string.feature_catalog_has_serial), stringResource(R.string.feature_catalog_has_serial_help), draft.hasSerial, actions.onHasSerialChange)
+            SwitchRow(stringResource(R.string.feature_catalog_has_photos), stringResource(R.string.feature_catalog_has_photos_help), draft.hasPhotos, actions.onHasPhotosChange)
             SwitchRow(stringResource(R.string.feature_catalog_per_client), stringResource(R.string.feature_catalog_per_client_help), draft.perClient, actions.onPerClientChange)
 
             SectionTitle(stringResource(R.string.feature_catalog_section_type_fields))

@@ -28,6 +28,8 @@ data class ItemTypeEntity(
     @ColumnInfo(name = "has_serial", defaultValue = "1") val hasSerial: Boolean = true,
     /** Each one is different (a client's child): described on the client, not in the catalog. */
     @ColumnInfo(name = "per_client", defaultValue = "0") val perClient: Boolean = false,
+    /** Photos are taken of things of this type. */
+    @ColumnInfo(name = "has_photos", defaultValue = "1") val hasPhotos: Boolean = true,
 )
 
 /** One field of a type; [options] are a choice field's values, one per line. */

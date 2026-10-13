@@ -29,7 +29,7 @@ data class ItemField(
 
 /**
  * A kind of thing; [parentId] is the type it goes into (a cartridge into a printer), null = stands alone.
- * [hasSerial]: things of this type have a serial number to keep. [perClient]: each one is different
+ * [hasSerial]: things of this type have a serial number to keep; [hasPhotos]: photos are taken of them. [perClient]: each one is different
  * (a client's child), so it's described on the client, not picked from the catalog.
  */
 data class ItemType(
@@ -39,6 +39,7 @@ data class ItemType(
     val fields: List<ItemField> = emptyList(),
     val hasSerial: Boolean = true,
     val perClient: Boolean = false,
+    val hasPhotos: Boolean = true,
 ) {
     val titleFields: List<ItemField> get() = fields.filter { it.inTitle }
 }

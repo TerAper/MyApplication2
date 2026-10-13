@@ -56,9 +56,9 @@ internal class OfflineCatalogRepository @Inject constructor(
             val below = if (clean.isNew) emptySet() else ItemTypes.selfAndBelow(types.map { ItemType(it.id, it.name, it.parentId) }, clean.id)
             val parentId = clean.parentId?.takeIf { id -> id !in below && types.any { it.id == id } }
             val typeId = if (clean.isNew) {
-                dao.insertType(ItemTypeEntity(name = clean.name, parentId = parentId, hasSerial = clean.hasSerial, perClient = clean.perClient))
+                dao.insertType(ItemTypeEntity(name = clean.name, parentId = parentId, hasSerial = clean.hasSerial, perClient = clean.perClient, hasPhotos = clean.hasPhotos))
             } else {
-                dao.updateType(ItemTypeEntity(id = clean.id, name = clean.name, parentId = parentId, hasSerial = clean.hasSerial, perClient = clean.perClient))
+                dao.updateType(ItemTypeEntity(id = clean.id, name = clean.name, parentId = parentId, hasSerial = clean.hasSerial, perClient = clean.perClient, hasPhotos = clean.hasPhotos))
                 clean.id
             }
             val existing = dao.getFields().filter { it.typeId == typeId }.associateBy { it.id }
@@ -97,7 +97,7 @@ internal class OfflineCatalogRepository @Inject constructor(
             val parentId = template.parentName?.let { name ->
                 dao.getTypes().firstOrNull { CatalogNames.key(it.name) == CatalogNames.key(name) }?.id
             }
-            val typeId = writer.typeId(template.name, parentId, template.hasSerial, template.perClient)
+            val typeId = writer.typeId(template.name, parentId, template.hasSerial, template.perClient, template.hasPhotos)
             if (dao.getTypes().size > before) added++
             template.fields.filter { it.name.isNotBlank() }.forEach { field ->
                 writer.fieldId(typeId, field.name, field.kind, field.optionList(), field.inTitle)

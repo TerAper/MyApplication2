@@ -86,6 +86,7 @@ internal class CatalogSnapshot(val types: Map<Long, ItemType>, val items: Map<Lo
                     parentId = t.parentId,
                     hasSerial = t.hasSerial,
                     perClient = t.perClient,
+                    hasPhotos = t.hasPhotos,
                     fields = fieldsByType[t.id].orEmpty().sortedWith(compareBy({ it.position }, { it.id })).map { f ->
                         ItemField(f.id, f.typeId, f.name, f.kind, f.options.lines().filter { it.isNotBlank() }, f.inTitle)
                     },
@@ -124,10 +125,10 @@ internal class CatalogWriter @Inject constructor(private val dao: CatalogDao) {
         CatalogSnapshot.of(dao.getTypes(), dao.getFields(), dao.getItems(), dao.getValues(), dao.getFits())
 
     /** The type named [name], made under [parentId] (with the given switches) when missing. */
-    suspend fun typeId(name: String, parentId: Long? = null, hasSerial: Boolean = true, perClient: Boolean = false): Long {
+    suspend fun typeId(name: String, parentId: Long? = null, hasSerial: Boolean = true, perClient: Boolean = false, hasPhotos: Boolean = true): Long {
         val clean = CatalogNames.clean(name)
         return dao.getTypes().firstOrNull { CatalogNames.key(it.name) == CatalogNames.key(clean) }?.id
-            ?: dao.insertType(ItemTypeEntity(name = clean, parentId = parentId, hasSerial = hasSerial, perClient = perClient))
+            ?: dao.insertType(ItemTypeEntity(name = clean, parentId = parentId, hasSerial = hasSerial, perClient = perClient, hasPhotos = hasPhotos))
     }
 
     /** The field named [name] of the type, made (as text) when missing. */

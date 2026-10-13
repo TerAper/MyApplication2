@@ -40,6 +40,7 @@ data class SharedItem(
     /** One of a kind (a child): not a catalog model; [fields] are its own values. */
     val perClient: Boolean = false,
     val hasSerial: Boolean = true,
+    val hasPhotos: Boolean = true,
     /** How the type's fields are made on the other phone when it doesn't have them yet. */
     val fieldDefs: List<SharedField> = emptyList(),
 )

@@ -125,4 +125,6 @@
     <string name="feature_catalog_tpl_shoe">Shoe</string>
     <string name="feature_catalog_tpl_pants">Pants</string>
     <string name="feature_catalog_tpl_shirt">Shirt</string>
+    <string name="feature_catalog_has_photos">Has photos</string>
+    <string name="feature_catalog_has_photos_help">Photos can be added to it on a client.</string>
 </resources>

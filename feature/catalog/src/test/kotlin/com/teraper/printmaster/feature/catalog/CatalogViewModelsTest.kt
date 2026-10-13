@@ -178,11 +178,14 @@ class CatalogViewModelsTest {
         // A printer can't be part of a cartridge or a chip: that would be a loop.
         assertEquals(emptyList<ItemType>(), vm.uiState.value.parents)
 
+        vm.onHasPhotosChange(false)
         vm.onFieldChange(2, FieldDraft(name = "Wi-Fi", kind = FieldKind.YES_NO))
         assertEquals(listOf("Brand", "Print", "Wi-Fi", ""), vm.uiState.value.form.draft.fields.map { it.name })
         vm.onSave()
         assertEquals(TypeEditEvent.Close, vm.events.first())
         assertEquals(listOf("Brand", "Print", "Wi-Fi"), repo.savedTypes.single().normalized().fields.map { it.name })
+        assertFalse(repo.savedTypes.single().hasPhotos)
+        assertTrue(repo.savedTypes.single().hasSerial)
 
         assertEquals(listOf(printer, cartridge), typeVm(typeId = chip.id).uiState.value.parents)
     }

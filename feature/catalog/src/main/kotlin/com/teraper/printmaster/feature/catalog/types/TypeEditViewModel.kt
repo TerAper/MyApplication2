@@ -94,6 +94,8 @@ class TypeEditViewModel @Inject constructor(
 
     fun onPerClientChange(on: Boolean) = editDraft { it.copy(perClient = on) }
 
+    fun onHasPhotosChange(on: Boolean) = editDraft { it.copy(hasPhotos = on) }
+
     fun onFieldChange(index: Int, field: FieldDraft) =
         editDraft { draft -> draft.copy(fields = draft.fields.mapIndexed { i, row -> if (i == index) field else row }) }
 

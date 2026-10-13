@@ -48,14 +48,17 @@ internal fun ItemsSection(
         val labels = photoLabels()
         items.forEach { item ->
             ItemCard(item, onClick = { onItemClick(item.id) }) {
-                PmPhotoStrip(
-                    photos = itemPhotos[item.id].orEmpty(),
-                    labels = labels,
-                    onAdd = { photoActions.onAdd(PhotoOwner.CLIENT_ITEM, item.id, it) },
-                    onDelete = photoActions.onDelete,
-                )
+                // Only types that keep photos get them (switch on the type); ones taken before stay visible.
+                if (item.type.hasPhotos || itemPhotos[item.id].orEmpty().isNotEmpty()) {
+                    PmPhotoStrip(
+                        photos = itemPhotos[item.id].orEmpty(),
+                        labels = labels,
+                        onAdd = { photoActions.onAdd(PhotoOwner.CLIENT_ITEM, item.id, it) },
+                        onDelete = photoActions.onDelete,
+                    )
+                }
                 // Each part of this item has its own photos (label, damage…).
-                item.parts.forEach { part ->
+                item.parts.filter { it.type.hasPhotos || partPhotos[it.id].orEmpty().isNotEmpty() }.forEach { part ->
                     Text(part.title, style = MaterialTheme.typography.labelMedium, color = PmTheme.colors.inkSecondary)
                     PmPhotoStrip(
                         photos = partPhotos[part.id].orEmpty(),

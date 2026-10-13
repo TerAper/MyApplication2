@@ -236,6 +236,7 @@ class SyncEngine @Inject internal constructor(
                 serialNumber = owned.serialNumber,
                 perClient = type.perClient,
                 hasSerial = type.hasSerial,
+                hasPhotos = type.hasPhotos,
                 fieldDefs = type.fields.map(::sharedField),
             )
         }
@@ -468,7 +469,7 @@ class SyncEngine @Inject internal constructor(
                 }
                 continue
             }
-            val typeId = catalogWriter.typeId(item.type, hasSerial = item.hasSerial, perClient = item.perClient)
+            val typeId = catalogWriter.typeId(item.type, hasSerial = item.hasSerial, perClient = item.perClient, hasPhotos = item.hasPhotos)
             val values = item.fields.mapKeys { (name, _) -> fieldId(typeId, name, item.fieldDefs, inTitle = name in item.titleFields) }
             val type = checkNotNull(catalogWriter.snapshot().types[typeId])
             // One of a kind (a child) keeps its own values; anything else is a model in this phone's catalog.

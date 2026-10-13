@@ -125,4 +125,6 @@
     <string name="feature_catalog_tpl_shoe">Կոշիկ</string>
     <string name="feature_catalog_tpl_pants">Տաբատ</string>
     <string name="feature_catalog_tpl_shirt">Վերնաշապիկ</string>
+    <string name="feature_catalog_has_photos">Ունի լուսանկարներ</string>
+    <string name="feature_catalog_has_photos_help">Հաճախորդի մոտ կարելի է լուսանկարներ ավելացնել։</string>
 </resources>
