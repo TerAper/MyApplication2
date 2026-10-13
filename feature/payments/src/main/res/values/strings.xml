@@ -12,7 +12,6 @@
     <string name="feature_payments_cash">Կանխիկ</string>
     <string name="feature_payments_bank">Անկանխիկ</string>
     <string name="feature_payments_total">Ընդամենը</string>
-    <string name="feature_payments_cash_payment">Կանխիկ վճարում</string>
     <string name="feature_payments_clients_header">ՀԱՃԱԽՈՐԴՆԵՐ</string>
     <string name="feature_payments_filter_debt">Պարտքով · %1$d</string>
     <string name="feature_payments_filter_paid">Վճարված</string>
@@ -52,4 +51,15 @@
         <item quantity="one">%1$d բանկային վճարում ստուգելու</item>
         <item quantity="other">%1$d բանկային վճարում ստուգելու</item>
     </plurals>
+    <string name="feature_payments_sort">Դասավորել</string>
+    <string name="feature_payments_sort_title">Դասավորել ըստ</string>
+    <string name="feature_payments_sort_debt">Ամենամեծ պարտքը</string>
+    <string name="feature_payments_sort_longest_unpaid">Երկար չվճարողները</string>
+    <string name="feature_payments_sort_last_payment">Վերջին վճարումը</string>
+    <string name="feature_payments_sort_least_paid">Ամենաքիչ վճարածները (%)</string>
+    <string name="feature_payments_sort_most_charged">Ամենաշատ հաշվարկվածը</string>
+    <string name="feature_payments_sort_most_paid">Ամենաշատ վճարածը</string>
+    <string name="feature_payments_sort_name">Անվան (Ա–Ֆ)</string>
+    <string name="feature_payments_sort_longest_unpaid_help">Պարտք ունեցողները, որոնք ամենաերկար չեն վճարել՝ առաջինը</string>
+    <string name="feature_payments_sort_least_paid_help">Հաշվարկվածի ամենափոքր մասը վճարածները՝ առաջինը</string>
 </resources>

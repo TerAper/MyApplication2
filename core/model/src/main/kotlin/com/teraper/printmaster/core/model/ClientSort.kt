@@ -75,3 +75,46 @@ object ClientNames {
         }
     }
 }
+
+/** How the Payments list is ordered; every order falls back to the name. */
+enum class PaymentSort {
+    /** Who owes the most first. */
+    DEBT,
+
+    /** Debtors who paid longest ago (or never) first. */
+    LONGEST_UNPAID,
+
+    /** Most recent payment first; never paid last. */
+    LAST_PAYMENT,
+
+    /** Lowest share of everything billed paid first (nothing paid = 0 %). */
+    LEAST_PAID_SHARE,
+
+    /** Billed the most in total first: the biggest clients. */
+    MOST_CHARGED,
+
+    /** Paid the most in total first. */
+    MOST_PAID,
+
+    /** A to Я, as on the Clients tab. */
+    NAME,
+    ;
+
+    fun sort(clients: List<ClientSummary>): List<ClientSummary> = when (this) {
+        DEBT -> ClientSort.DEBT.sort(clients)
+        LONGEST_UNPAID -> ClientSort.LONGEST_UNPAID.sort(clients)
+        LAST_PAYMENT -> ClientSort.LAST_PAYMENT.sort(clients)
+        NAME -> ClientSort.NAME.sort(clients)
+        LEAST_PAID_SHARE -> clients.sortedWith(
+            compareBy<ClientSummary> { !it.charged.isPositive }.thenBy { paidShare(it) }.thenComparing({ it.client }, ClientNames.comparator()),
+        )
+        MOST_CHARGED -> clients.sortedWith(compareByDescending<ClientSummary> { it.charged.minor }.thenComparing({ it.client }, ClientNames.comparator()))
+        MOST_PAID -> clients.sortedWith(compareByDescending<ClientSummary> { it.paid.minor }.thenComparing({ it.client }, ClientNames.comparator()))
+    }
+
+    companion object {
+        /** Paid ÷ billed, 0…1; clients billed nothing count as fully paid. */
+        fun paidShare(summary: ClientSummary): Double =
+            if (!summary.charged.isPositive) 1.0 else (summary.paid.minor.toDouble() / summary.charged.minor).coerceIn(0.0, 1.0)
+    }
+}

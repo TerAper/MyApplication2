@@ -3,6 +3,7 @@ package com.teraper.printmaster.core.data.repository
 import android.content.Context
 import androidx.core.content.edit
 import com.teraper.printmaster.core.model.ClientSort
+import com.teraper.printmaster.core.model.PaymentSort
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -10,11 +11,15 @@ import kotlinx.coroutines.flow.asStateFlow
 import javax.inject.Inject
 import javax.inject.Singleton
 
-/** How the client list is sorted, kept between launches. */
+/** How the client lists (Clients and Payments tabs) are sorted, kept between launches. */
 interface ClientListSettingsRepository {
     fun observeSort(): Flow<ClientSort>
 
     fun setSort(sort: ClientSort)
+
+    fun observePaymentSort(): Flow<PaymentSort>
+
+    fun setPaymentSort(sort: PaymentSort)
 }
 
 @Singleton
@@ -27,7 +32,18 @@ internal class PrefsClientListSettingsRepository @Inject constructor(
         prefs.getString(SORT, null)?.let { name -> ClientSort.entries.firstOrNull { it.name == name } } ?: ClientSort.NAME,
     )
 
+    private val paymentSort = MutableStateFlow(
+        prefs.getString(PAYMENT_SORT, null)?.let { name -> PaymentSort.entries.firstOrNull { it.name == name } } ?: PaymentSort.DEBT,
+    )
+
     override fun observeSort(): Flow<ClientSort> = sort.asStateFlow()
+
+    override fun observePaymentSort(): Flow<PaymentSort> = paymentSort.asStateFlow()
+
+    override fun setPaymentSort(sort: PaymentSort) {
+        paymentSort.value = sort
+        prefs.edit { putString(PAYMENT_SORT, sort.name) }
+    }
 
     override fun setSort(sort: ClientSort) {
         this.sort.value = sort
@@ -36,5 +52,6 @@ internal class PrefsClientListSettingsRepository @Inject constructor(
 
     private companion object {
         const val SORT = "sort"
+        const val PAYMENT_SORT = "payment_sort"
     }
 }

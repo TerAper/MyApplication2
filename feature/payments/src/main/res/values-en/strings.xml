@@ -12,7 +12,6 @@
     <string name="feature_payments_cash">Cash</string>
     <string name="feature_payments_bank">Bank</string>
     <string name="feature_payments_total">Total</string>
-    <string name="feature_payments_cash_payment">Cash payment</string>
     <string name="feature_payments_clients_header">CLIENTS</string>
     <string name="feature_payments_filter_debt">In debt · %1$d</string>
     <string name="feature_payments_filter_paid">Paid</string>
@@ -52,4 +51,15 @@
         <item quantity="one">%1$d bank payment to check</item>
         <item quantity="other">%1$d bank payments to check</item>
     </plurals>
+    <string name="feature_payments_sort">Sort</string>
+    <string name="feature_payments_sort_title">Sort by</string>
+    <string name="feature_payments_sort_debt">Biggest debt</string>
+    <string name="feature_payments_sort_longest_unpaid">Longest unpaid</string>
+    <string name="feature_payments_sort_last_payment">Recent payment</string>
+    <string name="feature_payments_sort_least_paid">Least paid (%)</string>
+    <string name="feature_payments_sort_most_charged">Most billed</string>
+    <string name="feature_payments_sort_most_paid">Most paid</string>
+    <string name="feature_payments_sort_name">Name (A–Z)</string>
+    <string name="feature_payments_sort_longest_unpaid_help">Debtors who paid longest ago (or never) first</string>
+    <string name="feature_payments_sort_least_paid_help">Who paid the smallest share of what was billed first</string>
 </resources>

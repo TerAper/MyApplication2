@@ -99,7 +99,7 @@ class PaymentsViewModelsTest {
 
     @Test
     fun overviewTotalsAndFilters() = runTest {
-        val vm = PaymentsOverviewViewModel(clients, payments, FakeImportRepository(), clock)
+        val vm = PaymentsOverviewViewModel(clients, payments, FakeImportRepository(), com.teraper.printmaster.core.testing.FakeClientListSettingsRepository(), clock)
         collect(vm.uiState)
         val state = vm.uiState.value
 

@@ -70,4 +70,19 @@ class ClientSortTest {
         assertEquals(listOf("A", "C", "B"), ClientSort.NEWEST.sort(list).names())
         assertEquals(listOf("C", "A", "B"), ClientSort.MOST_ITEMS.sort(list).names())
     }
+
+    @Test
+    fun paymentSortsByShareBilledAndPaid() {
+        fun billed(name: String, charged: Long, paid: Long) = ClientSummary(
+            client = Client(nextId++, name, ClientType.FIRM, null, "", emptyList(), emptyList()),
+            charged = Money.ofDram(charged),
+            paid = Money.ofDram(paid),
+        )
+        val list = listOf(billed("Half", 1_000, 500), billed("None", 200, 0), billed("All", 9_000, 9_000), billed("Nothing billed", 0, 300))
+        // Nothing paid of something billed first; nothing billed at all last.
+        assertEquals(listOf("None", "Half", "All", "Nothing billed"), PaymentSort.LEAST_PAID_SHARE.sort(list).names())
+        assertEquals(listOf("All", "Half", "None", "Nothing billed"), PaymentSort.MOST_CHARGED.sort(list).names())
+        assertEquals(listOf("All", "Half", "Nothing billed", "None"), PaymentSort.MOST_PAID.sort(list).names())
+        assertEquals(listOf("Half", "None", "All", "Nothing billed"), PaymentSort.DEBT.sort(list).names())
+    }
 }

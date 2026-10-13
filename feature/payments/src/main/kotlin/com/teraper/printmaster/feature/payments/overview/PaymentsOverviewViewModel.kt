@@ -3,7 +3,9 @@ package com.teraper.printmaster.feature.payments.overview
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.teraper.printmaster.core.data.repository.ClientsRepository
+import com.teraper.printmaster.core.data.repository.ClientListSettingsRepository
 import com.teraper.printmaster.core.data.repository.ImportRepository
+import com.teraper.printmaster.core.model.PaymentSort
 import com.teraper.printmaster.core.data.repository.PaymentsRepository
 import com.teraper.printmaster.core.model.ClientSummary
 import com.teraper.printmaster.core.model.IncomeTotals
@@ -38,6 +40,7 @@ data class PaymentsOverviewUiState(
     val debtorCount: Int = 0,
     val incomeThisMonth: IncomeTotals = IncomeTotals(),
     val filter: BalanceFilter = BalanceFilter.IN_DEBT,
+    val sort: PaymentSort = PaymentSort.DEBT,
     val rows: List<ClientSummary> = emptyList(),
     val hasClients: Boolean = false,
     /** Imported bank payments waiting for the user to say whose they are. */
@@ -49,6 +52,7 @@ class PaymentsOverviewViewModel @Inject constructor(
     clientsRepository: ClientsRepository,
     paymentsRepository: PaymentsRepository,
     importRepository: ImportRepository,
+    private val settings: ClientListSettingsRepository,
     clock: Clock,
 ) : ViewModel() {
 
@@ -60,7 +64,8 @@ class PaymentsOverviewViewModel @Inject constructor(
         paymentsRepository.observeIncome(today.withDayOfMonth(1), today),
         filter,
         importRepository.observePending(),
-    ) { clients, income, filter, pending ->
+        settings.observePaymentSort(),
+    ) { clients, income, filter, pending, sort ->
         val debtors = clients.filter { it.balance.isPositive }
         PaymentsOverviewUiState(
             isLoading = false,
@@ -68,10 +73,8 @@ class PaymentsOverviewViewModel @Inject constructor(
             debtorCount = debtors.size,
             incomeThisMonth = income,
             filter = filter,
-            rows = clients.filter { filter.accepts(it) }.let { rows ->
-                // Biggest debts first; the other lists stay alphabetical.
-                if (filter == BalanceFilter.IN_DEBT) rows.sortedByDescending { it.balance } else rows
-            },
+            sort = sort,
+            rows = sort.sort(clients.filter { filter.accepts(it) }),
             hasClients = clients.isNotEmpty(),
             pendingPayments = pending.size,
         )
@@ -80,4 +83,7 @@ class PaymentsOverviewViewModel @Inject constructor(
     fun onFilterChange(filter: BalanceFilter) {
         this.filter.value = filter
     }
+
+    /** Remembered for next time. */
+    fun onSortChange(sort: PaymentSort) = settings.setPaymentSort(sort)
 }

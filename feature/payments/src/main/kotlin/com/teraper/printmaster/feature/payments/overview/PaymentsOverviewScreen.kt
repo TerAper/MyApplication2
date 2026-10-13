@@ -20,6 +20,15 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import com.teraper.printmaster.core.model.PaymentSort
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -36,7 +45,6 @@ import com.teraper.printmaster.core.designsystem.component.AmountTone
 import com.teraper.printmaster.core.designsystem.component.PmCard
 import com.teraper.printmaster.core.designsystem.component.PmEmptyState
 import com.teraper.printmaster.core.designsystem.component.PmFilterChip
-import com.teraper.printmaster.core.designsystem.component.PmPrimaryButton
 import com.teraper.printmaster.core.designsystem.component.PmScreenTitle
 import com.teraper.printmaster.core.designsystem.component.PmSecondaryButton
 import com.teraper.printmaster.core.designsystem.component.format
@@ -54,7 +62,6 @@ import java.time.LocalDate
 @Composable
 internal fun PaymentsOverviewRoute(
     onOpenClient: (Long) -> Unit,
-    onCashPayment: () -> Unit,
     onImport: () -> Unit,
     onReviewPayments: () -> Unit,
     viewModel: PaymentsOverviewViewModel = hiltViewModel(),
@@ -63,8 +70,8 @@ internal fun PaymentsOverviewRoute(
     PaymentsOverviewScreen(
         state = state,
         onFilterChange = viewModel::onFilterChange,
+        onSortChange = viewModel::onSortChange,
         onOpenClient = onOpenClient,
-        onCashPayment = onCashPayment,
         onImport = onImport,
         onReviewPayments = onReviewPayments,
     )
@@ -75,11 +82,13 @@ internal fun PaymentsOverviewScreen(
     state: PaymentsOverviewUiState,
     onFilterChange: (BalanceFilter) -> Unit,
     onOpenClient: (Long) -> Unit,
-    onCashPayment: () -> Unit,
+    onSortChange: (PaymentSort) -> Unit = {},
     onImport: () -> Unit = {},
     onReviewPayments: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
+    var sorting by remember { mutableStateOf(false) }
+    if (sorting) SortSheet(state.sort, onPick = { onSortChange(it); sorting = false }, onDismiss = { sorting = false })
     LazyColumn(
         modifier = modifier.fillMaxSize().background(PmTheme.colors.background),
         contentPadding = PaddingValues(bottom = 24.dp),
@@ -91,30 +100,33 @@ internal fun PaymentsOverviewScreen(
             Column(Modifier.padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 SummaryCard(state)
                 if (state.pendingPayments > 0) PendingBanner(state.pendingPayments, onReviewPayments)
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    PmPrimaryButton(
-                        text = stringResource(R.string.feature_payments_cash_payment),
-                        onClick = onCashPayment,
-                        icon = PmIcons.Add,
-                        enabled = state.hasClients,
-                        modifier = Modifier.weight(1f),
-                    )
-                    PmSecondaryButton(
-                        text = stringResource(R.string.feature_payments_import),
-                        onClick = onImport,
-                        icon = PmIcons.ImportExcel,
-                        modifier = Modifier.weight(1f),
-                    )
-                }
-                Row(
-                    modifier = Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    BalanceFilter.entries.forEach { filter ->
-                        PmFilterChip(
-                            text = filter.label(state.debtorCount),
-                            selected = filter == state.filter,
-                            onClick = { onFilterChange(filter) },
+                // Cash is taken on the client's card ("Cash in"); here the bank statements come in.
+                PmSecondaryButton(
+                    text = stringResource(R.string.feature_payments_import),
+                    onClick = onImport,
+                    icon = PmIcons.ImportExcel,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Row(
+                        modifier = Modifier.weight(1f).horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        BalanceFilter.entries.forEach { filter ->
+                            PmFilterChip(
+                                text = filter.label(state.debtorCount),
+                                selected = filter == state.filter,
+                                onClick = { onFilterChange(filter) },
+                            )
+                        }
+                    }
+                    TextButton(onClick = { sorting = true }) {
+                        Icon(PmIcons.Sort, contentDescription = null, tint = PmTheme.colors.primary)
+                        Text(
+                            if (state.sort == PaymentSort.DEBT) stringResource(R.string.feature_payments_sort) else state.sort.label(),
+                            color = PmTheme.colors.primary,
+                            style = MaterialTheme.typography.labelLarge,
+                            maxLines = 1,
                         )
                     }
                 }
@@ -298,7 +310,56 @@ private fun PaymentsOverviewPreview() {
             ),
             onFilterChange = {},
             onOpenClient = {},
-            onCashPayment = {},
         )
+    }
+}
+
+@Composable
+private fun PaymentSort.label(): String = stringResource(
+    when (this) {
+        PaymentSort.DEBT -> R.string.feature_payments_sort_debt
+        PaymentSort.LONGEST_UNPAID -> R.string.feature_payments_sort_longest_unpaid
+        PaymentSort.LAST_PAYMENT -> R.string.feature_payments_sort_last_payment
+        PaymentSort.LEAST_PAID_SHARE -> R.string.feature_payments_sort_least_paid
+        PaymentSort.MOST_CHARGED -> R.string.feature_payments_sort_most_charged
+        PaymentSort.MOST_PAID -> R.string.feature_payments_sort_most_paid
+        PaymentSort.NAME -> R.string.feature_payments_sort_name
+    },
+)
+
+@Composable
+private fun PaymentSort.help(): String? = when (this) {
+    PaymentSort.LONGEST_UNPAID -> stringResource(R.string.feature_payments_sort_longest_unpaid_help)
+    PaymentSort.LEAST_PAID_SHARE -> stringResource(R.string.feature_payments_sort_least_paid_help)
+    else -> null
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun SortSheet(selected: PaymentSort, onPick: (PaymentSort) -> Unit, onDismiss: () -> Unit) {
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
+        containerColor = PmTheme.colors.background,
+    ) {
+        Column(Modifier.padding(bottom = 24.dp)) {
+            Text(
+                stringResource(R.string.feature_payments_sort_title),
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                style = MaterialTheme.typography.titleLarge,
+            )
+            PaymentSort.entries.forEach { sort ->
+                Row(
+                    Modifier.fillMaxWidth().clickable { onPick(sort) }.padding(horizontal = 16.dp, vertical = 14.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Column(Modifier.weight(1f)) {
+                        Text(sort.label(), style = MaterialTheme.typography.bodyLarge, color = if (sort == selected) PmTheme.colors.primary else PmTheme.colors.ink)
+                        sort.help()?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = PmTheme.colors.inkMuted) }
+                    }
+                    if (sort == selected) Icon(PmIcons.Check, contentDescription = null, tint = PmTheme.colors.primary)
+                }
+            }
+        }
     }
 }

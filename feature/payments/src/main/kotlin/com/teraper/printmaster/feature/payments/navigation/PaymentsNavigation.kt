@@ -39,7 +39,6 @@ fun NavGraphBuilder.paymentsGraph(
         composable<PaymentsOverviewDestination> {
             PaymentsOverviewRoute(
                 onOpenClient = onOpenClient,
-                onCashPayment = { navController.navigate(MoneyEntryDestination()) },
                 onImport = onImport,
                 onReviewPayments = onReviewPayments,
             )
