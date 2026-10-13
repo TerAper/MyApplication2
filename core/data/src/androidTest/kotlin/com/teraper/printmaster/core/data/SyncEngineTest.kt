@@ -6,6 +6,12 @@ import com.teraper.printmaster.core.data.repository.SaveClientResult
 import com.teraper.printmaster.core.data.repository.SaveCompanyResult
 import com.teraper.printmaster.core.data.repository.SaveOrderResult
 import com.teraper.printmaster.core.database.entity.CompanyEntity
+import com.teraper.printmaster.core.model.TypeTemplate
+import com.teraper.printmaster.core.model.ItemDraft
+import com.teraper.printmaster.core.model.FieldKind
+import com.teraper.printmaster.core.model.FieldDraft
+import com.teraper.printmaster.core.model.ClientPartDraft
+import com.teraper.printmaster.core.model.ClientItemDraft
 import com.teraper.printmaster.core.model.AccountMode
 import com.teraper.printmaster.core.model.ClientDraft
 import com.teraper.printmaster.core.model.ClientDraft.ContactDraft
@@ -264,5 +270,38 @@ class SyncEngineTest {
         // On Apo's phone the serial finds the printer and the order done on it.
         val found = apo.clientItems.findBySerial("CNB8K12345").single()
         assertEquals(listOf("Refill two cartridges"), apo.orders.observeClientItemOrders(found.item.id).first().map { it.description })
+    }
+
+    @Test
+    fun aChildWithItsShoeSizesReachesTheMaster() = runTest {
+        setUp()
+        apo.catalog.applyTemplate(
+            listOf(
+                TypeTemplate("Child", fields = listOf(FieldDraft(name = "Birth", kind = FieldKind.DATE)), hasSerial = false, perClient = true),
+                TypeTemplate("Shoe", parentName = "Child", fields = listOf(FieldDraft(name = "Size", kind = FieldKind.NUMBER)), hasSerial = false),
+            ),
+        )
+        val types = apo.catalog.observeTypes().first()
+        val child = types.first { it.name == "Child" }
+        val shoe = types.first { it.name == "Shoe" }
+        apo.clientItems.saveClientItem(
+            ClientItemDraft(
+                clientId = gamma,
+                item = ItemDraft(typeId = child.id, name = "David", values = mapOf(child.fields.single().id to "2019-03-12")),
+                parts = listOf(ClientPartDraft(typeId = shoe.id, values = mapOf(shoe.fields.single().id to "30"))),
+            ),
+        )
+        apoEngine.sync()
+        armenEngine.sync()
+
+        val client = armen.orders.observeOrder(armenOrderId()).first()!!.clientId
+        val david = armen.clientItems.observeClientItems(client).first().single { it.type.perClient }
+        assertEquals("David", david.title)
+        assertEquals(null, david.item)
+        assertEquals(listOf("2019-03-12"), david.values.values.toList())
+        assertEquals(listOf("Size 30"), david.parts.map { it.title })
+        assertFalse(david.type.hasSerial)
+        // The child is not put in the master's catalog.
+        assertTrue(armen.catalog.observeCatalog().first().none { it.item.typeId == david.type.id })
     }
 }

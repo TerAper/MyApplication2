@@ -17,9 +17,11 @@ import com.teraper.printmaster.core.designsystem.component.PhotoStripLabels
 import com.teraper.printmaster.core.designsystem.component.PmCard
 import com.teraper.printmaster.core.designsystem.component.PmPhotoStrip
 import com.teraper.printmaster.core.designsystem.component.PmSecondaryButton
+import com.teraper.printmaster.core.designsystem.component.yearsText
 import com.teraper.printmaster.core.designsystem.icon.PmIcons
 import com.teraper.printmaster.core.designsystem.theme.PmTheme
 import com.teraper.printmaster.core.model.ClientItem
+import com.teraper.printmaster.core.model.ItemTitles
 import com.teraper.printmaster.core.model.Photo
 import com.teraper.printmaster.core.model.PhotoOwner
 import com.teraper.printmaster.feature.clients.R
@@ -54,7 +56,7 @@ internal fun ItemsSection(
                 )
                 // Each part of this item has its own photos (label, damage…).
                 item.parts.forEach { part ->
-                    Text(part.item.title, style = MaterialTheme.typography.labelMedium, color = PmTheme.colors.inkSecondary)
+                    Text(part.title, style = MaterialTheme.typography.labelMedium, color = PmTheme.colors.inkSecondary)
                     PmPhotoStrip(
                         photos = partPhotos[part.id].orEmpty(),
                         labels = labels,
@@ -80,17 +82,19 @@ private fun ItemCard(item: ClientItem, onClick: () -> Unit, photos: @Composable 
         Row(Modifier.padding(14.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             Icon(PmIcons.Item, contentDescription = null, tint = PmTheme.colors.primary)
             Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
-                Text(item.item.title, style = MaterialTheme.typography.titleSmall)
+                val years = yearsText()
+                Text(item.title, style = MaterialTheme.typography.titleSmall)
                 Text(
-                    listOf(item.item.type.name, item.item.details, item.place).filter { it.isNotBlank() }.joinToString(" · "),
+                    listOf(item.type.name, ItemTitles.details(item.type, item.allValues, years = years), item.place).filter { it.isNotBlank() }.joinToString(" · "),
                     style = MaterialTheme.typography.bodySmall,
                     color = PmTheme.colors.inkMuted,
                 )
-                // "Cartridge: CF283A (chip X)": parts by type, each with what goes into it.
-                item.parts.groupBy { it.item.type.name }.forEach { (typeName, parts) ->
+                // "Cartridge: CF283A (chip X)", "Shoe: Size 30 · Boy": parts by type, each with what goes into it.
+                item.parts.groupBy { it.type.name }.forEach { (typeName, parts) ->
                     val names = parts.joinToString(", ") { part ->
-                        val inner = part.item.parts.joinToString(", ") { it.title }
-                        if (inner.isEmpty()) part.item.title else "${part.item.title} ($inner)"
+                        val inner = part.item?.parts.orEmpty().joinToString(", ") { it.title }
+                        val title = part.item?.title ?: ItemTitles.describe(part.type, part.values, years = years).ifEmpty { part.type.name }
+                        if (inner.isEmpty()) title else "$title ($inner)"
                     }
                     Text(
                         stringResource(R.string.feature_clients_item_parts_value, typeName, names),

@@ -8,7 +8,25 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.DisplayMode
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberDatePickerState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
+import com.teraper.printmaster.core.designsystem.R
+import com.teraper.printmaster.core.designsystem.icon.PmIcons
+import java.time.Instant
+import java.time.ZoneOffset
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
@@ -63,6 +81,7 @@ fun PmItemFields(
                     Text(field.name, style = MaterialTheme.typography.labelMedium, color = PmTheme.colors.inkSecondary)
                     ChoiceRow(field.options, selected = value) { onValueChange(field.id, if (it == value) "" else it) }
                 }
+                FieldKind.DATE -> DateField(field, value) { onValueChange(field.id, it) }
                 FieldKind.YES_NO -> {
                     val on = value == ItemTitles.YES
                     Row(
@@ -80,6 +99,51 @@ fun PmItemFields(
             }
         }
     }
+}
+
+/** A date picked from a calendar, shown with the age it gives: "12.03.2019 · 6 years". Tap again to change. */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun DateField(field: ItemField, value: String, onChange: (String) -> Unit) {
+    var picking by remember { mutableStateOf(false) }
+    val date = ItemTitles.parseDate(value)
+    val years = yearsText()
+    PmTextField(
+        value = date?.let { "${it.formatShort()} · ${years(ItemTitles.age(value) ?: 0)}" }.orEmpty(),
+        onValueChange = {},
+        label = field.name,
+        readOnly = true,
+        trailingIcon = {
+            IconButton(onClick = { picking = true }) {
+                Icon(PmIcons.Calendar, contentDescription = stringResource(R.string.core_designsystem_date_pick), tint = PmTheme.colors.primary)
+            }
+        },
+        modifier = Modifier.clickable { picking = true },
+    )
+    if (picking) {
+        // Typing opens first: a birth date years back is quicker to type than to scroll to.
+        val state = rememberDatePickerState(
+            initialSelectedDateMillis = date?.atStartOfDay(ZoneOffset.UTC)?.toInstant()?.toEpochMilli(),
+            initialDisplayMode = DisplayMode.Input,
+        )
+        DatePickerDialog(
+            onDismissRequest = { picking = false },
+            confirmButton = {
+                TextButton(onClick = {
+                    state.selectedDateMillis?.let { onChange(ItemTitles.formatDate(Instant.ofEpochMilli(it).atZone(ZoneOffset.UTC).toLocalDate())) }
+                    picking = false
+                }) { Text(stringResource(R.string.core_designsystem_date_ok)) }
+            },
+            dismissButton = { TextButton(onClick = { picking = false }) { Text(stringResource(R.string.core_designsystem_date_cancel)) } },
+        ) { DatePicker(state = state) }
+    }
+}
+
+/** "6 years", for ages worked out from a date field. */
+@Composable
+fun yearsText(): (Int) -> String {
+    val resources = LocalContext.current.resources
+    return { years -> resources.getQuantityString(R.plurals.core_designsystem_years, years, years) }
 }
 
 @Composable

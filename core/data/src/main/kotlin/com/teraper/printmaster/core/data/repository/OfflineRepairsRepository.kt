@@ -9,8 +9,6 @@ import com.teraper.printmaster.core.database.dao.RepairDao
 import com.teraper.printmaster.core.database.dao.RepairWithItems
 import com.teraper.printmaster.core.database.entity.ChargeEntity
 import com.teraper.printmaster.core.model.ClientSearch
-import com.teraper.printmaster.core.database.entity.ClientItemEntity
-import com.teraper.printmaster.core.database.entity.ClientItemPartEntity
 import com.teraper.printmaster.core.database.entity.ClientAddressEntity
 import com.teraper.printmaster.core.database.entity.ClientPhoneEntity
 import com.teraper.printmaster.core.database.entity.ClientEntity
@@ -225,25 +223,31 @@ internal class OfflineRepairsRepository @Inject constructor(
         val phone = source.phones.firstOrNull { it.id == order.phoneId }?.let { p -> contacts.phones.firstOrNull { it.number == p.number } }
         val address = source.addresses.firstOrNull { it.id == order.addressId }?.let { a -> contacts.addresses.firstOrNull { it.address == a.address } }
 
-        // Items: the own client's of the same model and place, or copies; the work points at them.
+        // Items: the own client's of the same model (or name) and place, or copies; the work points at them.
         val ownItems = catalog.getClientItems(clientId).toMutableList()
         val itemMap = HashMap<Long, Long>()
         val partMap = HashMap<Long, Long>()
         for (item in catalog.getClientItems(order.clientId)) {
-            val same = ownItems.firstOrNull { it.itemId == item.itemId && it.place == item.place }
-            val targetId = same?.id ?: catalog.insertClientItem(
-                ClientItemEntity(
-                    clientId = clientId, itemId = item.itemId, place = item.place, note = item.note,
-                    serialNumber = item.serialNumber, serialKey = item.serialKey,
-                ),
-            ).also { id -> ownItems += item.copy(id = id, clientId = clientId, syncId = null) }
-            val parts = catalog.getClientItemParts(item.id)
+            val same = ownItems.firstOrNull { it.typeId == item.typeId && it.itemId == item.itemId && it.name == item.name && it.place == item.place }
+            val targetId = same?.id ?: catalog.insertClientItem(item.copy(id = 0, clientId = clientId, syncId = null))
+                .also { id ->
+                    ownItems += item.copy(id = id, clientId = clientId, syncId = null)
+                    catalog.insertClientItemValues(catalog.getClientItemValues(item.id).map { it.copy(clientItemId = id) })
+                }
             val existing = catalog.getClientItemParts(targetId)
-            val missing = parts.filter { p -> existing.none { it.itemId == p.itemId } }
-            catalog.insertClientItemParts(missing.map { ClientItemPartEntity(clientItemId = targetId, itemId = it.itemId) })
-            val rows = catalog.getClientItemParts(targetId)
+            val partValues = catalog.getClientPartValues(item.id).groupBy { it.partId }
+            for (part in catalog.getClientItemParts(item.id)) {
+                val values = partValues[part.id].orEmpty()
+                // The same catalog part, or a described one with the same values, is already there.
+                val match = existing.firstOrNull { e ->
+                    e.typeId == part.typeId && e.itemId == part.itemId &&
+                        (part.itemId != null || catalog.getClientPartValues(targetId).filter { it.partId == e.id }.map { it.fieldId to it.value }.toSet() == values.map { it.fieldId to it.value }.toSet())
+                }
+                partMap[part.id] = match?.id ?: catalog.insertClientItemPart(part.copy(id = 0, clientItemId = targetId)).also { id ->
+                    catalog.insertClientPartValues(values.map { it.copy(partId = id) })
+                }
+            }
             itemMap[item.id] = targetId
-            parts.forEach { p -> rows.firstOrNull { it.itemId == p.itemId }?.let { partMap[p.id] = it.id } }
         }
         repairDao.getRepairs(order.id).forEach { r ->
             val repair = r.repair

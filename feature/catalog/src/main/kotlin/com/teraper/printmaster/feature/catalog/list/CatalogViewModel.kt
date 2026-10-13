@@ -42,7 +42,9 @@ class CatalogViewModel @Inject constructor(
         catalogRepository.observeCatalog(),
         _query,
         typeFilter,
-    ) { types, catalog, query, filter ->
+    ) { allTypes, catalog, query, filter ->
+        // One-of-a-kind types (a child) are filled in on clients, never in the catalog.
+        val types = allTypes.filterNot { it.perClient }
         val shownFilter = filter?.takeIf { id -> types.any { it.id == id } }
         CatalogUiState(
             isLoading = false,

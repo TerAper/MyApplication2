@@ -115,6 +115,32 @@ class CatalogViewModelsTest {
     }
 
     @Test
+    fun addingAPartSavesTheItemFirstThenOpensThePartsForm() = runTest {
+        val vm = itemVm(typeId = printer.id)
+        vm.onValueChange(1, "HP")
+        vm.onNameChange("M15")
+        val section = vm.uiState.value.sections.single()
+        vm.onOpenPart(section, null)
+
+        assertEquals(ItemEditEvent.OpenItem(itemId = 0, typeId = cartridge.id, intoId = 99), vm.events.first())
+        assertEquals("M15", repo.savedItems.single().name)
+        assertFalse(vm.uiState.value.form.hasChanges)
+
+        // An existing part opens as itself.
+        val existing = itemVm(itemId = 2)
+        existing.onOpenPart(existing.uiState.value.sections.single(), existing.uiState.value.sections.single().links.single())
+        assertEquals(ItemEditEvent.OpenItem(itemId = 20, typeId = cartridge.id, intoId = 0), existing.events.first())
+    }
+
+    @Test
+    fun aNewPartMadeFromItsItemGoesIntoIt() = runTest {
+        val vm = ItemEditViewModel(SavedStateHandle(mapOf("itemId" to 0L, "typeId" to cartridge.id, "intoId" to 2L)), repo)
+        backgroundScope.launch(UnconfinedTestDispatcher()) { vm.uiState.collect {} }
+        assertEquals(listOf("HP M125"), vm.uiState.value.form.draft.fitsInto.map { it.title })
+        assertFalse(vm.uiState.value.form.hasChanges)
+    }
+
+    @Test
     fun aNewItemOfAKnownTypeUsesItsFieldsAndBrandsUsedBefore() = runTest {
         val vm = itemVm(typeId = printer.id)
         assertEquals(printer, vm.uiState.value.type)

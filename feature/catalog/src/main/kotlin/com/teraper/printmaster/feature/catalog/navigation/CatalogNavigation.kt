@@ -12,9 +12,12 @@ import kotlinx.serialization.Serializable
 @Serializable
 data object CatalogDestination
 
-/** [itemId] 0 = add a new item, of type [typeId] when it's known (0 = choose). */
+/**
+ * [itemId] 0 = add a new item, of type [typeId] when it's known (0 = choose). [intoId]: a new part
+ * made from its item's form goes into that item.
+ */
 @Serializable
-data class ItemEditDestination(val itemId: Long = 0, val typeId: Long = 0)
+data class ItemEditDestination(val itemId: Long = 0, val typeId: Long = 0, val intoId: Long = 0)
 
 @Serializable
 data object ItemTypesDestination
@@ -25,6 +28,7 @@ data class TypeEditDestination(val typeId: Long = 0)
 
 internal const val ITEM_ID_ARG = "itemId"
 internal const val TYPE_ID_ARG = "typeId"
+internal const val INTO_ID_ARG = "intoId"
 
 fun NavController.navigateToCatalog() = navigate(CatalogDestination)
 
@@ -44,7 +48,11 @@ fun NavGraphBuilder.catalogScreens(navController: NavController, onOpenClient: (
         )
     }
     composable<ItemEditDestination> {
-        ItemEditRoute(onClose = navController::popBackStack, onOpenClient = onOpenClient)
+        ItemEditRoute(
+            onClose = navController::popBackStack,
+            onOpenClient = onOpenClient,
+            onOpenItem = { itemId, typeId, intoId -> navController.navigate(ItemEditDestination(itemId, typeId, intoId)) },
+        )
     }
     composable<ItemTypesDestination> {
         ItemTypesRoute(

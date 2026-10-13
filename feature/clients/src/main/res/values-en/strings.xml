@@ -176,4 +176,11 @@
     <string name="feature_clients_item_serial_taken">Already on another item: %1$s. Check it, or save if it moved.</string>
     <string name="feature_clients_item_no_types">First create your types (e.g. Printer, Phone), so each one has the right fields.</string>
     <string name="feature_clients_item_open_types">Types and templates</string>
+    <string name="feature_clients_item_type">Type</string>
+    <string name="feature_clients_item_name">Name</string>
+    <string name="feature_clients_item_part_name">From the catalog (name or model)</string>
+    <string name="feature_clients_item_part_describe">Or describe what is needed</string>
+    <string name="feature_clients_item_part_save">Done</string>
+    <string name="feature_clients_item_part_remove">Remove</string>
+    <string name="feature_clients_item_part_empty">Pick from the catalog or fill in at least one field.</string>
 </resources>

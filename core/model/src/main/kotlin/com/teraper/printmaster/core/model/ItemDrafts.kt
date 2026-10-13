@@ -21,6 +21,8 @@ data class ItemTypeDraft(
     val name: String = "",
     val parentId: Long? = null,
     val fields: List<FieldDraft> = emptyList(),
+    val hasSerial: Boolean = true,
+    val perClient: Boolean = false,
 ) {
     val isNew: Boolean get() = id == 0L
 
@@ -39,14 +41,20 @@ data class ItemTypeDraft(
     )
 
     companion object {
-        fun from(type: ItemType) = ItemTypeDraft(type.id, type.name, type.parentId, type.fields.map(FieldDraft::from))
+        fun from(type: ItemType) = ItemTypeDraft(type.id, type.name, type.parentId, type.fields.map(FieldDraft::from), type.hasSerial, type.perClient)
     }
 }
 
 enum class ItemTypeError { NAME_REQUIRED, CHOICES_REQUIRED }
 
 /** A ready set of types (a business template), or a part of an AI suggestion. */
-data class TypeTemplate(val name: String, val parentName: String? = null, val fields: List<FieldDraft> = emptyList())
+data class TypeTemplate(
+    val name: String,
+    val parentName: String? = null,
+    val fields: List<FieldDraft> = emptyList(),
+    val hasSerial: Boolean = true,
+    val perClient: Boolean = false,
+)
 
 data class ItemTemplate(val key: String, val name: String, val types: List<TypeTemplate>)
 
@@ -117,14 +125,51 @@ data class ItemDraft(
 enum class ItemDraftError { TYPE_REQUIRED, NAME_REQUIRED }
 
 /**
- * The client-item form. The model is either picked from the catalog or typed as a new one;
- * [selectedParts] holds [LinkDraft.key]s of the model's parts this client's item uses.
+ * A part in the client-item form: a catalog item ([itemId], or a new one by [title]) or, with
+ * neither, what it should be, described by [values]. [id] is the client's row, 0 = new.
+ */
+data class ClientPartDraft(
+    val id: Long = 0,
+    val typeId: Long,
+    val itemId: Long = 0,
+    val title: String = "",
+    val values: Map<Long, String> = emptyMap(),
+    val serialNumber: String = "",
+    val note: String = "",
+) {
+    /** Described by its values, not a catalog item. */
+    val isSpec: Boolean get() = itemId == 0L && title.isBlank()
+
+    fun link() = LinkDraft(itemId, typeId, title)
+
+    fun withValue(fieldId: Long, value: String) =
+        copy(values = if (value.isBlank()) values - fieldId else values + (fieldId to value))
+
+    /** "CF283A", or "Size 30 · Boy" for a described one. */
+    fun title(type: ItemType?): String = title.ifBlank { type?.let { ItemTitles.describe(it, values) }.orEmpty() }.ifEmpty { type?.name.orEmpty() }
+
+    companion object {
+        fun from(part: ClientItemPart) = ClientPartDraft(
+            id = part.id,
+            typeId = part.type.id,
+            itemId = part.item?.id ?: 0,
+            title = part.item?.title.orEmpty(),
+            values = if (part.item == null) part.values else emptyMap(),
+            serialNumber = part.serialNumber,
+            note = part.note,
+        )
+    }
+}
+
+/**
+ * The client-item form. [item] is the catalog model picked or typed as a new one; for a type whose
+ * things are each different (a child) it's the item's own name and values and never goes to the catalog.
  */
 data class ClientItemDraft(
     val id: Long = 0,
     val clientId: Long = 0,
     val item: ItemDraft = ItemDraft(),
-    val selectedParts: Set<String> = emptySet(),
+    val parts: List<ClientPartDraft> = emptyList(),
     val place: String = "",
     val note: String = "",
     /** As on the label, typed or scanned. */
@@ -134,37 +179,32 @@ data class ClientItemDraft(
 
     fun validate(): Set<ItemDraftError> = item.validate()
 
-    /** The parts of the model that are ticked for this item. */
-    fun chosenParts(): List<LinkDraft> = item.parts.filter { it.key in selectedParts }
-
-    fun togglePart(key: String): ClientItemDraft =
-        copy(selectedParts = if (key in selectedParts) selectedParts - key else selectedParts + key)
-
-    /** A new part typed in the form: added to the model and ticked. */
-    fun addPart(part: LinkDraft): ClientItemDraft {
-        if (part.title.isBlank()) return this
-        return copy(item = item.withPart(part), selectedParts = selectedParts + part.key)
+    /** A catalog part already listed is not added twice; described parts can repeat (two pairs of shoes). */
+    fun addPart(part: ClientPartDraft): ClientItemDraft {
+        if (part.isSpec && part.values.isEmpty() && part.serialNumber.isBlank()) return this
+        if (!part.isSpec && parts.any { !it.isSpec && it.link().key == part.link().key }) return this
+        return copy(parts = parts + part.copy(title = CatalogNames.clean(part.title)))
     }
 
-    /** Picking a catalog model ticks all its parts, the usual case. */
-    fun withItem(model: CatalogItem): ClientItemDraft {
-        val draft = ItemDraft.from(model)
-        return copy(item = draft, selectedParts = draft.parts.mapTo(mutableSetOf()) { it.key })
-    }
+    fun withPart(index: Int, part: ClientPartDraft) = copy(parts = parts.mapIndexed { i, p -> if (i == index) part else p })
+
+    fun removePart(index: Int) = copy(parts = parts.filterIndexed { i, _ -> i != index })
+
+    /** Picking a catalog model lists all its parts, the usual case; described parts stay. */
+    fun withItem(model: CatalogItem): ClientItemDraft = copy(
+        item = ItemDraft.from(model),
+        parts = parts.filter { it.isSpec } + model.parts.map { ClientPartDraft(typeId = it.typeId, itemId = it.id, title = it.title) },
+    )
 
     companion object {
-        fun from(owned: ClientItem): ClientItemDraft {
-            // Keep parts the item has even if they were later removed from the model.
-            val model = owned.parts.fold(ItemDraft.from(owned.item)) { draft, part -> draft.withPart(LinkDraft.from(part.item.ref())) }
-            return ClientItemDraft(
-                id = owned.id,
-                clientId = owned.clientId,
-                item = model,
-                selectedParts = owned.parts.mapTo(mutableSetOf()) { LinkDraft.keyOf(it.item.typeId, it.item.title) },
-                place = owned.place,
-                note = owned.note,
-                serialNumber = owned.serialNumber,
-            )
-        }
+        fun from(owned: ClientItem) = ClientItemDraft(
+            id = owned.id,
+            clientId = owned.clientId,
+            item = owned.item?.let(ItemDraft::from) ?: ItemDraft(typeId = owned.type.id, name = owned.name, values = owned.values),
+            parts = owned.parts.map(ClientPartDraft::from),
+            place = owned.place,
+            note = owned.note,
+            serialNumber = owned.serialNumber,
+        )
     }
 }

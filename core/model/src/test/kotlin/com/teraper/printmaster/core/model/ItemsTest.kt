@@ -4,6 +4,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.time.LocalDate
 
 class ItemsTest {
 
@@ -87,20 +88,66 @@ class ItemsTest {
     }
 
     @Test
-    fun pickingAModelTicksAllItsPartsAndNewOnesAreTickedToo() {
-        val draft = ClientItemDraft(clientId = 1).withItem(m125).addPart(LinkDraft(typeId = 2, title = "CF283X"))
+    fun pickingAModelListsItsPartsAndKeepsDescribedOnes() {
+        val shoes = ClientPartDraft(typeId = 2, values = mapOf(9L to "30"))
+        val draft = ClientItemDraft(clientId = 1, parts = listOf(shoes)).withItem(m125)
+            .addPart(ClientPartDraft(typeId = 2, title = "CF283X"))
+            .addPart(ClientPartDraft(typeId = 2, title = "cf 283x"))
 
-        assertEquals(listOf("CF283A", "CF283X"), draft.chosenParts().map { it.title })
-        assertEquals(listOf("CF283X"), draft.togglePart(LinkDraft.keyOf(2, "CF283A")).chosenParts().map { it.title })
+        assertEquals(listOf("", "CF283A", "CF283X"), draft.parts.map { it.title })
+        assertTrue(draft.parts.first().isSpec)
+        // Described parts can repeat (two pairs of shoes); empty ones are not added.
+        assertEquals(4, draft.addPart(shoes).parts.size)
+        assertEquals(3, draft.addPart(ClientPartDraft(typeId = 2)).parts.size)
+        assertEquals(listOf("CF283A", "CF283X"), draft.removePart(0).parts.map { it.title })
     }
 
     @Test
-    fun editingAClientItemKeepsPartsRemovedFromTheModel() {
+    fun editingAClientItemKeepsItsPartsAndOneOfAKindStaysOwn() {
         val owned = ClientItem(
             id = 3, clientId = 1, item = m125.copy(parts = emptyList()),
             parts = listOf(ClientItemPart(7, CatalogItem(5, cartridge, "CF283A"))),
         )
         val draft = ClientItemDraft.from(owned)
-        assertEquals(listOf("CF283A"), draft.chosenParts().map { it.title })
+        assertEquals(listOf(7L to "CF283A"), draft.parts.map { it.id to it.title })
+        assertEquals(1L, draft.item.id)
+
+        val child = ItemType(9, "Child", fields = listOf(ItemField(10, 9, "Birth", FieldKind.DATE)), perClient = true)
+        val david = ClientItem(4, 1, child, name = "David", values = mapOf(10L to "2019-03-12"))
+        assertEquals("David", david.title)
+        val childDraft = ClientItemDraft.from(david)
+        assertEquals(ItemDraft(typeId = 9, name = "David", values = mapOf(10L to "2019-03-12")), childDraft.item)
+    }
+
+    @Test
+    fun aDateFieldShowsTheAgeItGivesToday() {
+        val child = ItemType(9, "Child", fields = listOf(ItemField(10, 9, "Birth", FieldKind.DATE), ItemField(11, 9, "Sex", FieldKind.CHOICE)))
+        val values = mapOf(10L to "2019-03-12", 11L to "Boy")
+        assertEquals("6 y · Boy", ItemTitles.details(child, values, LocalDate.of(2026, 3, 11)) { "$it y" })
+        assertEquals("7 y · Boy", ItemTitles.details(child, values, LocalDate.of(2026, 3, 12)) { "$it y" })
+        assertEquals(null, ItemTitles.age("not a date"))
+    }
+
+    @Test
+    fun stockFitsWhenValuesAgreeAndMissingOnesMeanAny() {
+        val shoe = ItemType(
+            20, "Shoe", 9,
+            listOf(ItemField(21, 20, "Size", FieldKind.NUMBER), ItemField(22, 20, "For", FieldKind.CHOICE), ItemField(23, 20, "Brand", inTitle = true)),
+        )
+        val wanted = ClientItemPart(1, shoe, values = mapOf(21L to "30", 22L to "Boy"))
+        fun stock(id: Long, vararg values: Pair<Long, String>) = CatalogItem(id, shoe, "Runner", values.toMap())
+
+        assertTrue(StockMatch.fits(wanted, stock(1, 21L to "30", 22L to "boy", 23L to "Nike")))
+        assertTrue(StockMatch.fits(wanted, stock(2, 21L to "30.0")))
+        assertFalse(StockMatch.fits(wanted, stock(3, 21L to "31", 22L to "Boy")))
+        assertFalse(StockMatch.fits(wanted, stock(4, 21L to "30", 22L to "Girl")))
+        // A part asking for no "For" takes any.
+        assertTrue(StockMatch.fits(wanted.copy(values = mapOf(21L to "30")), stock(5, 21L to "30", 22L to "Girl")))
+        // Another type never fits; a catalog part fits only itself.
+        assertFalse(StockMatch.fits(wanted, CatalogItem(6, cartridge, "CF283A")))
+        val exact = ClientItemPart(2, CatalogItem(1, shoe, "Runner"))
+        assertTrue(StockMatch.fits(exact, stock(1)))
+        assertFalse(StockMatch.fits(exact, stock(7)))
+        assertEquals("Size 30 · Boy", wanted.title)
     }
 }

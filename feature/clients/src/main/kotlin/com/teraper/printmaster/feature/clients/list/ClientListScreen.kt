@@ -259,7 +259,7 @@ private fun SerialRow(match: SerialMatch, onClick: () -> Unit) {
         Column(Modifier.weight(1f)) {
             Text(match.item.serialNumber, style = MaterialTheme.typography.titleSmall)
             Text(
-                stringResource(R.string.feature_clients_serial_row, match.item.item.title, match.clientName),
+                stringResource(R.string.feature_clients_serial_row, match.item.title, match.clientName),
                 style = MaterialTheme.typography.bodySmall,
                 color = PmTheme.colors.inkMuted,
             )

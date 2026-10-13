@@ -8,6 +8,36 @@ import com.teraper.printmaster.core.model.ItemTemplate
 import com.teraper.printmaster.core.model.TypeTemplate
 import com.teraper.printmaster.feature.catalog.R
 
+/**
+ * Children's things: each child is filled in on the client (birth date gives the age, sex), and their
+ * shoes, pants and shirts by size, so an order for a child can offer what fits.
+ */
+@Composable
+private fun kidsTemplate(brand: FieldDraft, color: FieldDraft): ItemTemplate {
+    val child = stringResource(R.string.feature_catalog_tpl_child)
+    val forWhom = FieldDraft(name = stringResource(R.string.feature_catalog_tpl_for), kind = FieldKind.CHOICE, options = stringResource(R.string.feature_catalog_tpl_sexes))
+    val size = FieldDraft(name = stringResource(R.string.feature_catalog_tpl_size), kind = FieldKind.NUMBER)
+    fun clothing(name: String) = TypeTemplate(name, parentName = child, fields = listOf(brand, size, forWhom, color), hasSerial = false)
+    return ItemTemplate(
+        key = "kids",
+        name = stringResource(R.string.feature_catalog_tpl_kids),
+        types = listOf(
+            TypeTemplate(
+                child,
+                fields = listOf(
+                    FieldDraft(name = stringResource(R.string.feature_catalog_tpl_birth), kind = FieldKind.DATE),
+                    FieldDraft(name = stringResource(R.string.feature_catalog_tpl_sex), kind = FieldKind.CHOICE, options = stringResource(R.string.feature_catalog_tpl_sexes)),
+                ),
+                hasSerial = false,
+                perClient = true,
+            ),
+            clothing(stringResource(R.string.feature_catalog_tpl_shoe)),
+            clothing(stringResource(R.string.feature_catalog_tpl_pants)),
+            clothing(stringResource(R.string.feature_catalog_tpl_shirt)),
+        ),
+    )
+}
+
 /** Ready sets of types for common businesses, in the app's language. Parents come before their parts. */
 @Composable
 internal fun itemTemplates(): List<ItemTemplate> {
@@ -51,6 +81,7 @@ internal fun itemTemplates(): List<ItemTemplate> {
                 ),
             ),
         ),
+        kidsTemplate(brand, color),
         ItemTemplate(
             key = "shoes",
             name = stringResource(R.string.feature_catalog_tpl_shoes),

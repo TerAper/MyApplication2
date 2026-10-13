@@ -3,6 +3,8 @@ package com.teraper.printmaster.core.data.repository
 import com.teraper.printmaster.core.database.dao.CatalogDao
 import com.teraper.printmaster.core.database.entity.ClientItemEntity
 import com.teraper.printmaster.core.database.entity.ClientItemPartEntity
+import com.teraper.printmaster.core.database.entity.ClientItemPartValueEntity
+import com.teraper.printmaster.core.database.entity.ClientItemValueEntity
 import com.teraper.printmaster.core.database.entity.ItemEntity
 import com.teraper.printmaster.core.database.entity.ItemFieldEntity
 import com.teraper.printmaster.core.database.entity.ItemFitEntity
@@ -23,19 +25,42 @@ import javax.inject.Inject
 /** The whole catalog put together: types with fields, items with values and links. */
 internal class CatalogSnapshot(val types: Map<Long, ItemType>, val items: Map<Long, CatalogItem>) {
 
-    fun clientItem(row: ClientItemEntity, parts: List<ClientItemPartEntity>): ClientItem? {
-        val item = items[row.itemId] ?: return null
+    /** [values] are the item's own (one of a kind), [partValues] by part id (parts described by values). */
+    fun clientItem(
+        row: ClientItemEntity,
+        parts: List<ClientItemPartEntity>,
+        values: List<ClientItemValueEntity> = emptyList(),
+        partValues: List<ClientItemPartValueEntity> = emptyList(),
+    ): ClientItem? {
+        val type = types[row.typeId] ?: return null
+        val partValuesBy = partValues.groupBy({ it.partId }, { it.fieldId to it.value })
         return ClientItem(
             id = row.id,
             clientId = row.clientId,
-            item = item,
+            type = type,
+            item = row.itemId?.let(items::get),
+            name = row.name,
+            values = values.filter { it.clientItemId == row.id }.associate { it.fieldId to it.value },
             place = row.place,
             note = row.note,
             serialNumber = row.serialNumber.orEmpty(),
-            parts = parts.mapNotNull { part -> items[part.itemId]?.let { ClientItemPart(part.id, it) } }
-                .sortedBy { CatalogNames.codeKey(it.item.title) },
+            parts = parts.mapNotNull { part ->
+                val partType = types[part.typeId] ?: return@mapNotNull null
+                ClientItemPart(
+                    id = part.id,
+                    type = partType,
+                    item = part.itemId?.let(items::get),
+                    values = partValuesBy[part.id].orEmpty().toMap(),
+                    serialNumber = part.serialNumber.orEmpty(),
+                    note = part.note,
+                )
+            }.sortedWith(compareBy({ CatalogNames.key(it.type.name) }, { it.item == null }, { CatalogNames.codeKey(it.title) })),
         )
     }
+
+    /** The client's item as stored, put together. */
+    suspend fun clientItem(dao: CatalogDao, row: ClientItemEntity): ClientItem? =
+        clientItem(row, dao.getClientItemParts(row.id), dao.getClientItemValues(row.id), dao.getClientPartValues(row.id))
 
     /** The item of [typeId] whose title (or bare name) is [title], other than [excludeId]. */
     fun find(typeId: Long, title: String, excludeId: Long = 0): CatalogItem? {
@@ -59,6 +84,8 @@ internal class CatalogSnapshot(val types: Map<Long, ItemType>, val items: Map<Lo
                     id = t.id,
                     name = t.name,
                     parentId = t.parentId,
+                    hasSerial = t.hasSerial,
+                    perClient = t.perClient,
                     fields = fieldsByType[t.id].orEmpty().sortedWith(compareBy({ it.position }, { it.id })).map { f ->
                         ItemField(f.id, f.typeId, f.name, f.kind, f.options.lines().filter { it.isNotBlank() }, f.inTitle)
                     },
@@ -96,11 +123,11 @@ internal class CatalogWriter @Inject constructor(private val dao: CatalogDao) {
     suspend fun snapshot(): CatalogSnapshot =
         CatalogSnapshot.of(dao.getTypes(), dao.getFields(), dao.getItems(), dao.getValues(), dao.getFits())
 
-    /** The type named [name], made under [parentId] when missing. */
-    suspend fun typeId(name: String, parentId: Long? = null): Long {
+    /** The type named [name], made under [parentId] (with the given switches) when missing. */
+    suspend fun typeId(name: String, parentId: Long? = null, hasSerial: Boolean = true, perClient: Boolean = false): Long {
         val clean = CatalogNames.clean(name)
         return dao.getTypes().firstOrNull { CatalogNames.key(it.name) == CatalogNames.key(clean) }?.id
-            ?: dao.insertType(ItemTypeEntity(name = clean, parentId = parentId))
+            ?: dao.insertType(ItemTypeEntity(name = clean, parentId = parentId, hasSerial = hasSerial, perClient = perClient))
     }
 
     /** The field named [name] of the type, made (as text) when missing. */

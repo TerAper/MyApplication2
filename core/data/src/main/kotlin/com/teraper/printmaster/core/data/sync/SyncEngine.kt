@@ -19,6 +19,8 @@ import com.teraper.printmaster.core.database.entity.ClientEntity
 import com.teraper.printmaster.core.database.entity.ClientPhoneEntity
 import com.teraper.printmaster.core.database.entity.ClientItemEntity
 import com.teraper.printmaster.core.database.entity.ClientItemPartEntity
+import com.teraper.printmaster.core.database.entity.ClientItemPartValueEntity
+import com.teraper.printmaster.core.database.entity.ClientItemValueEntity
 import com.teraper.printmaster.core.database.entity.OrderEntity
 import com.teraper.printmaster.core.database.entity.RepairEntity
 import com.teraper.printmaster.core.database.entity.RepairItemEntity
@@ -37,6 +39,9 @@ import com.teraper.printmaster.core.model.SharedLine
 import com.teraper.printmaster.core.model.SharedOrder
 import com.teraper.printmaster.core.model.SharedItem
 import com.teraper.printmaster.core.model.SharedPart
+import com.teraper.printmaster.core.model.SharedField
+import com.teraper.printmaster.core.model.FieldKind
+import com.teraper.printmaster.core.model.ItemField
 import com.teraper.printmaster.core.model.SharedRepair
 import com.teraper.printmaster.core.model.SharedPriceItem
 import com.teraper.printmaster.core.model.SyncReport
@@ -211,16 +216,27 @@ class SyncEngine @Inject internal constructor(
         val createdHere = isMember && (client.syncId == null || client.needsReview)
         if (createdHere && !client.needsReview) sync.setNeedsReview(client.id, true)
         val items = clientItems(clientId).map { owned ->
-            val type = owned.item.type
+            val type = owned.type
             SharedItem(
                 type = type.name,
-                name = owned.item.name,
-                fields = type.fields.mapNotNull { f -> owned.item.values[f.id]?.let { f.name to it } }.toMap(),
+                name = owned.item?.name ?: owned.name,
+                fields = type.fields.mapNotNull { f -> owned.allValues[f.id]?.let { f.name to it } }.toMap(),
                 titleFields = type.titleFields.map { it.name },
-                parts = owned.parts.map { SharedPart(it.item.type.name, it.item.title) },
+                parts = owned.parts.map { part ->
+                    SharedPart(
+                        type = part.type.name,
+                        name = part.item?.title.orEmpty(),
+                        fields = part.type.fields.mapNotNull { f -> part.values[f.id]?.let { f.name to it } }.toMap(),
+                        serialNumber = part.serialNumber,
+                        fieldDefs = part.type.fields.map(::sharedField),
+                    )
+                },
                 place = owned.place,
                 id = clientItemSyncId(owned.id),
                 serialNumber = owned.serialNumber,
+                perClient = type.perClient,
+                hasSerial = type.hasSerial,
+                fieldDefs = type.fields.map(::sharedField),
             )
         }
         return SharedClient(
@@ -288,14 +304,14 @@ class SyncEngine @Inject internal constructor(
     /** "CF283A · HP LaserJet M125 (Office)", the same text on both phones. */
     private suspend fun deviceName(repair: RepairEntity): String? {
         val row = repair.clientItemId?.let { catalogDao.getClientItem(it) } ?: return null
-        val item = catalogWriter.snapshot().clientItem(row, catalogDao.getClientItemParts(row.id)) ?: return null
+        val item = catalogWriter.snapshot().clientItem(catalogDao, row) ?: return null
         return RepairDevice(item, item.parts.firstOrNull { it.id == repair.clientItemPartId }).name
     }
 
     /** The client's items, put together with the catalog. */
     private suspend fun clientItems(clientId: Long): List<ClientItem> {
         val snapshot = catalogWriter.snapshot()
-        return catalogDao.getClientItems(clientId).mapNotNull { snapshot.clientItem(it, catalogDao.getClientItemParts(it.id)) }
+        return catalogDao.getClientItems(clientId).mapNotNull { snapshot.clientItem(catalogDao, it) }
     }
 
     private suspend fun clientItemSyncId(id: Long): String {
@@ -452,21 +468,34 @@ class SyncEngine @Inject internal constructor(
                 }
                 continue
             }
-            val typeId = catalogWriter.typeId(item.type)
-            val values = item.fields.mapKeys { (name, _) -> catalogWriter.fieldId(typeId, name, inTitle = name in item.titleFields) }
+            val typeId = catalogWriter.typeId(item.type, hasSerial = item.hasSerial, perClient = item.perClient)
+            val values = item.fields.mapKeys { (name, _) -> fieldId(typeId, name, item.fieldDefs, inTitle = name in item.titleFields) }
             val type = checkNotNull(catalogWriter.snapshot().types[typeId])
-            val modelId = catalogWriter.findOrCreateItem(typeId, catalogWriter.title(type, item.name, values), values, item.name)
-            val partIds = item.parts.map { part ->
-                val partType = catalogWriter.typeId(part.type, parentId = typeId)
-                catalogWriter.linkParts(modelId, listOf(LinkDraft(typeId = partType, title = part.name)), exact = false).values.single()
-            }
+            // One of a kind (a child) keeps its own values; anything else is a model in this phone's catalog.
+            val modelId = if (type.perClient) null else catalogWriter.findOrCreateItem(typeId, catalogWriter.title(type, item.name, values), values, item.name)
             val clientItemId = catalogDao.insertClientItem(
                 ClientItemEntity(
-                    clientId = clientId, itemId = modelId, place = item.place, syncId = item.id.ifEmpty { null },
+                    clientId = clientId, typeId = typeId, itemId = modelId, name = if (type.perClient) item.name else "",
+                    place = item.place, syncId = item.id.ifEmpty { null },
                     serialNumber = item.serialNumber.ifEmpty { null }, serialKey = SerialNumbers.key(item.serialNumber).ifEmpty { null },
                 ),
             )
-            catalogDao.insertClientItemParts(partIds.distinct().map { ClientItemPartEntity(clientItemId = clientItemId, itemId = it) })
+            if (type.perClient) catalogDao.insertClientItemValues(values.map { (field, value) -> ClientItemValueEntity(clientItemId, field, value) })
+            for (part in item.parts) {
+                val partType = catalogWriter.typeId(part.type, parentId = typeId)
+                val partItemId = when {
+                    part.name.isBlank() -> null
+                    modelId != null -> catalogWriter.linkParts(modelId, listOf(LinkDraft(typeId = partType, title = part.name)), exact = false).values.single()
+                    else -> catalogWriter.findOrCreateItem(partType, part.name)
+                }
+                val partId = catalogDao.insertClientItemPart(
+                    ClientItemPartEntity(clientItemId = clientItemId, typeId = partType, itemId = partItemId, serialNumber = part.serialNumber.ifEmpty { null }),
+                )
+                if (partItemId == null) {
+                    val partValues = part.fields.mapKeys { (name, _) -> fieldId(partType, name, part.fieldDefs) }
+                    catalogDao.insertClientPartValues(partValues.map { (field, value) -> ClientItemPartValueEntity(partId, field, value) })
+                }
+            }
         }
     }
 
@@ -506,7 +535,7 @@ class SyncEngine @Inject internal constructor(
         for (repair in order.work) {
             val byId = repair.itemId?.let { id -> items.firstOrNull { item -> catalogDao.getClientItem(item.id)?.syncId == id } }
             val device = if (byId != null) {
-                RepairDevice(byId, byId.parts.firstOrNull { p -> repair.device?.startsWith("${p.item.title} · ") == true })
+                RepairDevice(byId, byId.parts.firstOrNull { p -> repair.device?.startsWith("${p.title} · ") == true })
             } else {
                 repair.device?.let { name -> devices(items).firstOrNull { it.name == name } }
             }
@@ -528,6 +557,14 @@ class SyncEngine @Inject internal constructor(
             )
         }
     }
+
+    /** The field named [name], made like the sending phone has it when missing here. */
+    private suspend fun fieldId(typeId: Long, name: String, defs: List<SharedField>, inTitle: Boolean = false): Long {
+        val def = defs.firstOrNull { it.name == name }
+        return catalogWriter.fieldId(typeId, name, def?.kind ?: FieldKind.TEXT, def?.options.orEmpty(), def?.inTitle ?: inTitle)
+    }
+
+    private fun sharedField(field: ItemField) = SharedField(field.name, field.kind, field.options, field.inTitle)
 
     /** Every device of the client: each item, and each item with one of its parts. */
     private fun devices(items: List<ClientItem>) = items.flatMap { item -> listOf(RepairDevice(item)) + item.parts.map { RepairDevice(item, it) } }

@@ -8,7 +8,9 @@ import com.teraper.printmaster.core.model.SharedLine
 import com.teraper.printmaster.core.model.SharedOrder
 import com.teraper.printmaster.core.model.SharedPriceItem
 import com.teraper.printmaster.core.model.SharedItem
+import com.teraper.printmaster.core.model.SharedField
 import com.teraper.printmaster.core.model.SharedPart
+import com.teraper.printmaster.core.model.FieldKind
 import com.teraper.printmaster.core.model.SharedRepair
 
 /** Shared values ↔ Firestore documents (plain maps; enums by name, money in minor units). */
@@ -23,8 +25,11 @@ internal object FirestoreMapping {
         "items" to items.map {
             mapOf(
                 "type" to it.type, "name" to it.name, "fields" to it.fields, "titleFields" to it.titleFields,
-                "parts" to it.parts.map { p -> mapOf("type" to p.type, "name" to p.name) },
-                "place" to it.place, "id" to it.id, "serial" to it.serialNumber,
+                "parts" to it.parts.map { p ->
+                    mapOf("type" to p.type, "name" to p.name, "fields" to p.fields, "serial" to p.serialNumber, "fieldDefs" to p.fieldDefs.map { f -> f.toMap() })
+                },
+                "fieldDefs" to it.fieldDefs.map { f -> f.toMap() },
+                "place" to it.place, "id" to it.id, "serial" to it.serialNumber, "perClient" to it.perClient, "hasSerial" to it.hasSerial,
             )
         },
         "createdByMaster" to createdByMaster,
@@ -42,13 +47,15 @@ internal object FirestoreMapping {
             SharedItem(
                 type = it.string("type"),
                 name = it.string("name"),
-                fields = (it["fields"] as? Map<*, *>).orEmpty().entries
-                    .mapNotNull { (k, v) -> if (k is String && v is String) k to v else null }.toMap(),
+                fields = it.stringMap("fields"),
                 titleFields = (it["titleFields"] as? List<*>).orEmpty().filterIsInstance<String>(),
-                parts = it.list("parts").map { p -> SharedPart(p.string("type"), p.string("name")) },
+                parts = it.list("parts").map { p -> SharedPart(p.string("type"), p.string("name"), p.stringMap("fields"), p.string("serial"), p.list("fieldDefs").map(::field)) },
+                fieldDefs = it.list("fieldDefs").map(::field),
                 place = it.string("place"),
                 id = it.string("id"),
                 serialNumber = it.string("serial"),
+                perClient = it["perClient"] == true,
+                hasSerial = it["hasSerial"] != false,
             )
         },
         createdByMaster = d["createdByMaster"] == true,
@@ -118,11 +125,20 @@ internal object FirestoreMapping {
         archived = d["archived"] == true,
     )
 
+    private fun SharedField.toMap() = mapOf("name" to name, "kind" to kind.name, "options" to options, "inTitle" to inTitle)
+
+    private fun field(d: Map<String, Any?>) = SharedField(
+        d.string("name"), enumOr(d["kind"], FieldKind.TEXT), (d["options"] as? List<*>).orEmpty().filterIsInstance<String>(), d["inTitle"] == true,
+    )
+
     private fun SharedContact.toMap() = mapOf("value" to value, "label" to label, "mapLink" to mapLink)
 
     private fun contact(d: Map<String, Any?>) = SharedContact(d.string("value"), d.string("label"), d["mapLink"] as? String)
 
     private fun Map<String, Any?>.string(key: String): String = this[key] as? String ?: ""
+
+    private fun Map<String, Any?>.stringMap(key: String): Map<String, String> =
+        (this[key] as? Map<*, *>).orEmpty().entries.mapNotNull { (k, v) -> if (k is String && v is String) k to v else null }.toMap()
 
     private fun Map<String, Any?>.long(key: String): Long? = (this[key] as? Number)?.toLong()
 

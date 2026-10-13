@@ -7,6 +7,8 @@ import androidx.room.Query
 import androidx.room.Update
 import com.teraper.printmaster.core.database.entity.ClientItemEntity
 import com.teraper.printmaster.core.database.entity.ClientItemPartEntity
+import com.teraper.printmaster.core.database.entity.ClientItemPartValueEntity
+import com.teraper.printmaster.core.database.entity.ClientItemValueEntity
 import com.teraper.printmaster.core.database.entity.ItemEntity
 import com.teraper.printmaster.core.database.entity.ItemFieldEntity
 import com.teraper.printmaster.core.database.entity.ItemFitEntity
@@ -81,7 +83,7 @@ interface CatalogDao {
     @Query("SELECT * FROM items WHERE id = :id")
     suspend fun getItem(id: Long): ItemEntity?
 
-    @Query("SELECT item_id AS id, COUNT(*) AS count FROM client_items GROUP BY item_id")
+    @Query("SELECT item_id AS id, COUNT(*) AS count FROM client_items WHERE item_id IS NOT NULL GROUP BY item_id")
     fun observeOwnedCounts(): Flow<List<IdCount>>
 
     @Query(
@@ -145,6 +147,42 @@ interface CatalogDao {
 
     @Query("SELECT * FROM client_item_parts WHERE client_item_id = :clientItemId ORDER BY id")
     suspend fun getClientItemParts(clientItemId: Long): List<ClientItemPartEntity>
+
+    @Query("SELECT v.* FROM client_item_values v JOIN client_items i ON i.id = v.client_item_id WHERE i.client_id = :clientId")
+    fun observeClientItemValues(clientId: Long): Flow<List<ClientItemValueEntity>>
+
+    @Query(
+        """
+        SELECT v.* FROM client_item_part_values v
+        JOIN client_item_parts p ON p.id = v.part_id JOIN client_items i ON i.id = p.client_item_id
+        WHERE i.client_id = :clientId
+        """,
+    )
+    fun observeClientPartValues(clientId: Long): Flow<List<ClientItemPartValueEntity>>
+
+    @Query("SELECT * FROM client_item_values WHERE client_item_id = :clientItemId")
+    suspend fun getClientItemValues(clientItemId: Long): List<ClientItemValueEntity>
+
+    @Query("SELECT v.* FROM client_item_part_values v JOIN client_item_parts p ON p.id = v.part_id WHERE p.client_item_id = :clientItemId")
+    suspend fun getClientPartValues(clientItemId: Long): List<ClientItemPartValueEntity>
+
+    @Query("DELETE FROM client_item_values WHERE client_item_id = :clientItemId")
+    suspend fun deleteClientItemValues(clientItemId: Long)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertClientItemValues(values: List<ClientItemValueEntity>)
+
+    @Query("DELETE FROM client_item_part_values WHERE part_id = :partId")
+    suspend fun deleteClientPartValues(partId: Long)
+
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertClientPartValues(values: List<ClientItemPartValueEntity>)
+
+    @Insert
+    suspend fun insertClientItemPart(row: ClientItemPartEntity): Long
+
+    @Update
+    suspend fun updateClientItemPart(row: ClientItemPartEntity)
 
     /** Items whose serial is [key] exactly, or contains it when [partial] (a part of the label read). */
     @Query(

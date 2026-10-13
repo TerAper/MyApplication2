@@ -57,6 +57,7 @@ object PmIcons {
     val Today: ImageVector = Icons.Rounded.Home
     val Clients: ImageVector = Icons.Rounded.Group
     val Orders: ImageVector = Icons.Rounded.CalendarMonth
+    val Calendar: ImageVector = Icons.Rounded.CalendarMonth
     val Payments: ImageVector = Icons.Rounded.AccountBalanceWallet
     val More: ImageVector = Icons.Rounded.GridView
 

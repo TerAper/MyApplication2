@@ -10,6 +10,8 @@ import com.teraper.printmaster.core.model.SharedOrder
 import com.teraper.printmaster.core.model.SharedPriceItem
 import com.teraper.printmaster.core.model.SharedItem
 import com.teraper.printmaster.core.model.SharedPart
+import com.teraper.printmaster.core.model.SharedField
+import com.teraper.printmaster.core.model.FieldKind
 import com.teraper.printmaster.core.model.SharedRepair
 import org.junit.Assert.assertEquals
 import org.junit.Test
@@ -26,6 +28,11 @@ class FirestoreMappingTest {
                 SharedItem(
                     "Printer", "M125", mapOf("Brand" to "HP", "Print" to "Laser"), listOf("Brand"),
                     listOf(SharedPart("Cartridge", "CF283A")), "Office", id = "i1", serialNumber = "SN1",
+                    fieldDefs = listOf(SharedField("Brand", inTitle = true), SharedField("Print", FieldKind.CHOICE, listOf("Laser", "Inkjet"))),
+                ),
+                SharedItem(
+                    "Child", "David", mapOf("Birth" to "2019-03-12"), perClient = true, hasSerial = false, id = "i2",
+                    parts = listOf(SharedPart("Shoe", "", mapOf("Size" to "30"), fieldDefs = listOf(SharedField("Size", FieldKind.NUMBER)))),
                 ),
             ),
             createdByMaster = true,

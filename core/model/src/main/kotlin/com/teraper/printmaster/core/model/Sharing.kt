@@ -37,10 +37,27 @@ data class SharedItem(
     /** The client's item itself: a client can have two of one model. */
     val id: String = "",
     val serialNumber: String = "",
+    /** One of a kind (a child): not a catalog model; [fields] are its own values. */
+    val perClient: Boolean = false,
+    val hasSerial: Boolean = true,
+    /** How the type's fields are made on the other phone when it doesn't have them yet. */
+    val fieldDefs: List<SharedField> = emptyList(),
 )
 
-/** A part the client's item uses: its type and its title ("Cartridge", "CF283A"). */
-data class SharedPart(val type: String, val name: String)
+/** A field as the other phone needs to make it: kind and choices, not just the name. */
+data class SharedField(val name: String, val kind: FieldKind = FieldKind.TEXT, val options: List<String> = emptyList(), val inTitle: Boolean = false)
+
+/**
+ * A part of the client's item: a catalog item by its title ("Cartridge", "CF283A"), or, with an
+ * empty [name], what it should be by its [fields] ("Shoe", size 30).
+ */
+data class SharedPart(
+    val type: String,
+    val name: String,
+    val fields: Map<String, String> = emptyMap(),
+    val serialNumber: String = "",
+    val fieldDefs: List<SharedField> = emptyList(),
+)
 
 /** An order and, once done, the work and how it was paid. */
 data class SharedOrder(

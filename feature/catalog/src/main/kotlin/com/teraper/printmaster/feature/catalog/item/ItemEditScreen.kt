@@ -35,6 +35,7 @@ import com.teraper.printmaster.core.designsystem.component.PmFilterChip
 import com.teraper.printmaster.core.designsystem.component.PmItemFields
 import com.teraper.printmaster.core.designsystem.component.PmMessageDialog
 import com.teraper.printmaster.core.designsystem.component.PmPrimaryButton
+import com.teraper.printmaster.core.designsystem.component.PmSecondaryButton
 import com.teraper.printmaster.core.designsystem.component.PmTextField
 import com.teraper.printmaster.core.designsystem.component.PmTopBar
 import com.teraper.printmaster.core.designsystem.icon.PmIcons
@@ -53,6 +54,7 @@ import com.teraper.printmaster.feature.catalog.R
 internal fun ItemEditRoute(
     onClose: () -> Unit,
     onOpenClient: (Long) -> Unit,
+    onOpenItem: (itemId: Long, typeId: Long, intoId: Long) -> Unit,
     viewModel: ItemEditViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -60,6 +62,7 @@ internal fun ItemEditRoute(
         viewModel.events.collect { event ->
             when (event) {
                 ItemEditEvent.Close -> onClose()
+                is ItemEditEvent.OpenItem -> onOpenItem(event.itemId, event.typeId, event.intoId)
             }
         }
     }
@@ -75,6 +78,7 @@ internal fun ItemEditRoute(
             onLinkQueryChange = viewModel::onLinkQueryChange,
             onAddLink = viewModel::onAddLink,
             onRemoveLink = viewModel::onRemoveLink,
+            onOpenPart = viewModel::onOpenPart,
             onOpenClient = onOpenClient,
             onSave = viewModel::onSave,
             onConfirmDelete = viewModel::onConfirmDelete,
@@ -93,6 +97,7 @@ internal data class ItemEditActions(
     val onLinkQueryChange: (Long, String) -> Unit = { _, _ -> },
     val onAddLink: (LinkSection, ItemRef?) -> Unit = { _, _ -> },
     val onRemoveLink: (LinkSection, String) -> Unit = { _, _ -> },
+    val onOpenPart: (LinkSection, LinkDraft?) -> Unit = { _, _ -> },
     val onOpenClient: (Long) -> Unit = {},
     val onSave: () -> Unit = {},
     val onConfirmDelete: () -> Unit = {},
@@ -132,7 +137,7 @@ internal fun ItemEditScreen(
             Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            if (state.isNew) {
+            if (state.isNew && !state.typeLocked) {
                 SectionTitle(stringResource(R.string.feature_catalog_type))
                 Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     state.types.forEach { type ->
@@ -227,8 +232,11 @@ private fun LinkSectionView(section: LinkSection, actions: ItemEditActions) {
         PmCard(Modifier.fillMaxWidth()) {
             section.links.forEachIndexed { index, link ->
                 if (index > 0) HorizontalDivider(color = PmTheme.colors.surfaceMuted)
-                Row(Modifier.fillMaxWidth().padding(start = 14.dp), verticalAlignment = Alignment.CenterVertically) {
+                // A part opens its own form (with its own parts); what it goes into is only listed.
+                val open = if (section.isParent) Modifier else Modifier.clickable { actions.onOpenPart(section, link) }
+                Row(open.fillMaxWidth().padding(start = 14.dp), verticalAlignment = Alignment.CenterVertically) {
                     Text(link.title, style = MaterialTheme.typography.bodyLarge, modifier = Modifier.weight(1f))
+                    if (!section.isParent) Icon(PmIcons.Chevron, contentDescription = stringResource(R.string.feature_catalog_open_part, link.title), tint = PmTheme.colors.outlineStrong)
                     IconButton(onClick = { actions.onRemoveLink(section, link.key) }) {
                         Icon(PmIcons.Close, contentDescription = stringResource(R.string.feature_catalog_remove_link, link.title), tint = PmTheme.colors.inkMuted)
                     }
@@ -236,7 +244,14 @@ private fun LinkSectionView(section: LinkSection, actions: ItemEditActions) {
             }
         }
     }
-    Row(verticalAlignment = Alignment.CenterVertically) {
+    if (!section.isParent) {
+        PmSecondaryButton(
+            text = stringResource(R.string.feature_catalog_add_part, section.type.name),
+            onClick = { actions.onOpenPart(section, null) },
+            icon = PmIcons.Add,
+            modifier = Modifier.fillMaxWidth(),
+        )
+    } else Row(verticalAlignment = Alignment.CenterVertically) {
         PmTextField(
             value = section.query,
             onValueChange = { actions.onLinkQueryChange(section.type.id, it) },

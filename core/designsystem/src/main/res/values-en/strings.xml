@@ -59,4 +59,11 @@
     <string name="core_designsystem_order_waiting">Waiting for the master</string>
     <string name="core_designsystem_order_given">Given · accepted</string>
     <string name="core_designsystem_order_accepted">Accepted</string>
+    <string name="core_designsystem_date_ok">OK</string>
+    <string name="core_designsystem_date_cancel">Cancel</string>
+    <string name="core_designsystem_date_pick">Pick</string>
+    <plurals name="core_designsystem_years">
+        <item quantity="one">%1$d year</item>
+        <item quantity="other">%1$d years</item>
+    </plurals>
 </resources>

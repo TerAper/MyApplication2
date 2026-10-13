@@ -5,6 +5,8 @@ import com.teraper.printmaster.core.database.PrintMasterDatabase
 import com.teraper.printmaster.core.database.dao.CatalogDao
 import com.teraper.printmaster.core.database.entity.ClientItemEntity
 import com.teraper.printmaster.core.database.entity.ClientItemPartEntity
+import com.teraper.printmaster.core.database.entity.ClientItemPartValueEntity
+import com.teraper.printmaster.core.database.entity.ClientItemValueEntity
 import com.teraper.printmaster.core.database.entity.ItemEntity
 import com.teraper.printmaster.core.database.entity.ItemFieldEntity
 import com.teraper.printmaster.core.database.entity.ItemTypeEntity
@@ -54,9 +56,9 @@ internal class OfflineCatalogRepository @Inject constructor(
             val below = if (clean.isNew) emptySet() else ItemTypes.selfAndBelow(types.map { ItemType(it.id, it.name, it.parentId) }, clean.id)
             val parentId = clean.parentId?.takeIf { id -> id !in below && types.any { it.id == id } }
             val typeId = if (clean.isNew) {
-                dao.insertType(ItemTypeEntity(name = clean.name, parentId = parentId))
+                dao.insertType(ItemTypeEntity(name = clean.name, parentId = parentId, hasSerial = clean.hasSerial, perClient = clean.perClient))
             } else {
-                dao.updateType(ItemTypeEntity(id = clean.id, name = clean.name, parentId = parentId))
+                dao.updateType(ItemTypeEntity(id = clean.id, name = clean.name, parentId = parentId, hasSerial = clean.hasSerial, perClient = clean.perClient))
                 clean.id
             }
             val existing = dao.getFields().filter { it.typeId == typeId }.associateBy { it.id }
@@ -95,7 +97,7 @@ internal class OfflineCatalogRepository @Inject constructor(
             val parentId = template.parentName?.let { name ->
                 dao.getTypes().firstOrNull { CatalogNames.key(it.name) == CatalogNames.key(name) }?.id
             }
-            val typeId = writer.typeId(template.name, parentId)
+            val typeId = writer.typeId(template.name, parentId, template.hasSerial, template.perClient)
             if (dao.getTypes().size > before) added++
             template.fields.filter { it.name.isNotBlank() }.forEach { field ->
                 writer.fieldId(typeId, field.name, field.kind, field.optionList(), field.inTitle)
@@ -161,15 +163,20 @@ internal class OfflineClientItemsRepository @Inject constructor(
     private val writer: CatalogWriter,
 ) : ClientItemsRepository {
 
-    override fun observeClientItems(clientId: Long): Flow<List<ClientItem>> =
-        combine(dao.observeSnapshot(), dao.observeClientItems(clientId), dao.observeClientItemParts(clientId)) { snapshot, rows, parts ->
-            val partsBy = parts.groupBy { it.clientItemId }
-            rows.mapNotNull { snapshot.clientItem(it, partsBy[it.id].orEmpty()) }
-        }
+    override fun observeClientItems(clientId: Long): Flow<List<ClientItem>> = combine(
+        dao.observeSnapshot(),
+        dao.observeClientItems(clientId),
+        dao.observeClientItemParts(clientId),
+        dao.observeClientItemValues(clientId),
+        dao.observeClientPartValues(clientId),
+    ) { snapshot, rows, parts, values, partValues ->
+        val partsBy = parts.groupBy { it.clientItemId }
+        rows.mapNotNull { snapshot.clientItem(it, partsBy[it.id].orEmpty(), values, partValues) }
+    }
 
     override suspend fun getClientItem(id: Long): ClientItem? {
         val row = dao.getClientItem(id) ?: return null
-        return writer.snapshot().clientItem(row, dao.getClientItemParts(id))
+        return writer.snapshot().clientItem(dao, row)
     }
 
     override suspend fun saveClientItem(draft: ClientItemDraft): SaveClientItemResult {
@@ -178,46 +185,67 @@ internal class OfflineClientItemsRepository @Inject constructor(
         val model = draft.item.normalized()
         val place = CatalogNames.clean(draft.place)
         val note = draft.note.trim()
-        val serial = SerialNumbers.clean(draft.serialNumber).ifEmpty { null }
-        val serialKey = serial?.let(SerialNumbers::key)?.ifEmpty { null }
 
         return db.withTransaction {
             val snapshot = writer.snapshot()
             val type = snapshot.types[model.typeId] ?: return@withTransaction SaveClientItemResult.Invalid(errors)
-            val itemId = if (model.isNew) {
-                val values = model.values.filterKeys { id -> type.fields.any { it.id == id } }
-                writer.findOrCreateItem(type.id, writer.title(type, model.name, values), values, model.name)
-            } else {
-                model.id
+            val values = model.values.filterKeys { id -> type.fields.any { it.id == id } }
+            val serial = SerialNumbers.clean(draft.serialNumber).takeIf { type.hasSerial }?.ifEmpty { null }
+            val serialKey = serial?.let(SerialNumbers::key)?.ifEmpty { null }
+            // One of a kind (a child): its name and values are its own, not a catalog model.
+            val itemId = when {
+                type.perClient -> null
+                model.isNew -> writer.findOrCreateItem(type.id, writer.title(type, model.name, values), values, model.name)
+                else -> model.id
             }
+            val partTypes = snapshot.types.values.filter { it.parentId == type.id }.associateBy { it.id }
+            val parts = draft.parts.filter { it.typeId in partTypes }
             // Add-only: this form never takes parts out of the shared catalog model.
-            val partIds = writer.linkParts(itemId, model.parts.filter { link -> snapshot.types[link.typeId]?.parentId == type.id }, exact = false)
-            val chosenIds = model.parts.filter { it.key in draft.selectedParts }.mapNotNull { partIds[it.key] }
-
-            val clientItemId = if (draft.isNew) {
-                dao.insertClientItem(
-                    ClientItemEntity(clientId = draft.clientId, itemId = itemId, place = place, note = note, serialNumber = serial, serialKey = serialKey),
-                )
+            val linked = if (itemId != null) {
+                writer.linkParts(itemId, parts.filterNot { it.isSpec }.map { it.link() }, exact = false)
             } else {
-                // Keep the shared id, so masters' phones see the same item, not a new one.
-                val syncId = dao.getClientItem(draft.id)?.syncId
-                dao.updateClientItem(
-                    ClientItemEntity(
-                        id = draft.id, clientId = draft.clientId, itemId = itemId, place = place, note = note, syncId = syncId,
-                        serialNumber = serial, serialKey = serialKey,
-                    ),
-                )
-                draft.id
+                parts.filterNot { it.isSpec }.associate { it.link().key to (it.itemId.takeIf { id -> id != 0L } ?: writer.findOrCreateItem(it.typeId, it.title)) }
             }
 
-            // Rows for parts still chosen keep their id, so work stays linked to them.
-            val existing = dao.getClientItemParts(clientItemId)
-            val kept = existing.filter { it.itemId in chosenIds }
-            dao.deleteClientItemPartsExcept(clientItemId, kept.map { it.id })
-            val keptItemIds = kept.mapTo(mutableSetOf()) { it.itemId }
-            dao.insertClientItemParts(
-                chosenIds.distinct().filterNot { it in keptItemIds }.map { ClientItemPartEntity(clientItemId = clientItemId, itemId = it) },
+            val row = ClientItemEntity(
+                id = if (draft.isNew) 0 else draft.id,
+                clientId = draft.clientId,
+                typeId = type.id,
+                itemId = itemId,
+                name = if (type.perClient) model.name else "",
+                place = place,
+                note = note,
+                // Keep the shared id, so masters' phones see the same item, not a new one.
+                syncId = if (draft.isNew) null else dao.getClientItem(draft.id)?.syncId,
+                serialNumber = serial,
+                serialKey = serialKey,
             )
+            val clientItemId = if (draft.isNew) dao.insertClientItem(row) else draft.id.also { dao.updateClientItem(row) }
+            dao.deleteClientItemValues(clientItemId)
+            if (type.perClient) dao.insertClientItemValues(values.map { (field, value) -> ClientItemValueEntity(clientItemId, field, value) })
+
+            // Rows still listed keep their id, so work and photos stay linked to them.
+            val existing = dao.getClientItemParts(clientItemId).map { it.id }.toSet()
+            val kept = parts.filter { it.id in existing }.map { it.id }
+            dao.deleteClientItemPartsExcept(clientItemId, kept)
+            for (part in parts) {
+                val partType = partTypes.getValue(part.typeId)
+                val partRow = ClientItemPartEntity(
+                    id = part.id.takeIf { it in existing } ?: 0,
+                    clientItemId = clientItemId,
+                    typeId = part.typeId,
+                    itemId = if (part.isSpec) null else linked[part.link().key],
+                    note = part.note.trim(),
+                    serialNumber = SerialNumbers.clean(part.serialNumber).takeIf { partType.hasSerial }?.ifEmpty { null },
+                )
+                val partId = if (partRow.id == 0L) dao.insertClientItemPart(partRow) else partRow.id.also { dao.updateClientItemPart(partRow) }
+                dao.deleteClientPartValues(partId)
+                if (part.isSpec) {
+                    val partValues = part.values.filterKeys { id -> partType.fields.any { it.id == id } }
+                        .mapValues { CatalogNames.clean(it.value) }.filterValues { it.isNotEmpty() }
+                    dao.insertClientPartValues(partValues.map { (field, value) -> ClientItemPartValueEntity(partId, field, value) })
+                }
+            }
             SaveClientItemResult.Saved(clientItemId)
         }
     }
@@ -227,7 +255,7 @@ internal class OfflineClientItemsRepository @Inject constructor(
         val clientDao = db.clientDao()
         val snapshot = writer.snapshot()
         return dao.findClientItemsBySerial(key, partial = true).mapNotNull { row ->
-            val item = snapshot.clientItem(row, dao.getClientItemParts(row.id)) ?: return@mapNotNull null
+            val item = snapshot.clientItem(dao, row) ?: return@mapNotNull null
             SerialMatch(item, clientDao.getClient(row.clientId)?.name.orEmpty(), exact = row.serialKey == key)
         }
     }

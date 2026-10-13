@@ -16,16 +16,20 @@ import com.teraper.printmaster.core.model.ItemRef
 import com.teraper.printmaster.core.model.ItemType
 import com.teraper.printmaster.core.model.ItemTypes
 import com.teraper.printmaster.core.model.LinkDraft
+import com.teraper.printmaster.feature.catalog.navigation.INTO_ID_ARG
 import com.teraper.printmaster.feature.catalog.navigation.ITEM_ID_ARG
 import com.teraper.printmaster.feature.catalog.navigation.TYPE_ID_ARG
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
@@ -57,6 +61,8 @@ data class ItemEditUiState(
     /** Values used before in each text field of this type. */
     val suggestions: Map<Long, List<String>> = emptyMap(),
     val owners: List<ItemOwner> = emptyList(),
+    /** A new part made from its item's form: its type is set. */
+    val typeLocked: Boolean = false,
 ) {
     val isNew: Boolean get() = form.draft.isNew
     val title: String get() = form.draft.title(type)
@@ -66,19 +72,25 @@ enum class ItemEditDialog { DISCARD, CONFIRM_DELETE, IN_USE }
 
 sealed interface ItemEditEvent {
     data object Close : ItemEditEvent
+
+    /** Open a part's own form: an existing one ([itemId]) or a new one of [typeId] going into [intoId]. */
+    data class OpenItem(val itemId: Long, val typeId: Long, val intoId: Long) : ItemEditEvent
 }
 
+@OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class ItemEditViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val catalogRepository: CatalogRepository,
 ) : ViewModel() {
 
-    private val itemId: Long = savedStateHandle[ITEM_ID_ARG] ?: 0L
+    /** 0 until the item is saved for the first time. */
+    private val itemId = MutableStateFlow<Long>(savedStateHandle[ITEM_ID_ARG] ?: 0L)
+    private val intoId: Long = savedStateHandle[INTO_ID_ARG] ?: 0L
     private var initialDraft = ItemDraft(typeId = savedStateHandle[TYPE_ID_ARG] ?: 0L)
     private var triedToSave = false
 
-    private val form = MutableStateFlow(ItemForm(isLoading = itemId != 0L, draft = initialDraft))
+    private val form = MutableStateFlow(ItemForm(isLoading = itemId.value != 0L || intoId != 0L, draft = initialDraft))
 
     private val _events = Channel<ItemEditEvent>(Channel.BUFFERED)
     val events: Flow<ItemEditEvent> = _events.receiveAsFlow()
@@ -87,28 +99,40 @@ class ItemEditViewModel @Inject constructor(
         form,
         catalogRepository.observeTypes(),
         catalogRepository.observeCatalog(),
-        if (itemId != 0L) catalogRepository.observeOwners(itemId) else flowOf(emptyList()),
+        itemId.flatMapLatest { id -> if (id != 0L) catalogRepository.observeOwners(id) else flowOf(emptyList()) },
     ) { form, types, catalog, owners ->
         val type = types.firstOrNull { it.id == form.draft.typeId }
         ItemEditUiState(
             form = form,
-            types = types,
+            // One-of-a-kind types (a child) are filled in on clients, never in the catalog.
+            types = types.filterNot { it.perClient },
             type = type,
             sections = type?.let { sections(it, types, catalog, form) }.orEmpty(),
             suggestions = type?.let { t -> usedValues(catalog.map { it.item }.filter { it.typeId == t.id }, t.fields) }.orEmpty(),
             owners = owners,
+            typeLocked = intoId != 0L,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ItemEditUiState(form.value))
 
     init {
-        if (itemId != 0L) {
-            viewModelScope.launch {
-                val item = catalogRepository.observeItem(itemId).first()
+        viewModelScope.launch {
+            if (itemId.value != 0L) {
+                val item = catalogRepository.observeItem(itemId.value).first()
                 if (item == null) {
                     _events.send(ItemEditEvent.Close)
-                } else {
+                    return@launch
+                }
+                initialDraft = ItemDraft.from(item)
+            } else if (intoId != 0L) {
+                // A new part made from its item's form already goes into that item.
+                catalogRepository.observeItem(intoId).first()?.let { into -> initialDraft = initialDraft.withFitsInto(LinkDraft.from(into.ref())) }
+            }
+            form.update { it.copy(isLoading = false, draft = initialDraft) }
+            // Parts saved in their own forms show up here; unsaved typing is never overwritten.
+            itemId.filter { it != 0L }.flatMapLatest { catalogRepository.observeItem(it) }.collect { item ->
+                if (item != null && !form.value.hasChanges && !form.value.isSaving) {
                     initialDraft = ItemDraft.from(item)
-                    form.update { it.copy(isLoading = false, draft = initialDraft) }
+                    form.update { it.copy(draft = initialDraft) }
                 }
             }
         }
@@ -116,7 +140,7 @@ class ItemEditViewModel @Inject constructor(
 
     /** Only for a new item: an existing one keeps its type. */
     fun onTypeChange(typeId: Long) {
-        if (form.value.draft.isNew) editDraft { it.copy(typeId = typeId, values = emptyMap(), fitsInto = emptyList(), parts = emptyList()) }
+        if (form.value.draft.isNew && intoId == 0L) editDraft { it.copy(typeId = typeId, values = emptyMap(), fitsInto = emptyList(), parts = emptyList()) }
     }
 
     fun onNameChange(name: String) = editDraft { it.copy(name = name) }
@@ -138,21 +162,48 @@ class ItemEditViewModel @Inject constructor(
     }
 
     fun onSave() {
+        viewModelScope.launch { if (save()) _events.send(ItemEditEvent.Close) }
+    }
+
+    /**
+     * A part's own form: tapping a listed part, or "+ Cartridge" for a new one. The item is saved
+     * first (a part needs something to go into); with errors the form stays.
+     */
+    fun onOpenPart(section: LinkSection, link: LinkDraft?) {
+        viewModelScope.launch {
+            val state = form.value
+            if ((state.draft.isNew || state.hasChanges) && !save()) return@launch
+            val id = itemId.value
+            val partId = link?.let { l ->
+                l.id.takeIf { it != 0L } ?: catalogRepository.observeItem(id).first()?.parts?.firstOrNull { LinkDraft.from(it).key == l.key }?.id
+            } ?: 0L
+            _events.send(ItemEditEvent.OpenItem(partId, section.type.id, if (partId == 0L) id else 0L))
+        }
+    }
+
+    /** Saves and stays; true when saved. */
+    private suspend fun save(): Boolean {
         val state = form.value
-        if (state.isSaving || state.isLoading) return
+        if (state.isSaving || state.isLoading) return false
         triedToSave = true
         // A link typed but not added yet is almost certainly meant to be added.
         uiState.value.sections.filter { it.query.isNotBlank() }.forEach { onAddLink(it, null) }
         val draft = form.value.draft
-        viewModelScope.launch {
-            form.update { it.copy(isSaving = true) }
-            when (val result = catalogRepository.saveItem(draft)) {
-                is SaveItemResult.Saved -> {
-                    form.update { it.copy(isSaving = false, hasChanges = false) }
-                    _events.send(ItemEditEvent.Close)
-                }
-                is SaveItemResult.Invalid -> form.update { it.copy(isSaving = false, errors = result.errors) }
-                SaveItemResult.NameTaken -> form.update { it.copy(isSaving = false, errors = emptySet(), nameTaken = true) }
+        form.update { it.copy(isSaving = true) }
+        return when (val result = catalogRepository.saveItem(draft)) {
+            is SaveItemResult.Saved -> {
+                initialDraft = draft.copy(id = result.itemId)
+                form.update { it.copy(isSaving = false, hasChanges = false, draft = initialDraft) }
+                itemId.value = result.itemId
+                true
+            }
+            is SaveItemResult.Invalid -> {
+                form.update { it.copy(isSaving = false, errors = result.errors) }
+                false
+            }
+            SaveItemResult.NameTaken -> {
+                form.update { it.copy(isSaving = false, errors = emptySet(), nameTaken = true) }
+                false
             }
         }
     }
@@ -164,7 +215,7 @@ class ItemEditViewModel @Inject constructor(
     fun onConfirmDelete() {
         form.update { it.copy(dialog = null) }
         viewModelScope.launch {
-            when (catalogRepository.deleteItem(itemId)) {
+            when (catalogRepository.deleteItem(itemId.value)) {
                 DeleteResult.DELETED, DeleteResult.NOT_FOUND -> {
                     form.update { it.copy(hasChanges = false) }
                     _events.send(ItemEditEvent.Close)
@@ -206,7 +257,7 @@ class ItemEditViewModel @Inject constructor(
         fun section(of: ItemType, isParent: Boolean): LinkSection {
             val query = form.linkQueries[of.id].orEmpty()
             val candidates = catalog.asSequence().map { it.item }
-                .filter { it.typeId == of.id && it.id != itemId && LinkDraft.keyOf(it.typeId, it.title) !in linked }
+                .filter { it.typeId == of.id && it.id != itemId.value && LinkDraft.keyOf(it.typeId, it.title) !in linked }
                 .filter { query.isBlank() || CatalogSearch.matches(it, query) }
                 .take(MAX_CANDIDATES).map { it.ref() }.toList()
             val links = if (isParent) form.draft.fitsInto else form.draft.parts.filter { it.typeId == of.id }

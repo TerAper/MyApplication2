@@ -18,10 +18,10 @@ data class RepairLine(
 /** What was worked on: a client's item, or one of its parts. */
 data class RepairDevice(val item: ClientItem, val part: ClientItemPart? = null) {
     /** "CF283A · HP LaserJet M125", or "… (Office)" so two of one model read differently. */
-    val name: String get() = part?.let { "${it.item.title} · ${item.name}" } ?: item.name
+    val name: String get() = part?.let { "${it.title} · ${item.label}" } ?: item.label
 
     /** The type of what was worked on, to offer its price-list group first. */
-    val typeId: Long get() = (part?.item ?: item.item).typeId
+    val typeId: Long get() = (part?.type ?: item.type).id
 }
 
 /** The work done during a visit on one device ([device] null = not a listed device). */

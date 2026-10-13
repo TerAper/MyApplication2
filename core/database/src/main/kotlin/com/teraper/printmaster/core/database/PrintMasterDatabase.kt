@@ -22,6 +22,8 @@ import com.teraper.printmaster.core.database.dao.SyncDao
 import com.teraper.printmaster.core.database.entity.AppProfileEntity
 import com.teraper.printmaster.core.database.entity.ClientItemEntity
 import com.teraper.printmaster.core.database.entity.ClientItemPartEntity
+import com.teraper.printmaster.core.database.entity.ClientItemPartValueEntity
+import com.teraper.printmaster.core.database.entity.ClientItemValueEntity
 import com.teraper.printmaster.core.database.entity.ItemEntity
 import com.teraper.printmaster.core.database.entity.ItemFieldEntity
 import com.teraper.printmaster.core.database.entity.ItemFitEntity
@@ -67,6 +69,8 @@ import com.teraper.printmaster.core.database.entity.SyncStateEntity
         ItemFitEntity::class,
         ClientItemEntity::class,
         ClientItemPartEntity::class,
+        ClientItemValueEntity::class,
+        ClientItemPartValueEntity::class,
         OrderEntity::class,
         RepairPartEntity::class,
         RepairEntity::class,
@@ -109,6 +113,7 @@ import com.teraper.printmaster.core.database.entity.SyncStateEntity
         // 13: orders given to attached masters, and their accepting.
         AutoMigration(from = 12, to = 13),
         // 14: the customer's own item types instead of printers (ItemsMigration, by hand).
+        // 15: one-of-a-kind client items and parts described by values (ClientProfilesMigration, by hand).
     ],
 )
 abstract class PrintMasterDatabase : RoomDatabase() {
@@ -127,7 +132,7 @@ abstract class PrintMasterDatabase : RoomDatabase() {
     abstract fun expenseDao(): ExpenseDao
 
     companion object {
-        const val VERSION = 14
+        const val VERSION = 15
 
         /** Oldest version a backup file may have; older ones only existed on development phones. */
         const val OLDEST_RESTORABLE_VERSION = 2
@@ -143,7 +148,7 @@ abstract class PrintMasterDatabase : RoomDatabase() {
             }
             return builder
                 .addCallback(ForeignKeysOn)
-                .addMigrations(ItemsMigration(PrinterWords.from(context)))
+                .addMigrations(ItemsMigration(PrinterWords.from(context)), ClientProfilesMigration)
                 // Version 1 only ever existed on development phones (before companies were added).
                 .fallbackToDestructiveMigrationFrom(dropAllTables = true, 1)
                 .build()

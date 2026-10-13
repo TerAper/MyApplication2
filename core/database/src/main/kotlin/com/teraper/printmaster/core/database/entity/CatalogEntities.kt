@@ -24,6 +24,10 @@ data class ItemTypeEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val name: String,
     @ColumnInfo(name = "parent_id") val parentId: Long? = null,
+    /** Things of this type have a serial number to keep. */
+    @ColumnInfo(name = "has_serial", defaultValue = "1") val hasSerial: Boolean = true,
+    /** Each one is different (a client's child): described on the client, not in the catalog. */
+    @ColumnInfo(name = "per_client", defaultValue = "0") val perClient: Boolean = false,
 )
 
 /** One field of a type; [options] are a choice field's values, one per line. */
@@ -120,7 +124,10 @@ data class ItemFitEntity(
     @ColumnInfo(name = "into_id") val intoId: Long,
 )
 
-/** Something a client owns, of a catalog model. */
+/**
+ * Something a client owns or has: of a catalog model ([itemId]), or one of a kind (a child) with
+ * its own [name] and values (client_item_values).
+ */
 @Entity(
     tableName = "client_items",
     foreignKeys = [
@@ -131,18 +138,27 @@ data class ItemFitEntity(
             onDelete = ForeignKey.CASCADE,
         ),
         ForeignKey(
+            entity = ItemTypeEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["type_id"],
+            onDelete = ForeignKey.RESTRICT,
+        ),
+        ForeignKey(
             entity = ItemEntity::class,
             parentColumns = ["id"],
             childColumns = ["item_id"],
             onDelete = ForeignKey.RESTRICT,
         ),
     ],
-    indices = [Index(value = ["client_id"]), Index(value = ["item_id"]), Index(value = ["serial_key"])],
+    indices = [Index(value = ["client_id"]), Index(value = ["type_id"]), Index(value = ["item_id"]), Index(value = ["serial_key"])],
 )
 data class ClientItemEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     @ColumnInfo(name = "client_id") val clientId: Long,
-    @ColumnInfo(name = "item_id") val itemId: Long,
+    @ColumnInfo(name = "type_id") val typeId: Long,
+    @ColumnInfo(name = "item_id") val itemId: Long?,
+    /** A one-of-a-kind item's name ("David"); empty for a catalog model. */
+    val name: String = "",
     /** Where it stands, e.g. "Accounting room". */
     val place: String = "",
     val note: String = "",
@@ -154,7 +170,10 @@ data class ClientItemEntity(
     @ColumnInfo(name = "serial_key") val serialKey: String? = null,
 )
 
-/** A part one of the client's items uses (a cartridge of their printer). */
+/**
+ * A part of one of the client's items: a catalog item (a cartridge of their printer), or with no
+ * [itemId] what it should be, by its values in client_item_part_values (a child's shoes, size 30).
+ */
 @Entity(
     tableName = "client_item_parts",
     foreignKeys = [
@@ -165,17 +184,77 @@ data class ClientItemEntity(
             onDelete = ForeignKey.CASCADE,
         ),
         ForeignKey(
+            entity = ItemTypeEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["type_id"],
+            onDelete = ForeignKey.RESTRICT,
+        ),
+        ForeignKey(
             entity = ItemEntity::class,
             parentColumns = ["id"],
             childColumns = ["item_id"],
             onDelete = ForeignKey.RESTRICT,
         ),
     ],
-    indices = [Index(value = ["client_item_id"]), Index(value = ["item_id"])],
+    indices = [Index(value = ["client_item_id"]), Index(value = ["type_id"]), Index(value = ["item_id"])],
 )
 data class ClientItemPartEntity(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     @ColumnInfo(name = "client_item_id") val clientItemId: Long,
-    @ColumnInfo(name = "item_id") val itemId: Long,
+    @ColumnInfo(name = "type_id") val typeId: Long,
+    @ColumnInfo(name = "item_id") val itemId: Long?,
     val note: String = "",
+    @ColumnInfo(name = "serial_number") val serialNumber: String? = null,
+)
+
+/** A field value of a one-of-a-kind client item (a child's birth date). */
+@Entity(
+    tableName = "client_item_values",
+    primaryKeys = ["client_item_id", "field_id"],
+    foreignKeys = [
+        ForeignKey(
+            entity = ClientItemEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["client_item_id"],
+            onDelete = ForeignKey.CASCADE,
+        ),
+        ForeignKey(
+            entity = ItemFieldEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["field_id"],
+            onDelete = ForeignKey.CASCADE,
+        ),
+    ],
+    indices = [Index(value = ["field_id"])],
+)
+data class ClientItemValueEntity(
+    @ColumnInfo(name = "client_item_id") val clientItemId: Long,
+    @ColumnInfo(name = "field_id") val fieldId: Long,
+    val value: String,
+)
+
+/** A field value of a client's part described by its values (shoe size 30). */
+@Entity(
+    tableName = "client_item_part_values",
+    primaryKeys = ["part_id", "field_id"],
+    foreignKeys = [
+        ForeignKey(
+            entity = ClientItemPartEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["part_id"],
+            onDelete = ForeignKey.CASCADE,
+        ),
+        ForeignKey(
+            entity = ItemFieldEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["field_id"],
+            onDelete = ForeignKey.CASCADE,
+        ),
+    ],
+    indices = [Index(value = ["field_id"])],
+)
+data class ClientItemPartValueEntity(
+    @ColumnInfo(name = "part_id") val partId: Long,
+    @ColumnInfo(name = "field_id") val fieldId: Long,
+    val value: String,
 )

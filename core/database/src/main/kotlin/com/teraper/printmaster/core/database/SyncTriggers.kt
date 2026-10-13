@@ -22,6 +22,8 @@ internal object SyncTriggers {
         Trigger("client_items", listOf("DELETE"), "client", "OLD.client_id"),
         Trigger("client_item_parts", listOf("INSERT", "UPDATE"), "client", "(SELECT client_id FROM client_items WHERE id = NEW.client_item_id)"),
         Trigger("client_item_parts", listOf("DELETE"), "client", "(SELECT client_id FROM client_items WHERE id = OLD.client_item_id)"),
+        Trigger("client_item_values", listOf("INSERT", "UPDATE"), "client", "(SELECT client_id FROM client_items WHERE id = NEW.client_item_id)"),
+        Trigger("client_item_part_values", listOf("INSERT", "UPDATE"), "client", "(SELECT i.client_id FROM client_item_parts p JOIN client_items i ON i.id = p.client_item_id WHERE p.id = NEW.part_id)"),
         Trigger("orders", listOf("INSERT", "UPDATE"), "order", "NEW.id"),
         Trigger("repairs", listOf("INSERT", "UPDATE"), "order", "NEW.order_id"),
         Trigger("repairs", listOf("DELETE"), "order", "OLD.order_id"),

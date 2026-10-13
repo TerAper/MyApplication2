@@ -90,6 +90,10 @@ class TypeEditViewModel @Inject constructor(
 
     fun onParentChange(parentId: Long?) = editDraft { it.copy(parentId = parentId) }
 
+    fun onHasSerialChange(on: Boolean) = editDraft { it.copy(hasSerial = on) }
+
+    fun onPerClientChange(on: Boolean) = editDraft { it.copy(perClient = on) }
+
     fun onFieldChange(index: Int, field: FieldDraft) =
         editDraft { draft -> draft.copy(fields = draft.fields.mapIndexed { i, row -> if (i == index) field else row }) }
 

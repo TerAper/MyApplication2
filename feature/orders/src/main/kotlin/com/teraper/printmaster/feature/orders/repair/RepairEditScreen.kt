@@ -280,8 +280,8 @@ private fun DeviceCard(items: List<ClientItem>, draft: RepairDraft, onDeviceClic
         items.forEach { item ->
             val selected = draft.itemId == item.id
             ChoiceRow(
-                title = item.item.title,
-                subtitle = listOf(item.item.type.name, item.place).filter { it.isNotBlank() }.joinToString(" · "),
+                title = item.title,
+                subtitle = listOf(item.type.name, item.place).filter { it.isNotBlank() }.joinToString(" · "),
                 selected = selected,
                 onClick = { onDeviceClick(item.id, null) },
             )
@@ -293,7 +293,7 @@ private fun DeviceCard(items: List<ClientItem>, draft: RepairDraft, onDeviceClic
                 ) {
                     item.parts.forEach { part ->
                         PmFilterChip(
-                            text = part.item.title,
+                            text = part.title,
                             selected = draft.itemPartId == part.id,
                             onClick = { onDeviceClick(item.id, part.id) },
                         )

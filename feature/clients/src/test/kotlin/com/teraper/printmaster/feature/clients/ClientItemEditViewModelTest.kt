@@ -9,7 +9,7 @@ import com.teraper.printmaster.core.model.ItemDraftError
 import com.teraper.printmaster.core.model.ItemField
 import com.teraper.printmaster.core.model.ItemRef
 import com.teraper.printmaster.core.model.ItemType
-import com.teraper.printmaster.core.model.LinkDraft
+import com.teraper.printmaster.core.model.FieldKind
 import com.teraper.printmaster.core.model.SerialMatch
 import com.teraper.printmaster.core.testing.FakeCatalogRepository
 import com.teraper.printmaster.core.testing.FakeClientItemsRepository
@@ -61,7 +61,7 @@ class ClientItemEditViewModelTest {
         vm.onModelPicked(m125)
         val state = vm.uiState.value
         assertEquals(ModelStep.PICKED, state.form.step)
-        assertEquals(listOf("CF283A", "CF283X"), state.form.draft.chosenParts().map { it.title })
+        assertEquals(listOf("CF283A", "CF283X"), state.form.draft.parts.map { it.title })
         assertEquals(listOf(cartridge, toner), state.partTypes)
         assertEquals("HP LaserJet M125", state.title)
     }
@@ -69,12 +69,13 @@ class ClientItemEditViewModelTest {
     @Test
     fun aNewItemTakesTheTypedNameAndItsTypesFields() = runTest {
         val vm = vm()
+        vm.onTypePicked(printer)
         vm.onModelQueryChange("LaserJet P1102")
         vm.onStartNewModel()
         assertEquals(ModelStep.NEW, vm.uiState.value.form.step)
         assertEquals("LaserJet P1102", vm.uiState.value.form.draft.item.name)
+        assertEquals(printer.id, vm.uiState.value.form.draft.item.typeId)
 
-        vm.onNewModelType(printer.id)
         vm.onModelValueChange(1, "HP")
         assertEquals("HP LaserJet P1102", vm.uiState.value.title)
         assertEquals(mapOf(1L to listOf("HP", "Canon")), vm.uiState.value.valueSuggestions)
@@ -89,21 +90,60 @@ class ClientItemEditViewModelTest {
     }
 
     @Test
-    fun aTypedPartIsAddedOfTheChosenPartTypeAndSaved() = runTest {
+    fun aPartIsPickedOrTypedInItsSheetAndSaved() = runTest {
         val vm = vm()
         val closed = mutableListOf<ClientItemEditEvent>()
         backgroundScope.launch(UnconfinedTestDispatcher()) { vm.events.collect { closed += it } }
         vm.onModelPicked(m125)
-        vm.onNewPartType(toner.id)
-        vm.onNewPartChange("TN-1")
+        vm.onAddPart(toner)
+        vm.onPartNameChange("TN-1")
+        vm.onSavePart()
+        // Tapping a listed part opens it; removing it there takes it off.
+        vm.onEditPart(1)
+        assertEquals("CF283X", vm.uiState.value.form.partEditor!!.draft.title)
+        vm.onRemovePart()
         vm.onPlaceChange("Office")
         vm.onSave()
 
         val saved = items.saved.single()
-        assertEquals(LinkDraft(typeId = 3, title = "TN-1"), saved.item.parts.last())
-        assertEquals(listOf("CF283A", "CF283X", "TN-1"), saved.chosenParts().map { it.title })
+        assertEquals(listOf("CF283A", "TN-1"), saved.parts.map { it.title })
+        assertEquals(3L, saved.parts.last().typeId)
         assertEquals("Office", saved.place)
         assertEquals(listOf<ClientItemEditEvent>(ClientItemEditEvent.Close), closed)
+    }
+
+    @Test
+    fun aChildIsFilledInOnTheClientWithItsShoesBySize() = runTest {
+        val child = ItemType(10, "Child", fields = listOf(ItemField(11, 10, "Birth", FieldKind.DATE)), hasSerial = false, perClient = true)
+        val shoe = ItemType(20, "Shoe", 10, listOf(ItemField(21, 20, "Size", FieldKind.NUMBER), ItemField(22, 20, "For", FieldKind.CHOICE, listOf("Boy", "Girl"))), hasSerial = false)
+        val runner = CatalogItem(30, shoe, "Runner", mapOf(21L to "30"))
+        catalog.types.value = listOf(printer, cartridge, child, shoe)
+        catalog.entries.value = catalog.entries.value + CatalogEntry(runner)
+        val vm = vm()
+
+        vm.onTypePicked(child)
+        assertEquals(ModelStep.NEW, vm.uiState.value.form.step)
+        vm.onModelNameChange("David")
+        vm.onModelValueChange(11, "2019-03-12")
+        assertEquals(listOf(shoe), vm.uiState.value.partTypes)
+
+        vm.onAddPart(shoe)
+        assertEquals(listOf(runner), vm.uiState.value.partChoices)
+        vm.onPartValueChange(21, "30")
+        vm.onPartValueChange(22, "Boy")
+        vm.onSavePart()
+        // A second pair, picked from the catalog this time.
+        vm.onAddPart(shoe)
+        vm.onPartItemPicked(runner)
+        vm.onSavePart()
+        vm.onSave()
+
+        val saved = items.saved.single()
+        assertEquals("David", saved.item.name)
+        assertEquals(mapOf(11L to "2019-03-12"), saved.item.values)
+        assertEquals(listOf(true, false), saved.parts.map { it.isSpec })
+        assertEquals(mapOf(21L to "30", 22L to "Boy"), saved.parts.first().values)
+        assertEquals(30L, saved.parts.last().itemId)
     }
 
     @Test
@@ -112,7 +152,7 @@ class ClientItemEditViewModelTest {
         val vm = vm(clientItemId = 4)
         val form = vm.uiState.value.form
         assertEquals(ModelStep.PICKED, form.step)
-        assertEquals(listOf("CF283A"), form.draft.chosenParts().map { it.title })
+        assertEquals(listOf(9L to "CF283A"), form.draft.parts.map { it.id to it.title })
 
         vm.onDeleteClick()
         assertEquals(ClientItemEditDialog.CONFIRM_DELETE, vm.uiState.value.form.dialog)

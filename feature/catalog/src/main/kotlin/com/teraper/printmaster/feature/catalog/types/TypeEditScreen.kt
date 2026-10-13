@@ -18,6 +18,8 @@ import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -67,6 +69,8 @@ internal fun TypeEditRoute(
             onDelete = viewModel::onDeleteClick,
             onNameChange = viewModel::onNameChange,
             onParentChange = viewModel::onParentChange,
+            onHasSerialChange = viewModel::onHasSerialChange,
+            onPerClientChange = viewModel::onPerClientChange,
             onFieldChange = viewModel::onFieldChange,
             onRemoveField = viewModel::onRemoveField,
             onSave = viewModel::onSave,
@@ -82,6 +86,8 @@ internal data class TypeEditActions(
     val onDelete: () -> Unit = {},
     val onNameChange: (String) -> Unit = {},
     val onParentChange: (Long?) -> Unit = {},
+    val onHasSerialChange: (Boolean) -> Unit = {},
+    val onPerClientChange: (Boolean) -> Unit = {},
     val onFieldChange: (Int, FieldDraft) -> Unit = { _, _ -> },
     val onRemoveField: (Int) -> Unit = {},
     val onSave: () -> Unit = {},
@@ -143,6 +149,9 @@ internal fun TypeEditScreen(
                     }
                 }
             }
+
+            SwitchRow(stringResource(R.string.feature_catalog_has_serial), stringResource(R.string.feature_catalog_has_serial_help), draft.hasSerial, actions.onHasSerialChange)
+            SwitchRow(stringResource(R.string.feature_catalog_per_client), stringResource(R.string.feature_catalog_per_client_help), draft.perClient, actions.onPerClientChange)
 
             SectionTitle(stringResource(R.string.feature_catalog_section_type_fields))
             Text(stringResource(R.string.feature_catalog_fields_help), style = MaterialTheme.typography.bodySmall, color = PmTheme.colors.inkMuted)
@@ -261,8 +270,20 @@ private fun FieldKind.label(): String = stringResource(
         FieldKind.NUMBER -> R.string.feature_catalog_kind_number
         FieldKind.CHOICE -> R.string.feature_catalog_kind_choice
         FieldKind.YES_NO -> R.string.feature_catalog_kind_yes_no
+        FieldKind.DATE -> R.string.feature_catalog_kind_date
     },
 )
+
+@Composable
+private fun SwitchRow(title: String, help: String, checked: Boolean, onChange: (Boolean) -> Unit) {
+    Row(Modifier.fillMaxWidth().clickable { onChange(!checked) }, verticalAlignment = Alignment.CenterVertically) {
+        Column(Modifier.weight(1f).padding(end = 12.dp)) {
+            Text(title, style = MaterialTheme.typography.bodyLarge)
+            Text(help, style = MaterialTheme.typography.bodySmall, color = PmTheme.colors.inkMuted)
+        }
+        Switch(checked = checked, onCheckedChange = onChange, colors = SwitchDefaults.colors(checkedTrackColor = PmTheme.colors.primary))
+    }
+}
 
 @Composable
 private fun SectionTitle(text: String) {

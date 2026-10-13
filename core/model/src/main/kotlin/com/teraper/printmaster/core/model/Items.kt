@@ -1,5 +1,8 @@
 package com.teraper.printmaster.core.model
 
+import java.time.LocalDate
+import java.time.Period
+import java.time.format.DateTimeFormatter
 import java.util.Locale
 
 /*
@@ -8,8 +11,8 @@ import java.util.Locale
  * the real models ("HP LaserJet M125"), and client items are the ones a client owns.
  */
 
-/** What a field holds; choices are typed by the customer. */
-enum class FieldKind { TEXT, NUMBER, CHOICE, YES_NO }
+/** What a field holds; choices are typed by the customer. A date is kept as yyyy-MM-dd and shown as an age. */
+enum class FieldKind { TEXT, NUMBER, CHOICE, YES_NO, DATE }
 
 /**
  * One field of a type. [inTitle] fields are written before the item's name, so a "Brand" field
@@ -24,12 +27,18 @@ data class ItemField(
     val inTitle: Boolean = false,
 )
 
-/** A kind of thing; [parentId] is the type it goes into (a cartridge into a printer), null = stands alone. */
+/**
+ * A kind of thing; [parentId] is the type it goes into (a cartridge into a printer), null = stands alone.
+ * [hasSerial]: things of this type have a serial number to keep. [perClient]: each one is different
+ * (a client's child), so it's described on the client, not picked from the catalog.
+ */
 data class ItemType(
     val id: Long,
     val name: String,
     val parentId: Long? = null,
     val fields: List<ItemField> = emptyList(),
+    val hasSerial: Boolean = true,
+    val perClient: Boolean = false,
 ) {
     val titleFields: List<ItemField> get() = fields.filter { it.inTitle }
 }
@@ -97,16 +106,34 @@ object ItemTitles {
     fun title(type: ItemType, name: String, values: Map<Long, String>): String =
         CatalogNames.clean((type.titleFields.mapNotNull { values[it.id]?.takeIf(String::isNotBlank) } + name).joinToString(" "))
 
-    fun details(type: ItemType, values: Map<Long, String>): String =
-        type.fields.filterNot { it.inTitle }.mapNotNull { field ->
-            val value = values[field.id]?.trim().orEmpty()
-            when {
-                value.isEmpty() -> null
-                field.kind == FieldKind.YES_NO -> field.name.takeIf { value == YES }
-                field.kind == FieldKind.NUMBER -> "${field.name} $value"
-                else -> value
-            }
-        }.joinToString(" · ")
+    /** [years] words an age ("6 y"); a date field shows the age it gives today. */
+    fun details(
+        type: ItemType,
+        values: Map<Long, String>,
+        today: LocalDate = LocalDate.now(),
+        years: (Int) -> String = { it.toString() },
+    ): String = type.fields.filterNot { it.inTitle }.mapNotNull { field ->
+        val value = values[field.id]?.trim().orEmpty()
+        when {
+            value.isEmpty() -> null
+            field.kind == FieldKind.YES_NO -> field.name.takeIf { value == YES }
+            field.kind == FieldKind.NUMBER -> "${field.name} $value"
+            field.kind == FieldKind.DATE -> age(value, today)?.let(years) ?: value
+            else -> value
+        }
+    }.joinToString(" · ")
+
+    /** Title fields and the other filled fields: "Size 30 · Boy", what a part asked for by its values reads like. */
+    fun describe(type: ItemType, values: Map<Long, String>, today: LocalDate = LocalDate.now(), years: (Int) -> String = { it.toString() }): String =
+        listOf(title(type, "", values), details(type, values, today, years)).filter { it.isNotBlank() }.joinToString(" · ")
+
+    /** Full years from a stored date to [today]; null = not a date. */
+    fun age(date: String, today: LocalDate = LocalDate.now()): Int? =
+        parseDate(date)?.let { Period.between(it, today).years.coerceAtLeast(0) }
+
+    fun parseDate(text: String): LocalDate? = runCatching { LocalDate.parse(text.trim()) }.getOrNull()
+
+    fun formatDate(date: LocalDate): String = date.format(DateTimeFormatter.ISO_LOCAL_DATE)
 
     /** How a yes/no field stores "yes"; empty = no. */
     const val YES = "1"
@@ -118,11 +145,17 @@ data class CatalogEntry(val item: CatalogItem, val ownedCount: Int = 0)
 /** A client who owns an item of some catalog model ("who has this?"). */
 data class ItemOwner(val clientId: Long, val clientName: String, val place: String)
 
-/** One thing a client owns. */
+/**
+ * One thing a client owns or has: a catalog model ([item], a printer) or one of a kind (a child),
+ * then described by its own [name] and [values].
+ */
 data class ClientItem(
     val id: Long,
     val clientId: Long,
-    val item: CatalogItem,
+    val type: ItemType,
+    val item: CatalogItem? = null,
+    val name: String = "",
+    val values: Map<Long, String> = emptyMap(),
     /** Where it stands, e.g. "Accounting room". */
     val place: String = "",
     val note: String = "",
@@ -130,12 +163,56 @@ data class ClientItem(
     /** As on the label; empty = not known. */
     val serialNumber: String = "",
 ) {
+    constructor(id: Long, clientId: Long, item: CatalogItem, place: String = "", note: String = "", parts: List<ClientItemPart> = emptyList(), serialNumber: String = "") :
+        this(id, clientId, item.type, item, place = place, note = note, parts = parts, serialNumber = serialNumber)
+
+    /** "HP LaserJet M125", or a child's name. */
+    val title: String get() = item?.title ?: ItemTitles.title(type, name, values)
+
+    /** The field values: the model's, or its own. */
+    val allValues: Map<Long, String> get() = item?.values ?: values
+
     /** "HP LaserJet M125 (Office)", so two of one model read differently. */
-    val name: String get() = item.title + if (place.isBlank()) "" else " ($place)"
+    val label: String get() = title + if (place.isBlank()) "" else " ($place)"
 }
 
-/** A part the client's item uses (a cartridge of their printer); [id] is kept so work stays linked. */
-data class ClientItemPart(val id: Long, val item: CatalogItem)
+/**
+ * A part of a client's item: a catalog item ([item], the cartridge of their printer) or what it should
+ * be, described by [values] (a child's shoes: size 30). [id] is kept so work stays linked.
+ */
+data class ClientItemPart(
+    val id: Long,
+    val type: ItemType,
+    val item: CatalogItem? = null,
+    val values: Map<Long, String> = emptyMap(),
+    val serialNumber: String = "",
+    val note: String = "",
+) {
+    constructor(id: Long, item: CatalogItem) : this(id, item.type, item)
+
+    /** "CF283A", or "Size 30 · Boy" for one described by its values, or the type's name when nothing is filled. */
+    val title: String get() = item?.title ?: ItemTitles.describe(type, values).ifEmpty { type.name }
+}
+
+/** What fits what a client's part asks for: the same catalog item, or one of its type whose values agree. */
+object StockMatch {
+    fun fits(part: ClientItemPart, candidate: CatalogItem): Boolean {
+        if (candidate.typeId != part.type.id) return false
+        part.item?.let { return it.id == candidate.id }
+        return part.type.fields.all { field -> agree(field, part.values[field.id], candidate.values[field.id]) }
+    }
+
+    /** A value missing on either side means "any": shoes with no "For" fit boys and girls. */
+    private fun agree(field: ItemField, wanted: String?, has: String?): Boolean {
+        val a = wanted?.trim().orEmpty()
+        val b = has?.trim().orEmpty()
+        if (a.isEmpty() || b.isEmpty()) return true
+        return when (field.kind) {
+            FieldKind.NUMBER -> a.replace(',', '.').toDoubleOrNull()?.let { it == b.replace(',', '.').toDoubleOrNull() } ?: (a == b)
+            else -> CatalogNames.key(a) == CatalogNames.key(b)
+        }
+    }
+}
 
 /** A client item found by its serial number, with its client. [exact] false = its serial only contains what was searched. */
 data class SerialMatch(val item: ClientItem, val clientName: String, val exact: Boolean)

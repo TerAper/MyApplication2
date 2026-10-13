@@ -15,12 +15,14 @@ import com.teraper.printmaster.core.data.repository.SaveTypeResult
 import com.teraper.printmaster.core.database.PrintMasterDatabase
 import com.teraper.printmaster.core.model.ClientDraft
 import com.teraper.printmaster.core.model.ClientItemDraft
+import com.teraper.printmaster.core.model.ClientPartDraft
 import com.teraper.printmaster.core.model.FieldDraft
 import com.teraper.printmaster.core.model.FieldKind
 import com.teraper.printmaster.core.model.ItemDraft
 import com.teraper.printmaster.core.model.ItemDraftError
 import com.teraper.printmaster.core.model.ItemTypeDraft
 import com.teraper.printmaster.core.model.LinkDraft
+import com.teraper.printmaster.core.model.StockMatch
 import com.teraper.printmaster.core.model.TypeTemplate
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
@@ -87,7 +89,7 @@ class OfflineCatalogRepositoryTest {
         val draft = ClientItemDraft(
             clientId = clientId,
             item = model,
-            selectedParts = model.parts.mapTo(mutableSetOf()) { it.key },
+            parts = model.parts.map { ClientPartDraft(typeId = it.typeId, itemId = it.id, title = it.title) },
             place = place,
             serialNumber = serial,
         )
@@ -123,10 +125,10 @@ class OfflineCatalogRepositoryTest {
         addItem(m125(), place = "Accounting")
 
         val owned = items.observeClientItems(clientId).first().single()
-        assertEquals("HP LaserJet M125", owned.item.title)
-        assertEquals("Laser", owned.item.details)
+        assertEquals("HP LaserJet M125", owned.title)
+        assertEquals("Laser", owned.item!!.details)
         assertEquals("Accounting", owned.place)
-        assertEquals(listOf("CF283A"), owned.parts.map { it.item.title })
+        assertEquals(listOf("CF283A"), owned.parts.map { it.title })
 
         val entries = catalog.observeCatalog().first()
         assertEquals(listOf("HP LaserJet M125", "CF283A"), entries.map { it.item.title })
@@ -153,12 +155,12 @@ class OfflineCatalogRepositoryTest {
         val before = items.getClientItem(id)!!
         val keptRow = before.parts.single().id
 
-        val draft = ClientItemDraft.from(before).addPart(LinkDraft(typeId = cartridge, title = "CF283X")).copy(place = "Director")
+        val draft = ClientItemDraft.from(before).addPart(ClientPartDraft(typeId = cartridge, title = "CF283X")).copy(place = "Director")
         items.saveClientItem(draft)
 
         val after = items.getClientItem(id)!!
         assertEquals("Director", after.place)
-        assertEquals(listOf("CF283A", "CF283X"), after.parts.map { it.item.title })
+        assertEquals(listOf("CF283A", "CF283X"), after.parts.map { it.title })
         assertEquals(keptRow, after.parts.first().id)
         // The new part was also added to the catalog model.
         assertEquals(2, catalog.observeCatalog().first().first { it.item.typeId == printer }.item.parts.size)
@@ -244,6 +246,60 @@ class OfflineCatalogRepositoryTest {
         assertEquals(listOf("Brand", "Print", "Wi-Fi"), types.first { it.id == printer }.fields.map { it.name })
         assertEquals(printer, types.first { it.name == "Toner" }.parentId)
         assertEquals(listOf("Printer", "Cartridge", "Chip", "Toner", "Shoes"), types.map { it.name })
+    }
+
+    @Test
+    fun aChildIsKeptOnTheClientWithItsShoesBySizeAndWithoutSerials() = runTest {
+        val child = saveType(
+            ItemTypeDraft(name = "Child", fields = listOf(FieldDraft(name = "Birth", kind = FieldKind.DATE)), hasSerial = false, perClient = true),
+        )
+        val shoe = saveType(
+            ItemTypeDraft(
+                name = "Shoe", parentId = child, hasSerial = false,
+                fields = listOf(FieldDraft(name = "Size", kind = FieldKind.NUMBER), FieldDraft(name = "For", kind = FieldKind.CHOICE, options = "Boy\nGirl")),
+            ),
+        )
+        val types = catalog.observeTypes().first()
+        val birth = types.first { it.id == child }.fields.single().id
+        val (size, forWhom) = types.first { it.id == shoe }.fields.map { it.id }
+        val runner = (catalog.saveItem(ItemDraft(typeId = shoe, name = "Runner", values = mapOf(size to "30"))) as SaveItemResult.Saved).itemId
+
+        val id = (
+            items.saveClientItem(
+                ClientItemDraft(
+                    clientId = clientId,
+                    item = ItemDraft(typeId = child, name = "David", values = mapOf(birth to "2019-03-12")),
+                    parts = listOf(
+                        ClientPartDraft(typeId = shoe, values = mapOf(size to "30", forWhom to "Boy"), serialNumber = "ignored"),
+                        ClientPartDraft(typeId = shoe, values = mapOf(size to "31")),
+                        ClientPartDraft(typeId = shoe, itemId = runner, title = "Runner"),
+                    ),
+                    serialNumber = "ignored too",
+                ),
+            ) as SaveClientItemResult.Saved
+            ).clientItemId
+
+        val david = items.observeClientItems(clientId).first().single()
+        assertNull(david.item)
+        assertEquals("David", david.title)
+        assertEquals(mapOf(birth to "2019-03-12"), david.values)
+        assertEquals("", david.serialNumber)
+        assertEquals(listOf("Runner", "Size 30 · Boy", "Size 31"), david.parts.map { it.title })
+        assertTrue(david.parts.all { it.serialNumber.isEmpty() })
+        // A child is no catalog model; only the shoe model is in the catalog.
+        assertEquals(listOf("Runner"), catalog.observeCatalog().first().filter { it.item.typeId != printer }.map { it.item.title })
+
+        // Editing keeps the rows; a shoe size can change.
+        val draft = ClientItemDraft.from(david)
+        val bigger = draft.parts.indexOfFirst { it.values[size] == "31" }
+        items.saveClientItem(draft.withPart(bigger, draft.parts[bigger].withValue(size, "32")))
+        val after = items.getClientItem(id)!!
+        assertEquals(david.parts.map { it.id }.toSet(), after.parts.map { it.id }.toSet())
+        assertTrue(after.parts.any { it.title == "Size 32" })
+
+        // The stock that fits: the size-30 shoes fit the boy's size-30 entry.
+        val wanted = after.parts.first { it.values[size] == "30" }
+        assertTrue(StockMatch.fits(wanted, catalog.observeItem(runner).first()!!))
     }
 
     @Test

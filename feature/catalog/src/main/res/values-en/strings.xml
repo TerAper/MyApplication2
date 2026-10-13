@@ -108,4 +108,21 @@
     <string name="feature_catalog_tpl_material">Material</string>
     <string name="feature_catalog_tpl_year">Year</string>
     <string name="feature_catalog_tpl_plate">Plate number</string>
+    <string name="feature_catalog_kind_date">Date (age)</string>
+    <string name="feature_catalog_has_serial">Has a serial number</string>
+    <string name="feature_catalog_has_serial_help">Asks for the serial when added to a client.</string>
+    <string name="feature_catalog_per_client">Each one is different</string>
+    <string name="feature_catalog_per_client_help">Filled in on the client, not picked from the catalog (e.g. a Child with birth date and sex).</string>
+    <string name="feature_catalog_per_client_tag">filled in on the client</string>
+    <string name="feature_catalog_add_part">Add %1$s</string>
+    <string name="feature_catalog_open_part">Open %1$s</string>
+    <string name="feature_catalog_tpl_kids">Children\'s clothes and shoes</string>
+    <string name="feature_catalog_tpl_child">Child</string>
+    <string name="feature_catalog_tpl_birth">Birth date</string>
+    <string name="feature_catalog_tpl_sex">Sex</string>
+    <string name="feature_catalog_tpl_sexes">Boy\nGirl</string>
+    <string name="feature_catalog_tpl_for">For</string>
+    <string name="feature_catalog_tpl_shoe">Shoe</string>
+    <string name="feature_catalog_tpl_pants">Pants</string>
+    <string name="feature_catalog_tpl_shirt">Shirt</string>
 </resources>

@@ -176,4 +176,11 @@
     <string name="feature_clients_item_serial_taken">Արդեն կա այլ իրի վրա՝ %1$s։ Ստուգեք, կամ պահեք, եթե այն տեղափոխվել է։</string>
     <string name="feature_clients_item_no_types">Նախ ստեղծեք տեսակներ (օր.՝ Տպիչ, Հեռախոս), որ իմանաք՝ ինչ դաշտեր ունի յուրաքանչյուրը։</string>
     <string name="feature_clients_item_open_types">Տեսակներ և ձևանմուշներ</string>
+    <string name="feature_clients_item_type">Տեսակ</string>
+    <string name="feature_clients_item_name">Անուն</string>
+    <string name="feature_clients_item_part_name">Կատալոգից (անուն կամ մոդել)</string>
+    <string name="feature_clients_item_part_describe">Կամ նկարագրեք՝ ինչ է պետք</string>
+    <string name="feature_clients_item_part_save">Պատրաստ է</string>
+    <string name="feature_clients_item_part_remove">Հեռացնել</string>
+    <string name="feature_clients_item_part_empty">Ընտրեք կատալոգից կամ լրացրեք գոնե մեկ դաշտ։</string>
 </resources>

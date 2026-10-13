@@ -143,6 +143,7 @@ private fun TypeRow(node: TypeInTree, parent: ItemType?, onClick: () -> Unit) {
             Text(
                 buildList {
                     parent?.let { add(stringResource(R.string.feature_catalog_part_of, it.name)) }
+                    if (type.perClient) add(stringResource(R.string.feature_catalog_per_client_tag))
                     if (type.fields.isNotEmpty()) add(type.fields.joinToString(", ") { it.name })
                     else add(pluralStringResource(R.plurals.feature_catalog_field_count, 0, 0))
                 }.joinToString(" · "),

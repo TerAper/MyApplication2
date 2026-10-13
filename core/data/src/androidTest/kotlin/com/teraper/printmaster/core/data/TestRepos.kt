@@ -34,6 +34,7 @@ import kotlinx.coroutines.flow.flowOf
 import com.teraper.printmaster.core.data.repository.SaveClientItemResult
 import com.teraper.printmaster.core.data.repository.SaveTypeResult
 import com.teraper.printmaster.core.model.ClientItemDraft
+import com.teraper.printmaster.core.model.ClientPartDraft
 import com.teraper.printmaster.core.model.FieldDraft
 import com.teraper.printmaster.core.model.ItemDraft
 import com.teraper.printmaster.core.model.ItemTypeDraft
@@ -88,7 +89,7 @@ internal class TestRepos(clock: Clock = Clock.fixed(Instant.parse("2026-10-07T10
         val draft = ClientItemDraft(
             clientId = clientId,
             item = ItemDraft(typeId = printer, name = name, values = mapOf(brand to "HP"), parts = listOf(part)),
-            selectedParts = setOf(part.key),
+            parts = listOf(ClientPartDraft(typeId = cartridge, title = part.title)),
             place = place,
             serialNumber = serial,
         )

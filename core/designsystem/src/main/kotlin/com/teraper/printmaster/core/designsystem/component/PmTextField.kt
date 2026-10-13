@@ -25,10 +25,13 @@ fun PmTextField(
     singleLine: Boolean = true,
     minLines: Int = 1,
     trailingIcon: (@Composable () -> Unit)? = null,
+    /** Shown but not typed into (a value picked another way, like a date). */
+    readOnly: Boolean = false,
 ) {
     OutlinedTextField(
         value = value,
         onValueChange = onValueChange,
+        readOnly = readOnly,
         modifier = modifier.fillMaxWidth(),
         label = { Text(label) },
         placeholder = placeholder?.let { { Text(it) } },

@@ -108,4 +108,21 @@
     <string name="feature_catalog_tpl_material">Նյութ</string>
     <string name="feature_catalog_tpl_year">Տարի</string>
     <string name="feature_catalog_tpl_plate">Համարանիշ</string>
+    <string name="feature_catalog_kind_date">Ամսաթիվ (տարիք)</string>
+    <string name="feature_catalog_has_serial">Ունի սերիական համար</string>
+    <string name="feature_catalog_has_serial_help">Հաճախորդին ավելացնելիս կհարցնի սերիական համարը։</string>
+    <string name="feature_catalog_per_client">Յուրաքանչյուրը տարբեր է</string>
+    <string name="feature_catalog_per_client_help">Լրացվում է հաճախորդի մոտ, ոչ թե ընտրվում կատալոգից (օր.՝ Երեխա՝ ծննդյան ամսաթվով և սեռով)։</string>
+    <string name="feature_catalog_per_client_tag">լրացվում է հաճախորդի մոտ</string>
+    <string name="feature_catalog_add_part">Ավելացնել՝ %1$s</string>
+    <string name="feature_catalog_open_part">Բացել %1$s</string>
+    <string name="feature_catalog_tpl_kids">Մանկական հագուստ և կոշիկ</string>
+    <string name="feature_catalog_tpl_child">Երեխա</string>
+    <string name="feature_catalog_tpl_birth">Ծննդյան ամսաթիվ</string>
+    <string name="feature_catalog_tpl_sex">Սեռ</string>
+    <string name="feature_catalog_tpl_sexes">Տղա\nԱղջիկ</string>
+    <string name="feature_catalog_tpl_for">Ում համար</string>
+    <string name="feature_catalog_tpl_shoe">Կոշիկ</string>
+    <string name="feature_catalog_tpl_pants">Տաբատ</string>
+    <string name="feature_catalog_tpl_shirt">Վերնաշապիկ</string>
 </resources>

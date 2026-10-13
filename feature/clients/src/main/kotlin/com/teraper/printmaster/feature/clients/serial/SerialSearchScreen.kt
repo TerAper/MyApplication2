@@ -132,7 +132,7 @@ private fun ItemHit(match: SerialMatch, onClick: () -> Unit) {
                 Text(match.clientName, Modifier.weight(1f), style = MaterialTheme.typography.titleMedium)
                 if (!match.exact) PmTag(stringResource(R.string.feature_clients_serial_partial), TagTone.Warning)
             }
-            Text(owned.item.title + if (owned.place.isBlank()) "" else " · ${owned.place}", style = MaterialTheme.typography.bodyLarge)
+            Text(owned.title + if (owned.place.isBlank()) "" else " · ${owned.place}", style = MaterialTheme.typography.bodyLarge)
             Text(owned.serialNumber, style = MaterialTheme.typography.bodyMedium.copy(fontFamily = FontFamily.Monospace), color = PmTheme.colors.inkSecondary)
             Text(stringResource(R.string.feature_clients_serial_open_client), style = MaterialTheme.typography.bodySmall, color = PmTheme.colors.primary)
         }

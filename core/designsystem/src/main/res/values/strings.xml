@@ -59,4 +59,11 @@
     <string name="core_designsystem_order_waiting">Սպասում է վարպետին</string>
     <string name="core_designsystem_order_given">Տրված · ընդունված</string>
     <string name="core_designsystem_order_accepted">Ընդունված</string>
+    <string name="core_designsystem_date_ok">Լավ</string>
+    <string name="core_designsystem_date_cancel">Չեղարկել</string>
+    <string name="core_designsystem_date_pick">Ընտրել</string>
+    <plurals name="core_designsystem_years">
+        <item quantity="one">%1$d տարեկան</item>
+        <item quantity="other">%1$d տարեկան</item>
+    </plurals>
 </resources>
