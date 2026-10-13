@@ -49,6 +49,14 @@ interface ClientDao {
     @Query("SELECT client_id, COUNT(*) AS total FROM client_items GROUP BY client_id")
     fun observeItemCounts(): Flow<List<ClientTotal>>
 
+    /** Orders per client, any company (a visit is a visit), cancelled ones left out. */
+    @Query("SELECT client_id, COUNT(*) AS total FROM orders WHERE status != 'CANCELLED' GROUP BY client_id")
+    fun observeOrderCounts(): Flow<List<ClientTotal>>
+
+    /** Each client's latest order time (epoch millis), cancelled ones left out. */
+    @Query("SELECT client_id, MAX(scheduled_at) AS total FROM orders WHERE status != 'CANCELLED' GROUP BY client_id")
+    fun observeLastOrderTimes(): Flow<List<ClientTotal>>
+
     @Query("SELECT * FROM clients WHERE tax_id = :taxId AND id != :excludeId LIMIT 1")
     suspend fun findOtherClientWithTaxId(taxId: String, excludeId: Long): ClientEntity?
 

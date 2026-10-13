@@ -24,6 +24,8 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import java.time.Clock
 import java.time.LocalDate
+import java.time.Instant
+import com.teraper.printmaster.core.model.ClientSort
 import javax.inject.Inject
 
 internal class OfflineClientsRepository @Inject constructor(
@@ -53,16 +55,19 @@ internal class OfflineClientsRepository @Inject constructor(
         paymentTotals: Flow<List<ClientTotal>>,
         lastPaymentDays: Flow<List<ClientTotal>>,
     ): Flow<List<ClientSummary>> = combine(
-        clientDao.observeClientsWithContacts(),
-        chargeTotals,
-        paymentTotals,
-        lastPaymentDays,
+        combine(clientDao.observeClientsWithContacts(), chargeTotals, paymentTotals, lastPaymentDays, ::MoneyRows),
         clientDao.observeItemCounts(),
-    ) { clients, charges, payments, lastPayments, items ->
-        val chargeBy = charges.byClient()
-        val paymentBy = payments.byClient()
-        val lastPaymentBy = lastPayments.byClient()
+        clientDao.observeOrderCounts(),
+        clientDao.observeLastOrderTimes(),
+    ) { money, items, orders, lastOrders ->
+        val clients = money.clients
+        val chargeBy = money.charges.byClient()
+        val paymentBy = money.payments.byClient()
+        val lastPaymentBy = money.lastPayments.byClient()
         val itemsBy = items.byClient()
+        val ordersBy = orders.byClient()
+        val lastOrderBy = lastOrders.byClient()
+        val zone = clock.zone
         clients
             .map { row ->
                 val id = row.client.id
@@ -72,10 +77,20 @@ internal class OfflineClientsRepository @Inject constructor(
                     charged = Money(chargeBy[id] ?: 0L),
                     paid = Money(paymentBy[id] ?: 0L),
                     lastPaymentDate = lastPaymentBy[id]?.let(LocalDate::ofEpochDay),
+                    orderCount = (ordersBy[id] ?: 0L).toInt(),
+                    lastOrderDate = lastOrderBy[id]?.let { Instant.ofEpochMilli(it).atZone(zone).toLocalDate() },
+                    createdAt = row.client.createdAt,
                 )
             }
-            .sortedBy { ClientSearch.normalizeText(it.client.name) }
+            .let(ClientSort.NAME::sort)
     }
+
+    private class MoneyRows(
+        val clients: List<ClientWithContacts>,
+        val charges: List<ClientTotal>,
+        val payments: List<ClientTotal>,
+        val lastPayments: List<ClientTotal>,
+    )
 
     /** An own client with its money, or an attached company's client (opened from its order) without. */
     override fun observeClientSummary(id: Long): Flow<ClientSummary?> =

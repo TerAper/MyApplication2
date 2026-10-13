@@ -12,6 +12,10 @@ import com.teraper.printmaster.core.model.ClientType
 import com.teraper.printmaster.core.model.Money
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
+import com.teraper.printmaster.core.model.OrderDraft
+import com.teraper.printmaster.core.model.OrderStatus
+import com.teraper.printmaster.core.data.repository.SaveOrderResult
+import java.time.LocalDate
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -153,5 +157,25 @@ class OfflineClientsRepositoryTest {
             listOf("ա անհատ", "«Բ» ՍՊԸ", "Գ"),
             repo.observeClientSummaries().first().map { it.client.name },
         )
+    }
+
+    @Test
+    fun summariesCountOrdersAndTheLastVisitWithoutCancelledOnes() = runTest {
+        val id = save(ClientDraft(name = "Firm"))
+        val other = save(ClientDraft(name = "Quiet"))
+        suspend fun order(day: LocalDate) =
+            (repos.orders.saveOrder(OrderDraft(clientId = id, date = day, description = "Refill")) as SaveOrderResult.Saved).orderId
+        order(LocalDate.of(2026, 10, 1))
+        order(LocalDate.of(2026, 10, 9))
+        repos.orders.setStatus(order(LocalDate.of(2026, 12, 1)), OrderStatus.CANCELLED)
+
+        val summaries = repo.observeClientSummaries().first()
+        val firm = summaries.single { it.client.id == id }
+        assertEquals(2, firm.orderCount)
+        assertEquals(LocalDate.of(2026, 10, 9), firm.lastOrderDate)
+        assertEquals(Instant.EPOCH.toEpochMilli(), firm.createdAt)
+        val quiet = summaries.single { it.client.id == other }
+        assertEquals(0, quiet.orderCount)
+        assertEquals(null, quiet.lastOrderDate)
     }
 }

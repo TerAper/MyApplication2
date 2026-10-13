@@ -4,6 +4,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.teraper.printmaster.core.data.repository.ClientsRepository
 import com.teraper.printmaster.core.data.repository.ClientItemsRepository
+import com.teraper.printmaster.core.data.repository.ClientListSettingsRepository
+import com.teraper.printmaster.core.model.ClientSort
 import com.teraper.printmaster.core.model.SerialMatch
 import com.teraper.printmaster.core.model.SerialNumbers
 import com.teraper.printmaster.core.model.ClientSearch
@@ -35,6 +37,7 @@ enum class ClientFilter {
 data class ClientListUiState(
     val isLoading: Boolean = true,
     val filter: ClientFilter = ClientFilter.ALL,
+    val sort: ClientSort = ClientSort.NAME,
     val clients: List<ClientSummary> = emptyList(),
     /** All clients, ignoring search and filter (for "All · 214" and the empty state). */
     val totalCount: Int = 0,
@@ -47,6 +50,7 @@ data class ClientListUiState(
 class ClientListViewModel @Inject constructor(
     clientsRepository: ClientsRepository,
     clientItemsRepository: ClientItemsRepository,
+    private val settings: ClientListSettingsRepository,
 ) : ViewModel() {
 
     // Kept outside uiState so the search field updates synchronously while typing.
@@ -64,11 +68,13 @@ class ClientListViewModel @Inject constructor(
         _query,
         filter,
         serialMatches,
-    ) { all, query, filter, serials ->
+        settings.observeSort(),
+    ) { all, query, filter, serials, sort ->
         ClientListUiState(
             isLoading = false,
             filter = filter,
-            clients = all.filter { filter.accepts(it) && ClientSearch.matches(it.client, query) },
+            sort = sort,
+            clients = sort.sort(all.filter { filter.accepts(it) && ClientSearch.matches(it.client, query) }),
             totalCount = all.size,
             serials = if (query.isBlank()) emptyList() else serials,
         )
@@ -81,6 +87,9 @@ class ClientListViewModel @Inject constructor(
     fun onFilterChange(filter: ClientFilter) {
         this.filter.value = filter
     }
+
+    /** Remembered for next time. */
+    fun onSortChange(sort: ClientSort) = settings.setSort(sort)
 
     private companion object {
         /** Fewer letters would find too many serials. */

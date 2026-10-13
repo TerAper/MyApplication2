@@ -26,11 +26,26 @@ class ClientListViewModelTest {
         ),
     )
 
+    private val settings = com.teraper.printmaster.core.testing.FakeClientListSettingsRepository()
+
+    @Test
+    fun theChosenSortIsUsedAndRemembered() = runTest {
+        val vm = ClientListViewModel(repo, com.teraper.printmaster.core.testing.FakeClientItemsRepository(), settings)
+        backgroundScope.launchCollect(vm)
+        assertEquals(listOf("«ԱԲԳ» ՍՊԸ", "Աննա Մկրտչյան", "Թիվ 5 դպրոց"), names(vm))
+
+        vm.onSortChange(com.teraper.printmaster.core.model.ClientSort.DEBT)
+        assertEquals(com.teraper.printmaster.core.model.ClientSort.DEBT, settings.sort.value)
+        assertEquals(com.teraper.printmaster.core.model.ClientSort.DEBT, vm.uiState.value.sort)
+        // Most owed first, the overpaid one last.
+        assertEquals(listOf("«ԱԲԳ» ՍՊԸ", "Թիվ 5 դպրոց", "Աննա Մկրտչյան"), names(vm))
+    }
+
     private fun names(vm: ClientListViewModel) = vm.uiState.value.clients.map { it.client.name }
 
     @Test
     fun filtersAndSearchCombine() = runTest {
-        val vm = ClientListViewModel(repo, com.teraper.printmaster.core.testing.FakeClientItemsRepository())
+        val vm = ClientListViewModel(repo, com.teraper.printmaster.core.testing.FakeClientItemsRepository(), settings)
         backgroundScope.launchCollect(vm)
 
         assertFalse(vm.uiState.value.isLoading)
@@ -50,7 +65,7 @@ class ClientListViewModelTest {
 
     @Test
     fun newClientsAppearLive() = runTest {
-        val vm = ClientListViewModel(repo, com.teraper.printmaster.core.testing.FakeClientItemsRepository())
+        val vm = ClientListViewModel(repo, com.teraper.printmaster.core.testing.FakeClientItemsRepository(), settings)
         backgroundScope.launchCollect(vm)
 
         repo.clients.value = repo.clients.value + summary(4, "Նոր")

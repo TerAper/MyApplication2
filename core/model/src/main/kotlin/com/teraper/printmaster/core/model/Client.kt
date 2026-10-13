@@ -36,6 +36,11 @@ data class ClientSummary(
     /** Everything the client paid: cash and bank. */
     val paid: Money = Money.ZERO,
     val lastPaymentDate: java.time.LocalDate? = null,
+    /** Orders not cancelled, and the day of the latest one (a visit). */
+    val orderCount: Int = 0,
+    val lastOrderDate: java.time.LocalDate? = null,
+    /** When the client was added (epoch millis). */
+    val createdAt: Long = 0,
 ) {
     /** Charges minus payments: positive = owes us, negative = overpaid. */
     val balance: Money get() = charged - paid

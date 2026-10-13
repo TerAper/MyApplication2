@@ -183,4 +183,24 @@
     <string name="feature_clients_item_part_save">Done</string>
     <string name="feature_clients_item_part_remove">Remove</string>
     <string name="feature_clients_item_part_empty">Pick from the catalog or fill in at least one field.</string>
+    <string name="feature_clients_sort">Sort</string>
+    <string name="feature_clients_sort_title">Sort by</string>
+    <string name="feature_clients_sort_name">Name (A–Z)</string>
+    <string name="feature_clients_sort_debt">Biggest debt</string>
+    <string name="feature_clients_sort_longest_unpaid">Longest unpaid</string>
+    <string name="feature_clients_sort_last_payment">Recent payment</string>
+    <string name="feature_clients_sort_last_order">Recent visit</string>
+    <string name="feature_clients_sort_most_orders">Most orders</string>
+    <string name="feature_clients_sort_newest">Newest clients</string>
+    <string name="feature_clients_sort_most_items">Most items</string>
+    <string name="feature_clients_sort_longest_unpaid_help">Debtors who paid longest ago (or never) first</string>
+    <string name="feature_clients_row_paid">Paid %1$s</string>
+    <string name="feature_clients_row_never_paid">Never paid</string>
+    <string name="feature_clients_row_last_order">Last visit %1$s</string>
+    <string name="feature_clients_row_no_orders">No orders yet</string>
+    <string name="feature_clients_row_added">Added %1$s</string>
+    <plurals name="feature_clients_row_orders">
+        <item quantity="one">%1$d order</item>
+        <item quantity="other">%1$d orders</item>
+    </plurals>
 </resources>

@@ -28,6 +28,8 @@ import com.teraper.printmaster.core.data.repository.OfflineRepairsRepository
 import com.teraper.printmaster.core.data.repository.PaymentsRepository
 import com.teraper.printmaster.core.data.repository.PriceListRepository
 import com.teraper.printmaster.core.data.repository.ClientItemsRepository
+import com.teraper.printmaster.core.data.repository.ClientListSettingsRepository
+import com.teraper.printmaster.core.data.repository.PrefsClientListSettingsRepository
 import com.teraper.printmaster.core.data.repository.RepairsRepository
 import com.teraper.printmaster.core.data.repository.ReportsRepository
 import com.teraper.printmaster.core.data.analytics.AppAnalytics
@@ -68,6 +70,9 @@ internal abstract class DataModule {
 
     @Binds
     abstract fun bindClientItemsRepository(impl: OfflineClientItemsRepository): ClientItemsRepository
+
+    @Binds
+    abstract fun bindClientListSettingsRepository(impl: PrefsClientListSettingsRepository): ClientListSettingsRepository
 
     @Binds
     abstract fun bindPriceListRepository(impl: OfflinePriceListRepository): PriceListRepository

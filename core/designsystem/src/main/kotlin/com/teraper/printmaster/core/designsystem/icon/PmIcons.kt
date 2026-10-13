@@ -36,6 +36,7 @@ import androidx.compose.material.icons.rounded.PhotoLibrary
 import androidx.compose.material.icons.rounded.Place
 import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.Category
+import androidx.compose.material.icons.rounded.SwapVert
 import androidx.compose.material.icons.rounded.Inventory2
 import androidx.compose.material.icons.rounded.AccountTree
 import androidx.compose.material.icons.rounded.Remove
@@ -58,6 +59,7 @@ object PmIcons {
     val Clients: ImageVector = Icons.Rounded.Group
     val Orders: ImageVector = Icons.Rounded.CalendarMonth
     val Calendar: ImageVector = Icons.Rounded.CalendarMonth
+    val Sort: ImageVector = Icons.Rounded.SwapVert
     val Payments: ImageVector = Icons.Rounded.AccountBalanceWallet
     val More: ImageVector = Icons.Rounded.GridView
 

@@ -183,4 +183,24 @@
     <string name="feature_clients_item_part_save">Պատրաստ է</string>
     <string name="feature_clients_item_part_remove">Հեռացնել</string>
     <string name="feature_clients_item_part_empty">Ընտրեք կատալոգից կամ լրացրեք գոնե մեկ դաշտ։</string>
+    <string name="feature_clients_sort">Դասավորել</string>
+    <string name="feature_clients_sort_title">Դասավորել ըստ</string>
+    <string name="feature_clients_sort_name">Անվան (Ա–Ֆ)</string>
+    <string name="feature_clients_sort_debt">Ամենամեծ պարտքը</string>
+    <string name="feature_clients_sort_longest_unpaid">Երկար չվճարողները</string>
+    <string name="feature_clients_sort_last_payment">Վերջին վճարումը</string>
+    <string name="feature_clients_sort_last_order">Վերջին այցը</string>
+    <string name="feature_clients_sort_most_orders">Ամենաշատ պատվերները</string>
+    <string name="feature_clients_sort_newest">Նոր ավելացվածները</string>
+    <string name="feature_clients_sort_most_items">Ամենաշատ իրերը</string>
+    <string name="feature_clients_sort_longest_unpaid_help">Պարտք ունեցողները, որոնք ամենաերկար չեն վճարել՝ առաջինը</string>
+    <string name="feature_clients_row_paid">Վճարել է %1$s</string>
+    <string name="feature_clients_row_never_paid">Երբեք չի վճարել</string>
+    <string name="feature_clients_row_last_order">Վերջին այց՝ %1$s</string>
+    <string name="feature_clients_row_no_orders">Պատվերներ չկան</string>
+    <string name="feature_clients_row_added">Ավելացվել է %1$s</string>
+    <plurals name="feature_clients_row_orders">
+        <item quantity="one">%1$d պատվեր</item>
+        <item quantity="other">%1$d պատվեր</item>
+    </plurals>
 </resources>
