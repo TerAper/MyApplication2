@@ -30,12 +30,41 @@ enum class TopLevelDestination(
     MORE(PmIcons.More, R.string.tab_more, MoreGraph, MoreGraph::class),
 }
 
-/** Switch tabs keeping each tab's own back stack and scroll position. */
+/** Switch tabs keeping each tab's own back stack and scroll position; [restore] false = its start screen. */
 internal fun NavHostController.navigateToTab(tab: TopLevelDestination, restore: Boolean = true) {
     navigate(tab.route) {
         popUpTo(graph.findStartDestination().id) { saveState = true }
         launchSingleTop = true
         restoreState = restore
+    }
+}
+
+/** Back to the start screen of the tab being shown, dropping what was opened in it. */
+internal fun NavHostController.resetTab(tab: TopLevelDestination) {
+    navigate(tab.route) {
+        popUpTo(graph.findStartDestination().id) { saveState = false }
+        launchSingleTop = true
+        restoreState = false
+    }
+}
+
+/**
+ * When a tab comes back where it was left: within [keepMillis] of leaving it, the screens opened in
+ * it are still there; later it starts over from its first screen, as a fresh look.
+ */
+internal class TabMemory(private val keepMillis: Long = KEEP_MILLIS, private val now: () -> Long) {
+    private val leftAt = HashMap<TopLevelDestination, Long>()
+
+    /** Switching from [from] to [to]: true = show [to] as it was left. */
+    fun restoreOnSwitch(from: TopLevelDestination?, to: TopLevelDestination): Boolean {
+        val time = now()
+        if (from != null && from != to) leftAt[from] = time
+        val left = leftAt[to] ?: return true
+        return time - left <= keepMillis
+    }
+
+    companion object {
+        const val KEEP_MILLIS = 10_000L
     }
 }
 

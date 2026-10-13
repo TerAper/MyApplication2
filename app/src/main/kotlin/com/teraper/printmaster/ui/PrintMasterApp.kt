@@ -18,7 +18,11 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import android.os.SystemClock
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import com.teraper.printmaster.navigation.TabMemory
+import com.teraper.printmaster.navigation.resetTab
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
@@ -66,6 +70,7 @@ private fun MainApp(
     if (state.worksForOthers) AskForNotifications()
     val fullScreen = currentDestination.isFullScreen()
     val tabs = TopLevelDestination.entries
+    val tabMemory = remember { TabMemory { SystemClock.elapsedRealtime() } }
     Scaffold(
         containerColor = PmTheme.colors.background,
         topBar = {
@@ -79,7 +84,15 @@ private fun MainApp(
                 PrintMasterBottomBar(
                     tabs = tabs,
                     currentTab = backStack.currentTab(),
-                    onTabSelected = { navController.navigateToTab(it) },
+                    onTabSelected = { tab ->
+                        val current = backStack.currentTab()
+                        // Tapping the tab you're on (or a double tap) goes to its first screen.
+                        if (tab == current) {
+                            navController.resetTab(tab)
+                        } else {
+                            navController.navigateToTab(tab, restore = tabMemory.restoreOnSwitch(current, tab))
+                        }
+                    },
                 )
             }
         },
