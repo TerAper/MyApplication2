@@ -18,6 +18,8 @@ internal const val EXPENSE_ID_ARG = "expenseId"
 
 fun NavController.navigateToExpenses() = navigate(ExpensesDestination)
 
+fun NavController.navigateToNewExpense() = navigate(ExpenseEditDestination())
+
 /** Expenses list and form; the app puts them inside the More tab. */
 fun NavGraphBuilder.expensesScreens(navController: NavController) {
     composable<ExpensesDestination> {

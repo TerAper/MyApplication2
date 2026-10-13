@@ -26,6 +26,7 @@ import com.teraper.printmaster.feature.clients.navigation.navigateToClientDetail
 import com.teraper.printmaster.feature.expenses.navigation.ExpenseEditDestination
 import com.teraper.printmaster.feature.expenses.navigation.expensesScreens
 import com.teraper.printmaster.feature.expenses.navigation.navigateToExpenses
+import com.teraper.printmaster.feature.expenses.navigation.navigateToNewExpense
 import com.teraper.printmaster.feature.imports.navigation.importScreens
 import com.teraper.printmaster.feature.imports.navigation.navigateToImport
 import com.teraper.printmaster.feature.imports.navigation.navigateToImportHistory
@@ -72,7 +73,7 @@ fun PrintMasterNavHost(navController: NavHostController, modifier: Modifier = Mo
             TodayActions(
                 onOrderClick = navController::navigateToOrder,
                 onNewOrder = { navController.navigateToNewOrder() },
-                onCashPayment = { navController.navigateToMoneyEntry(0, MoneyEntryKind.CASH_PAYMENT) },
+                onAddExpense = navController::navigateToNewExpense,
                 onOpenDebts = { navController.navigateToTab(TopLevelDestination.PAYMENTS) },
             ),
         )

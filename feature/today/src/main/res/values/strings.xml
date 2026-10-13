@@ -2,7 +2,7 @@
 <resources>
     <string name="feature_today_title">Այսօր</string>
     <string name="feature_today_new_order">Պատվեր</string>
-    <string name="feature_today_cash">Կանխիկ</string>
+    <string name="feature_today_expense">Ծախս</string>
     <string name="feature_today_to_collect">ՀԱՎԱՔԵԼՈՒ ԳՈՒՄԱՐ</string>
     <string name="feature_today_received">ԱՅՍՕՐ ՍՏԱՑՎԱԾ</string>
     <string name="feature_today_visits_none">ԱՅՍՕՐ ԱՅՑԵՐ ՉԿԱՆ</string>

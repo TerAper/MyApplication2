@@ -2,7 +2,7 @@
 <resources>
     <string name="feature_today_title">Today</string>
     <string name="feature_today_new_order">Order</string>
-    <string name="feature_today_cash">Cash</string>
+    <string name="feature_today_expense">Expense</string>
     <string name="feature_today_to_collect">TO COLLECT</string>
     <string name="feature_today_received">RECEIVED TODAY</string>
     <string name="feature_today_visits_none">NO VISITS TODAY</string>

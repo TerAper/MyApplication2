@@ -46,7 +46,8 @@ import java.time.LocalTime
 data class TodayActions(
     val onOrderClick: (Long) -> Unit = {},
     val onNewOrder: () -> Unit = {},
-    val onCashPayment: () -> Unit = {},
+    /** Opens the new-expense form: spending is added right from Today. */
+    val onAddExpense: () -> Unit = {},
     val onOpenDebts: () -> Unit = {},
 )
 
@@ -80,7 +81,7 @@ internal fun TodayScreen(state: TodayUiState, actions: TodayActions, modifier: M
         item {
             Row(Modifier.padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 PmPrimaryButton(stringResource(R.string.feature_today_new_order), actions.onNewOrder, Modifier.weight(1f), icon = PmIcons.Add)
-                if (showMoney) PmSecondaryButton(stringResource(R.string.feature_today_cash), actions.onCashPayment, Modifier.weight(1f), icon = PmIcons.Payments)
+                if (showMoney) PmSecondaryButton(stringResource(R.string.feature_today_expense), actions.onAddExpense, Modifier.weight(1f), icon = PmIcons.Payments)
             }
         }
 
