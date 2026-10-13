@@ -215,4 +215,7 @@
     <string name="feature_catalog_tpl_o_pc_kind">Նոութբուք\nՍեղանի\nՄոնոբլոկ\nՍերվեր</string>
     <string name="feature_catalog_tpl_o_disk_kind">SSD\nHDD\nNVMe</string>
     <string name="feature_catalog_tpl_o_appliance_kind">Լվացքի մեքենա\nՍառնարան\nԱման լվացող\nՋեռոց\nՕդորակիչ\nՋրատաքացուցիչ\nՄիկրոալիքային</string>
+    <string name="feature_catalog_keep_at_least">Պահել առնվազն</string>
+    <string name="feature_catalog_keep_at_least_hint">Պահեստում հատ — 0՝ չհետևել</string>
+    <string name="feature_catalog_in_stock">Պահեստում՝ %1$d հատ ›</string>
 </resources>

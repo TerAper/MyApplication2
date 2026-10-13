@@ -98,7 +98,7 @@ internal class CatalogSnapshot(val types: Map<Long, ItemType>, val items: Map<Lo
                 val type = typeMap[row.typeId] ?: return@mapNotNull null
                 row.id to CatalogItem(
                     row.id, type, row.name, valuesByItem[row.id].orEmpty().toMap(),
-                    barcode = row.barcode.orEmpty(), price = Money(row.priceMinor), cost = Money(row.costMinor),
+                    barcode = row.barcode.orEmpty(), price = Money(row.priceMinor), cost = Money(row.costMinor), keepAtLeast = row.minStock,
                 )
             }.toMap()
             val refs = bare.mapValues { it.value.ref() }

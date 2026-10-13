@@ -45,6 +45,9 @@ import com.teraper.printmaster.feature.payments.navigation.paymentsGraph
 import com.teraper.printmaster.feature.pricelist.navigation.PriceItemEditDestination
 import com.teraper.printmaster.feature.pricelist.navigation.navigateToPriceList
 import com.teraper.printmaster.feature.pricelist.navigation.priceListScreens
+import com.teraper.printmaster.feature.warehouse.navigation.navigateToItemStock
+import com.teraper.printmaster.feature.warehouse.navigation.navigateToWarehouse
+import com.teraper.printmaster.feature.warehouse.navigation.warehouseScreens
 import com.teraper.printmaster.feature.reports.navigation.navigateToDebtExport
 import com.teraper.printmaster.feature.reports.navigation.navigateToReports
 import com.teraper.printmaster.feature.reports.navigation.reportsScreens
@@ -99,6 +102,7 @@ fun PrintMasterNavHost(navController: NavHostController, modifier: Modifier = Mo
             actions = MoreActions(
                 onOpenPriceList = navController::navigateToPriceList,
                 onOpenCatalog = navController::navigateToCatalog,
+                onOpenWarehouse = navController::navigateToWarehouse,
                 onOpenCompanies = navController::navigateToCompanies,
                 onOpenCompany = navController::navigateToCompany,
                 onOpenMasters = navController::navigateToMasters,
@@ -120,7 +124,8 @@ fun PrintMasterNavHost(navController: NavHostController, modifier: Modifier = Mo
                 onOpenCatalogItem = { navController.navigate(ItemEditDestination(itemId = it)) },
                 onNewCatalogItem = { navController.navigate(ItemEditDestination()) },
             )
-            catalogScreens(navController, onOpenClient = navController::openClientFromOtherTab)
+            catalogScreens(navController, onOpenClient = navController::openClientFromOtherTab, onOpenStock = navController::navigateToItemStock)
+            warehouseScreens(navController, onOpenCatalogItem = { navController.navigate(ItemEditDestination(itemId = it)) })
             accountScreens(navController)
             settingsScreens(navController)
             reportsScreens(navController, onOpenClient = navController::openClientFromOtherTab, onOpenExpenses = navController::navigateToExpenses)

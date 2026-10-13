@@ -63,7 +63,7 @@ class CatalogViewModelsTest {
     )
 
     private fun TestScope.itemVm(itemId: Long = 0, typeId: Long = 0) =
-        ItemEditViewModel(SavedStateHandle(mapOf("itemId" to itemId, "typeId" to typeId)), repo, com.teraper.printmaster.core.testing.FakePhotoRepository()).also { vm ->
+        ItemEditViewModel(SavedStateHandle(mapOf("itemId" to itemId, "typeId" to typeId)), repo, com.teraper.printmaster.core.testing.FakePhotoRepository(), com.teraper.printmaster.core.testing.FakeWarehouseRepository()).also { vm ->
             backgroundScope.launch(UnconfinedTestDispatcher()) { vm.uiState.collect {} }
         }
 
@@ -134,7 +134,7 @@ class CatalogViewModelsTest {
 
     @Test
     fun aNewPartMadeFromItsItemGoesIntoIt() = runTest {
-        val vm = ItemEditViewModel(SavedStateHandle(mapOf("itemId" to 0L, "typeId" to cartridge.id, "intoId" to 2L)), repo, com.teraper.printmaster.core.testing.FakePhotoRepository())
+        val vm = ItemEditViewModel(SavedStateHandle(mapOf("itemId" to 0L, "typeId" to cartridge.id, "intoId" to 2L)), repo, com.teraper.printmaster.core.testing.FakePhotoRepository(), com.teraper.printmaster.core.testing.FakeWarehouseRepository())
         backgroundScope.launch(UnconfinedTestDispatcher()) { vm.uiState.collect {} }
         assertEquals(listOf("HP M125"), vm.uiState.value.form.draft.fitsInto.map { it.title })
         assertFalse(vm.uiState.value.form.hasChanges)

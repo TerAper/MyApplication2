@@ -9,6 +9,8 @@
     <string name="feature_more_price_list_sub">Services and prices</string>
     <string name="feature_more_catalog">Catalog</string>
     <string name="feature_more_catalog_sub">Your types, items and parts</string>
+    <string name="feature_more_warehouse">Warehouse</string>
+    <string name="feature_more_warehouse_sub">How many you have, what to buy</string>
     <string name="feature_more_calls">Call recordings</string>
     <string name="feature_more_calls_sub">Attach calls to clients</string>
     <string name="feature_more_reports">Reports</string>

@@ -86,7 +86,13 @@ data class ItemDraft(
     /** Whole dram as typed; empty = not sold as goods. */
     val priceDigits: String = "",
     val costDigits: String = "",
+    /** Keep at least this many in stock; empty = no minimum. */
+    val keepDigits: String = "",
 ) {
+    val keepAtLeast: Int get() = keepDigits.toIntOrNull() ?: 0
+
+    fun withKeep(text: String) = copy(keepDigits = text.filter { it.isDigit() }.trimStart('0').take(StockDraft.MAX_DIGITS))
+
     val isNew: Boolean get() = id == 0L
     val price: Money get() = Money.ofDram(priceDigits.toLongOrNull() ?: 0L)
     val cost: Money get() = Money.ofDram(costDigits.toLongOrNull() ?: 0L)
@@ -134,6 +140,7 @@ data class ItemDraft(
             barcode = item.barcode,
             priceDigits = item.price.dram.takeIf { it > 0 }?.toString().orEmpty(),
             costDigits = item.cost.dram.takeIf { it > 0 }?.toString().orEmpty(),
+            keepDigits = item.keepAtLeast.takeIf { it > 0 }?.toString().orEmpty(),
         )
     }
 }

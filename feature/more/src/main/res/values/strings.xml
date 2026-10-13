@@ -9,6 +9,8 @@
     <string name="feature_more_price_list_sub">Ծառայություններ և գներ</string>
     <string name="feature_more_catalog">Կատալոգ</string>
     <string name="feature_more_catalog_sub">Ձեր տեսակները, ապրանքներն ու մասերը</string>
+    <string name="feature_more_warehouse">Պահեստ</string>
+    <string name="feature_more_warehouse_sub">Քանի հատ կա, ինչ գնել</string>
     <string name="feature_more_calls">Զանգերի ձայնագրություններ</string>
     <string name="feature_more_calls_sub">Կցել զանգերը հաճախորդներին</string>
     <string name="feature_more_reports">Հաշվետվություններ</string>

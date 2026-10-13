@@ -53,6 +53,7 @@ private data class MoreSection(@param:StringRes val title: Int, val items: List<
 data class MoreActions(
     val onOpenPriceList: () -> Unit = {},
     val onOpenCatalog: () -> Unit = {},
+    val onOpenWarehouse: () -> Unit = {},
     val onOpenCompanies: () -> Unit = {},
     val onOpenCompany: (Long) -> Unit = {},
     val onOpenMasters: () -> Unit = {},
@@ -99,6 +100,7 @@ internal fun MoreScreen(state: MoreUiState, actions: MoreActions, modifier: Modi
             listOf(
                 MoreItem(PmIcons.PriceList, R.string.feature_more_price_list, R.string.feature_more_price_list_sub, actions.onOpenPriceList),
                 MoreItem(PmIcons.Catalog, R.string.feature_more_catalog, R.string.feature_more_catalog_sub, onOpenCatalog),
+                MoreItem(PmIcons.Warehouse, R.string.feature_more_warehouse, R.string.feature_more_warehouse_sub, actions.onOpenWarehouse),
                 MoreItem(PmIcons.Recording, R.string.feature_more_calls, R.string.feature_more_calls_sub, actions.onOpenCalls),
             ),
         ),

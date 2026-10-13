@@ -215,4 +215,7 @@
     <string name="feature_catalog_tpl_o_pc_kind">Laptop\nDesktop\nAll-in-one\nServer</string>
     <string name="feature_catalog_tpl_o_disk_kind">SSD\nHDD\nNVMe</string>
     <string name="feature_catalog_tpl_o_appliance_kind">Washing machine\nFridge\nDishwasher\nOven\nAir conditioner\nWater heater\nMicrowave</string>
+    <string name="feature_catalog_keep_at_least">Keep at least</string>
+    <string name="feature_catalog_keep_at_least_hint">Pieces in the warehouse — 0 to not watch</string>
+    <string name="feature_catalog_in_stock">In the warehouse: %1$d ›</string>
 </resources>

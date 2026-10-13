@@ -96,6 +96,8 @@ data class CatalogItem(
     val barcode: String = "",
     val price: Money = Money.ZERO,
     val cost: Money = Money.ZERO,
+    /** Fewer in stock than this = low, on the To buy list; 0 = no minimum. */
+    val keepAtLeast: Int = 0,
 ) {
     /** Has a price: offered as goods when work is written down. */
     val isGoods: Boolean get() = price.isPositive

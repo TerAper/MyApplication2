@@ -6,6 +6,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -18,6 +19,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -26,26 +28,25 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
-import com.teraper.printmaster.core.designsystem.component.LocalShowMoney
-import com.teraper.printmaster.core.designsystem.component.PhotoStripLabels
-import com.teraper.printmaster.core.designsystem.component.PmPhotoStrip
-import com.teraper.printmaster.core.designsystem.component.ScanOutcome
-import com.teraper.printmaster.core.designsystem.component.format
-import com.teraper.printmaster.core.designsystem.component.rememberCodeScanner
-import com.teraper.printmaster.core.model.Photo
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.teraper.printmaster.core.designsystem.component.LocalShowMoney
+import com.teraper.printmaster.core.designsystem.component.PhotoStripLabels
 import com.teraper.printmaster.core.designsystem.component.PmCard
 import com.teraper.printmaster.core.designsystem.component.PmConfirmDialog
 import com.teraper.printmaster.core.designsystem.component.PmFilterChip
 import com.teraper.printmaster.core.designsystem.component.PmItemFields
 import com.teraper.printmaster.core.designsystem.component.PmMessageDialog
+import com.teraper.printmaster.core.designsystem.component.PmPhotoStrip
 import com.teraper.printmaster.core.designsystem.component.PmPrimaryButton
 import com.teraper.printmaster.core.designsystem.component.PmSecondaryButton
 import com.teraper.printmaster.core.designsystem.component.PmTextField
 import com.teraper.printmaster.core.designsystem.component.PmTopBar
+import com.teraper.printmaster.core.designsystem.component.ScanOutcome
+import com.teraper.printmaster.core.designsystem.component.format
+import com.teraper.printmaster.core.designsystem.component.rememberCodeScanner
 import com.teraper.printmaster.core.designsystem.icon.PmIcons
 import com.teraper.printmaster.core.designsystem.theme.PmTheme
 import com.teraper.printmaster.core.model.FieldKind
@@ -56,6 +57,7 @@ import com.teraper.printmaster.core.model.ItemOwner
 import com.teraper.printmaster.core.model.ItemRef
 import com.teraper.printmaster.core.model.ItemType
 import com.teraper.printmaster.core.model.LinkDraft
+import com.teraper.printmaster.core.model.Photo
 import com.teraper.printmaster.feature.catalog.R
 
 @Composable
@@ -63,6 +65,7 @@ internal fun ItemEditRoute(
     onClose: () -> Unit,
     onOpenClient: (Long) -> Unit,
     onOpenItem: (itemId: Long, typeId: Long, intoId: Long) -> Unit,
+    onOpenStock: (Long) -> Unit = {},
     viewModel: ItemEditViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -92,6 +95,8 @@ internal fun ItemEditRoute(
             onValueChange = viewModel::onValueChange,
             onPriceChange = viewModel::onPriceChange,
             onCostChange = viewModel::onCostChange,
+            onKeepChange = viewModel::onKeepChange,
+            onOpenStock = { state.form.draft.id.takeIf { it != 0L }?.let(onOpenStock) },
             onBarcodeChange = viewModel::onBarcodeChange,
             onScanBarcode = scanBarcode,
             onAddPhoto = viewModel::onAddPhoto,
@@ -117,6 +122,8 @@ internal data class ItemEditActions(
     val onValueChange: (Long, String) -> Unit = { _, _ -> },
     val onPriceChange: (String) -> Unit = {},
     val onCostChange: (String) -> Unit = {},
+    val onKeepChange: (String) -> Unit = {},
+    val onOpenStock: () -> Unit = {},
     val onBarcodeChange: (String) -> Unit = {},
     val onScanBarcode: () -> Unit = {},
     val onAddPhoto: (String) -> Unit = {},
@@ -347,6 +354,18 @@ private fun SaleSection(state: ItemEditUiState, actions: ItemEditActions) {
     )
     if (state.form.scanUnavailable) {
         Text(stringResource(R.string.feature_catalog_scan_unavailable), style = MaterialTheme.typography.bodySmall, color = PmTheme.colors.error)
+    }
+    PmTextField(
+        value = draft.keepDigits,
+        onValueChange = actions.onKeepChange,
+        label = stringResource(R.string.feature_catalog_keep_at_least),
+        placeholder = stringResource(R.string.feature_catalog_keep_at_least_hint),
+        keyboardType = KeyboardType.Number,
+    )
+    state.stock?.let { stock ->
+        TextButton(onClick = actions.onOpenStock, contentPadding = PaddingValues(0.dp)) {
+            Text(stringResource(R.string.feature_catalog_in_stock, stock), color = PmTheme.colors.primary)
+        }
     }
 }
 

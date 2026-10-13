@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.teraper.printmaster.core.data.repository.CatalogRepository
 import com.teraper.printmaster.core.data.repository.DeleteResult
 import com.teraper.printmaster.core.data.repository.PhotoRepository
+import com.teraper.printmaster.core.data.repository.WarehouseRepository
 import com.teraper.printmaster.core.data.repository.SaveItemResult
 import com.teraper.printmaster.core.model.Photo
 import com.teraper.printmaster.core.model.PhotoOwner
@@ -71,6 +72,8 @@ data class ItemEditUiState(
     val photos: List<Photo> = emptyList(),
     /** A new part made from its item's form: its type is set. */
     val typeLocked: Boolean = false,
+    /** Pieces in the warehouse; null until the item is saved. */
+    val stock: Int? = null,
 ) {
     val isNew: Boolean get() = form.draft.isNew
     val title: String get() = form.draft.title(type)
@@ -91,6 +94,7 @@ class ItemEditViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val catalogRepository: CatalogRepository,
     private val photoRepository: PhotoRepository,
+    warehouseRepository: WarehouseRepository,
 ) : ViewModel() {
 
     /** 0 until the item is saved for the first time. */
@@ -108,9 +112,11 @@ class ItemEditViewModel @Inject constructor(
         form,
         catalogRepository.observeTypes(),
         catalogRepository.observeCatalog(),
-        itemId.flatMapLatest { id -> if (id != 0L) catalogRepository.observeOwners(id) else flowOf(emptyList()) },
+        itemId.flatMapLatest { id ->
+            if (id != 0L) combine(catalogRepository.observeOwners(id), warehouseRepository.observeCount(id)) { owners, count -> owners to count as Int? } else flowOf(emptyList<ItemOwner>() to null)
+        },
         itemId.flatMapLatest { id -> if (id != 0L) photoRepository.observePhotos(PhotoOwner.CATALOG_ITEM, listOf(id)) else flowOf(emptyList()) },
-    ) { form, types, catalog, owners, photos ->
+    ) { form, types, catalog, (owners, stock), photos ->
         val type = types.firstOrNull { it.id == form.draft.typeId }
         ItemEditUiState(
             form = form,
@@ -121,6 +127,7 @@ class ItemEditViewModel @Inject constructor(
             suggestions = type?.let { t -> usedValues(catalog.map { it.item }.filter { it.typeId == t.id }, t.fields) }.orEmpty(),
             owners = owners,
             photos = photos,
+            stock = stock,
             typeLocked = intoId != 0L,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ItemEditUiState(form.value))
@@ -161,6 +168,8 @@ class ItemEditViewModel @Inject constructor(
     fun onPriceChange(text: String) = editDraft { it.withPrice(text) }
 
     fun onCostChange(text: String) = editDraft { it.withCost(text) }
+
+    fun onKeepChange(text: String) = editDraft { it.withKeep(text) }
 
     fun onBarcodeChange(code: String) {
         editDraft { it.copy(barcode = code) }

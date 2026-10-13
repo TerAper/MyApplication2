@@ -13,6 +13,7 @@ import com.teraper.printmaster.core.database.dao.PhotoDao
 import com.teraper.printmaster.core.database.dao.PriceListDao
 import com.teraper.printmaster.core.database.dao.RepairDao
 import com.teraper.printmaster.core.database.dao.ReportDao
+import com.teraper.printmaster.core.database.dao.StockDao
 import com.teraper.printmaster.core.database.dao.SyncDao
 import dagger.Module
 import dagger.Provides
@@ -60,4 +61,7 @@ internal object DaosModule {
 
     @Provides
     fun provideExpenseDao(database: PrintMasterDatabase): ExpenseDao = database.expenseDao()
+
+    @Provides
+    fun provideStockDao(database: PrintMasterDatabase): StockDao = database.stockDao()
 }

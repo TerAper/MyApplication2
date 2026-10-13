@@ -143,6 +143,7 @@ internal class OfflineCatalogRepository @Inject constructor(
                 barcodeKey = barcodeKey,
                 priceMinor = clean.price.minor,
                 costMinor = clean.cost.minor,
+                minStock = clean.keepAtLeast,
             )
             val itemId = if (clean.isNew) {
                 dao.insertItem(row)

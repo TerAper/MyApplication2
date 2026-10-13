@@ -81,6 +81,8 @@ data class ItemEntity(
     @ColumnInfo(name = "price_minor", defaultValue = "0") val priceMinor: Long = 0,
     /** What it costs you. */
     @ColumnInfo(name = "cost_minor", defaultValue = "0") val costMinor: Long = 0,
+    /** Keep at least this many in stock; 0 = no minimum. */
+    @ColumnInfo(name = "min_stock", defaultValue = "0") val minStock: Int = 0,
 )
 
 /** The value of one field of one item. */

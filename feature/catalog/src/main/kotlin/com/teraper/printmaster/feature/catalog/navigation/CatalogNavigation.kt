@@ -38,7 +38,7 @@ fun NavController.navigateToItemTypes() = navigate(ItemTypesDestination)
  * Catalog screens; the app puts them inside the More tab.
  * [onOpenClient] opens a client card (Clients feature), wired by the app.
  */
-fun NavGraphBuilder.catalogScreens(navController: NavController, onOpenClient: (Long) -> Unit) {
+fun NavGraphBuilder.catalogScreens(navController: NavController, onOpenClient: (Long) -> Unit, onOpenStock: (Long) -> Unit = {}) {
     composable<CatalogDestination> {
         CatalogRoute(
             onBack = navController::popBackStack,
@@ -52,6 +52,7 @@ fun NavGraphBuilder.catalogScreens(navController: NavController, onOpenClient: (
             onClose = navController::popBackStack,
             onOpenClient = onOpenClient,
             onOpenItem = { itemId, typeId, intoId -> navController.navigate(ItemEditDestination(itemId, typeId, intoId)) },
+            onOpenStock = onOpenStock,
         )
     }
     composable<ItemTypesDestination> {

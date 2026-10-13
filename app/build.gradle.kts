@@ -48,6 +48,7 @@ dependencies {
     implementation(projects.feature.imports)
     implementation(projects.feature.team)
     implementation(projects.feature.expenses)
+    implementation(projects.feature.warehouse)
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.activity.compose)

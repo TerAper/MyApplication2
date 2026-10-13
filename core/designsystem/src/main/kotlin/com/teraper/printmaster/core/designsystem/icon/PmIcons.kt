@@ -38,6 +38,7 @@ import androidx.compose.material.icons.rounded.PlayArrow
 import androidx.compose.material.icons.rounded.Category
 import androidx.compose.material.icons.rounded.SwapVert
 import androidx.compose.material.icons.rounded.Inventory2
+import androidx.compose.material.icons.rounded.Warehouse
 import androidx.compose.material.icons.rounded.AccountTree
 import androidx.compose.material.icons.rounded.Remove
 import androidx.compose.material.icons.rounded.Search
@@ -77,6 +78,7 @@ object PmIcons {
     /** A client's thing or a catalog item, whatever its type. */
     val Item: ImageVector = Icons.Rounded.Inventory2
     val Catalog: ImageVector = Icons.Rounded.Category
+    val Warehouse: ImageVector = Icons.Rounded.Warehouse
     val ItemTypes: ImageVector = Icons.Rounded.AccountTree
     val Chevron: ImageVector = Icons.AutoMirrored.Rounded.KeyboardArrowRight
     val PriceList: ImageVector = Icons.Rounded.Sell

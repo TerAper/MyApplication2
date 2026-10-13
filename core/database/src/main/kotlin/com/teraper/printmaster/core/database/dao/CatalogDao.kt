@@ -101,6 +101,7 @@ interface CatalogDao {
         """
         SELECT (SELECT COUNT(*) FROM client_items WHERE item_id = :itemId)
              + (SELECT COUNT(*) FROM client_item_parts WHERE item_id = :itemId)
+             + (SELECT COUNT(*) FROM stock_moves WHERE item_id = :itemId)
         """,
     )
     suspend fun countUses(itemId: Long): Int

@@ -18,6 +18,7 @@ import com.teraper.printmaster.core.database.dao.PhotoDao
 import com.teraper.printmaster.core.database.dao.PriceListDao
 import com.teraper.printmaster.core.database.dao.RepairDao
 import com.teraper.printmaster.core.database.dao.ReportDao
+import com.teraper.printmaster.core.database.dao.StockDao
 import com.teraper.printmaster.core.database.dao.SyncDao
 import com.teraper.printmaster.core.database.entity.AppProfileEntity
 import com.teraper.printmaster.core.database.entity.ClientItemEntity
@@ -49,6 +50,7 @@ import com.teraper.printmaster.core.database.entity.PaymentEntity
 import com.teraper.printmaster.core.database.entity.RepairEntity
 import com.teraper.printmaster.core.database.entity.RepairItemEntity
 import com.teraper.printmaster.core.database.entity.RepairPartEntity
+import com.teraper.printmaster.core.database.entity.StockMoveEntity
 import com.teraper.printmaster.core.database.entity.SyncOutboxEntity
 import com.teraper.printmaster.core.database.entity.SyncStateEntity
 
@@ -86,6 +88,7 @@ import com.teraper.printmaster.core.database.entity.SyncStateEntity
         SyncStateEntity::class,
         PhotoEntity::class,
         ExpenseEntity::class,
+        StockMoveEntity::class,
     ],
     version = PrintMasterDatabase.VERSION,
     exportSchema = true,
@@ -118,6 +121,8 @@ import com.teraper.printmaster.core.database.entity.SyncStateEntity
         AutoMigration(from = 15, to = 16),
         // 17: catalog items' barcode, price and cost; goods on work lines.
         AutoMigration(from = 16, to = 17),
+        // 18: the warehouse (stock movements) and the minimum to keep of an item.
+        AutoMigration(from = 17, to = 18),
     ],
 )
 abstract class PrintMasterDatabase : RoomDatabase() {
@@ -134,9 +139,10 @@ abstract class PrintMasterDatabase : RoomDatabase() {
     abstract fun syncDao(): SyncDao
     abstract fun photoDao(): PhotoDao
     abstract fun expenseDao(): ExpenseDao
+    abstract fun stockDao(): StockDao
 
     companion object {
-        const val VERSION = 17
+        const val VERSION = 18
 
         /** Oldest version a backup file may have; older ones only existed on development phones. */
         const val OLDEST_RESTORABLE_VERSION = 2
