@@ -38,7 +38,7 @@
     <string name="feature_catalog_keep_editing">Շարունակել</string>
     <string name="feature_catalog_delete_title">Ջնջե՞լ կատալոգից</string>
     <string name="feature_catalog_in_use_title">Չի կարելի ջնջել</string>
-    <string name="feature_catalog_in_use_message">Սա օգտագործվում է հաճախորդների մոտ։ Նախ ջնջեք կամ փոխեք այն հաճախորդների քարտերում։</string>
+    <string name="feature_catalog_in_use_message">Այս հաճախորդներն ունեն այն։ Նախ հեռացրեք կամ փոխեք այն նրանց քարտերում (հպեք անվանը)։</string>
     <plurals name="feature_catalog_owned_count">
         <item quantity="one">%1$d հաճախորդի մոտ</item>
         <item quantity="other">%1$d հաճախորդի մոտ</item>
@@ -230,4 +230,7 @@
     <string name="feature_catalog_ai_unavailable">AI-ը հասանելի չէ․ ինտերնետ չկա կամ Firebase AI Logic-ը միացված չէ։</string>
     <string name="feature_catalog_ai_camera">Նկարել</string>
     <string name="feature_catalog_ai_gallery">Նկարներից</string>
+    <string name="feature_catalog_owner_as_part">որպես մաս</string>
+    <string name="feature_catalog_delete_with_stock">«%1$s»-ը ունի պահեստի գրառումներ։ Ջնջե՞լ այն դրանց հետ միասին։</string>
+    <string name="feature_catalog_delete_with_stock_count">«%1$s»-ը ունի պահեստի գրառումներ, այժմ պահեստում՝ %2$d հատ։ Ջնջե՞լ այն դրանց հետ միասին։</string>
 </resources>

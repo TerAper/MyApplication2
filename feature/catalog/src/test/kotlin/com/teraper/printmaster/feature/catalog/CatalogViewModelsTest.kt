@@ -264,4 +264,19 @@ class CatalogViewModelsTest {
         assertEquals(com.teraper.printmaster.feature.catalog.item.AiOutcome.UNAVAILABLE, vm.uiState.value.form.aiOutcome)
         assertEquals("Typed", vm.uiState.value.form.draft.name)
     }
+
+    @Test
+    fun anItemWithWarehouseRecordsIsDeletedWithThemAfterAsking() = runTest {
+        repo.deleteResult = com.teraper.printmaster.core.data.repository.DeleteResult.HAS_STOCK
+        repo.stock = 3
+        val vm = itemVm(itemId = 20)
+        vm.onDeleteClick()
+        vm.onConfirmDelete()
+        assertEquals(com.teraper.printmaster.feature.catalog.item.ItemEditDialog.DELETE_WITH_STOCK, vm.uiState.value.form.dialog)
+        assertEquals(3, vm.uiState.value.form.stockOnHand)
+        assertTrue(repo.deletedItems.isEmpty())
+
+        vm.onConfirmDeleteWithStock()
+        assertEquals(listOf(20L), repo.deletedItems)
+    }
 }

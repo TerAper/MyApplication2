@@ -65,10 +65,15 @@ class FakeCatalogRepository(types: List<ItemType> = emptyList(), items: List<Cat
         return SaveItemResult.Saved(if (draft.isNew) 99 else draft.id)
     }
 
-    override suspend fun deleteItem(id: Long): DeleteResult {
-        if (deleteResult == DeleteResult.DELETED) deletedItems += id
-        return deleteResult
+    var stock = 0
+
+    override suspend fun deleteItem(id: Long, withStock: Boolean): DeleteResult {
+        val result = if (deleteResult == DeleteResult.HAS_STOCK && withStock) DeleteResult.DELETED else deleteResult
+        if (result == DeleteResult.DELETED) deletedItems += id
+        return result
     }
+
+    override suspend fun stockOnHand(id: Long): Int = stock
 
     override suspend fun findByBarcode(code: String): CatalogItem? =
         entries.value.map { it.item }.firstOrNull { it.barcode.isNotEmpty() && it.barcode.equals(code.trim(), ignoreCase = true) }

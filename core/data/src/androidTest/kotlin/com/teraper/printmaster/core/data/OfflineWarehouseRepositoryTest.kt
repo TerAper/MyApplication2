@@ -76,8 +76,11 @@ class OfflineWarehouseRepositoryTest {
         assertEquals(listOf(-3, 5), warehouse.observeMoves(toner).first().map { it.quantity })
         assertEquals(AdjustReason.BROKEN, warehouse.observeMoves(toner).first().first().reason)
 
-        // An item with stock history stays: its counts must be explainable.
-        assertEquals(DeleteResult.IN_USE, repos.catalog.deleteItem(toner))
+        // An item with warehouse records is deleted only together with them, when asked to.
+        assertEquals(DeleteResult.HAS_STOCK, repos.catalog.deleteItem(toner))
+        assertEquals(2, repos.catalog.stockOnHand(toner))
+        assertEquals(DeleteResult.DELETED, repos.catalog.deleteItem(toner, withStock = true))
+        assertEquals(0, repos.count("stock_moves"))
     }
 
     @Test

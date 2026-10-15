@@ -36,7 +36,14 @@ interface CatalogRepository {
     /** Saves the item exactly as drafted: links not in the draft are removed. */
     suspend fun saveItem(draft: ItemDraft): SaveItemResult
 
-    suspend fun deleteItem(id: Long): DeleteResult
+    /**
+     * Not while clients have it. With warehouse records it answers [DeleteResult.HAS_STOCK]
+     * unless [withStock]: then its records (and what's left in stock) go with it.
+     */
+    suspend fun deleteItem(id: Long, withStock: Boolean = false): DeleteResult
+
+    /** How many are in all warehouses together. */
+    suspend fun stockOnHand(id: Long): Int
 
     /** The catalog item with this barcode, however it was typed or scanned. */
     suspend fun findByBarcode(code: String): CatalogItem?
@@ -59,7 +66,12 @@ sealed interface SaveItemResult {
     data class BarcodeTaken(val title: String) : SaveItemResult
 }
 
-enum class DeleteResult { DELETED, IN_USE, NOT_FOUND }
+enum class DeleteResult {
+    DELETED, IN_USE, NOT_FOUND,
+
+    /** It has warehouse records; delete again with them to remove it. */
+    HAS_STOCK,
+}
 
 /** The things clients own. */
 interface ClientItemsRepository {

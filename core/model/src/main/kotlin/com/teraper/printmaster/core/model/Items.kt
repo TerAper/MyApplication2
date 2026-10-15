@@ -154,7 +154,7 @@ object ItemTitles {
 data class CatalogEntry(val item: CatalogItem, val ownedCount: Int = 0)
 
 /** A client who owns an item of some catalog model ("who has this?"). */
-data class ItemOwner(val clientId: Long, val clientName: String, val place: String)
+data class ItemOwner(val clientId: Long, val clientName: String, val place: String, val asPart: Boolean = false)
 
 /**
  * One thing a client owns or has: a catalog model ([item], a printer) or one of a kind (a child),

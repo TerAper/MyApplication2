@@ -12,4 +12,6 @@ data class ItemOwnerRow(
     @ColumnInfo(name = "client_id") val clientId: Long,
     @ColumnInfo(name = "client_name") val clientName: String,
     @ColumnInfo(name = "place") val place: String,
+    /** The client has it as a part of another item (a cartridge in their printer). */
+    @ColumnInfo(name = "as_part") val asPart: Boolean = false,
 )

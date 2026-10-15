@@ -175,7 +175,10 @@ class OfflineCatalogRepositoryTest {
         val partId = entries.first { it.item.typeId == cartridge }.item.id
 
         assertEquals(DeleteResult.IN_USE, catalog.deleteItem(modelId))
-        assertEquals(DeleteResult.IN_USE, catalog.deleteItem(partId))
+        assertEquals(DeleteResult.IN_USE, catalog.deleteItem(partId, withStock = true))
+        // Who has it: the printer's owner, and the same client for the cartridge as a part.
+        assertEquals(listOf(false), catalog.observeOwners(modelId).first().map { it.asPart })
+        assertEquals(listOf(true), catalog.observeOwners(partId).first().map { it.asPart })
         assertTrue(items.deleteClientItem(clientItemId))
         assertEquals(DeleteResult.DELETED, catalog.deleteItem(modelId))
         assertEquals(0, count("item_fits"))

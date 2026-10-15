@@ -124,7 +124,7 @@ class TypeEditViewModel @Inject constructor(
         form.update { it.copy(dialog = null) }
         viewModelScope.launch {
             when (catalogRepository.deleteType(typeId)) {
-                DeleteResult.DELETED, DeleteResult.NOT_FOUND -> {
+                DeleteResult.DELETED, DeleteResult.NOT_FOUND, DeleteResult.HAS_STOCK -> {
                     form.update { it.copy(hasChanges = false) }
                     _events.send(TypeEditEvent.Close)
                 }

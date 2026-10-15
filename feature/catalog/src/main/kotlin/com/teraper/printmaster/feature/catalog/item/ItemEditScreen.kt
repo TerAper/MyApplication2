@@ -21,6 +21,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.material3.AlertDialog
 import com.teraper.printmaster.core.designsystem.component.rememberPhotoCapture
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.foundation.layout.size
@@ -119,6 +120,7 @@ internal fun ItemEditRoute(
             onOpenClient = onOpenClient,
             onSave = viewModel::onSave,
             onConfirmDelete = viewModel::onConfirmDelete,
+            onConfirmDeleteWithStock = viewModel::onConfirmDeleteWithStock,
             onDiscardConfirmed = viewModel::onDiscardConfirmed,
             onDismissDialog = viewModel::onDismissDialog,
         ),
@@ -149,6 +151,7 @@ internal data class ItemEditActions(
     val onOpenClient: (Long) -> Unit = {},
     val onSave: () -> Unit = {},
     val onConfirmDelete: () -> Unit = {},
+    val onConfirmDeleteWithStock: () -> Unit = {},
     val onDiscardConfirmed: () -> Unit = {},
     val onDismissDialog: () -> Unit = {},
 )
@@ -260,11 +263,33 @@ internal fun ItemEditScreen(
             onDismiss = actions.onDismissDialog,
             destructive = true,
         )
-        ItemEditDialog.IN_USE -> PmMessageDialog(
-            title = stringResource(R.string.feature_catalog_in_use_title),
-            message = stringResource(R.string.feature_catalog_in_use_message),
-            okText = stringResource(R.string.feature_catalog_ok),
+        // Who has it, by name: tapping one opens that client to remove or change it there.
+        ItemEditDialog.IN_USE -> AlertDialog(
+            onDismissRequest = actions.onDismissDialog,
+            title = { Text(stringResource(R.string.feature_catalog_in_use_title)) },
+            text = {
+                Column(Modifier.verticalScroll(rememberScrollState()), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(stringResource(R.string.feature_catalog_in_use_message), style = MaterialTheme.typography.bodyMedium)
+                    OwnersCard(state.owners) { clientId ->
+                        actions.onDismissDialog()
+                        actions.onOpenClient(clientId)
+                    }
+                }
+            },
+            confirmButton = { TextButton(onClick = actions.onDismissDialog) { Text(stringResource(R.string.feature_catalog_ok)) } },
+        )
+        ItemEditDialog.DELETE_WITH_STOCK -> PmConfirmDialog(
+            title = stringResource(R.string.feature_catalog_delete_title),
+            message = if (form.stockOnHand != 0) {
+                stringResource(R.string.feature_catalog_delete_with_stock_count, state.title, form.stockOnHand)
+            } else {
+                stringResource(R.string.feature_catalog_delete_with_stock, state.title)
+            },
+            confirmText = stringResource(R.string.feature_catalog_delete),
+            dismissText = stringResource(R.string.feature_catalog_cancel),
+            onConfirm = actions.onConfirmDeleteWithStock,
             onDismiss = actions.onDismissDialog,
+            destructive = true,
         )
         null -> Unit
     }
@@ -416,8 +441,12 @@ private fun OwnersCard(owners: List<ItemOwner>, onOpenClient: (Long) -> Unit) {
             ) {
                 Column(Modifier.weight(1f)) {
                     Text(owner.clientName, style = MaterialTheme.typography.bodyLarge)
-                    if (owner.place.isNotBlank()) {
-                        Text(owner.place, style = MaterialTheme.typography.bodySmall, color = PmTheme.colors.inkMuted)
+                    val details = listOfNotNull(
+                        stringResource(R.string.feature_catalog_owner_as_part).takeIf { owner.asPart },
+                        owner.place.takeIf { it.isNotBlank() },
+                    ).joinToString(" · ")
+                    if (details.isNotEmpty()) {
+                        Text(details, style = MaterialTheme.typography.bodySmall, color = PmTheme.colors.inkMuted)
                     }
                 }
                 Icon(PmIcons.Chevron, contentDescription = null, tint = PmTheme.colors.outlineStrong)

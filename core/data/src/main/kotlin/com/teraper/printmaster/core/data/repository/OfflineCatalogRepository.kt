@@ -117,7 +117,7 @@ internal class OfflineCatalogRepository @Inject constructor(
     override fun observeItem(id: Long): Flow<CatalogItem?> = dao.observeSnapshot().map { it.items[id] }
 
     override fun observeOwners(itemId: Long): Flow<List<ItemOwner>> =
-        dao.observeOwners(itemId).map { rows -> rows.map { ItemOwner(it.clientId, it.clientName, it.place) } }
+        dao.observeOwners(itemId).map { rows -> rows.map { ItemOwner(it.clientId, it.clientName, it.place, it.asPart) } }
 
     override suspend fun saveItem(draft: ItemDraft): SaveItemResult {
         val errors = draft.validate()
@@ -165,16 +165,20 @@ internal class OfflineCatalogRepository @Inject constructor(
         return writer.snapshot().items.values.firstOrNull { SerialNumbers.key(it.barcode) == key }
     }
 
-    override suspend fun deleteItem(id: Long): DeleteResult = db.withTransaction {
+    override suspend fun deleteItem(id: Long, withStock: Boolean): DeleteResult = db.withTransaction {
         when {
             dao.getItem(id) == null -> DeleteResult.NOT_FOUND
             dao.countUses(id) > 0 -> DeleteResult.IN_USE
+            dao.countStockMoves(id) > 0 && !withStock -> DeleteResult.HAS_STOCK
             else -> {
+                dao.deleteStockMoves(id)
                 dao.deleteItem(id)
                 DeleteResult.DELETED
             }
         }
     }
+
+    override suspend fun stockOnHand(id: Long): Int = dao.stockOnHand(id)
 }
 
 internal class OfflineClientItemsRepository @Inject constructor(

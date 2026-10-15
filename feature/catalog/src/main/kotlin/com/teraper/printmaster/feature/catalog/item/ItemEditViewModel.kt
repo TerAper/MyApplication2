@@ -67,6 +67,8 @@ data class ItemForm(
     val aiOutcome: AiOutcome? = null,
     /** The photo the AI read: it becomes the item's photo once saved. */
     val aiPhoto: String? = null,
+    /** Deleting an item with warehouse records: how many are in stock now. */
+    val stockOnHand: Int = 0,
 )
 
 enum class AiOutcome { FILLED, NOTHING, UNAVAILABLE }
@@ -92,7 +94,7 @@ data class ItemEditUiState(
     val title: String get() = form.draft.title(type)
 }
 
-enum class ItemEditDialog { DISCARD, CONFIRM_DELETE, IN_USE }
+enum class ItemEditDialog { DISCARD, CONFIRM_DELETE, IN_USE, DELETE_WITH_STOCK }
 
 sealed interface ItemEditEvent {
     data object Close : ItemEditEvent
@@ -316,15 +318,24 @@ class ItemEditViewModel @Inject constructor(
         it.copy(dialog = if (uiState.value.owners.isEmpty()) ItemEditDialog.CONFIRM_DELETE else ItemEditDialog.IN_USE)
     }
 
-    fun onConfirmDelete() {
+    fun onConfirmDelete() = delete(withStock = false)
+
+    /** Deleted together with its warehouse records, after the user agreed. */
+    fun onConfirmDeleteWithStock() = delete(withStock = true)
+
+    private fun delete(withStock: Boolean) {
         form.update { it.copy(dialog = null) }
         viewModelScope.launch {
-            when (catalogRepository.deleteItem(itemId.value)) {
+            when (catalogRepository.deleteItem(itemId.value, withStock)) {
                 DeleteResult.DELETED, DeleteResult.NOT_FOUND -> {
                     form.update { it.copy(hasChanges = false) }
                     _events.send(ItemEditEvent.Close)
                 }
                 DeleteResult.IN_USE -> form.update { it.copy(dialog = ItemEditDialog.IN_USE) }
+                DeleteResult.HAS_STOCK -> {
+                    val onHand = catalogRepository.stockOnHand(itemId.value)
+                    form.update { it.copy(dialog = ItemEditDialog.DELETE_WITH_STOCK, stockOnHand = onHand) }
+                }
             }
         }
     }

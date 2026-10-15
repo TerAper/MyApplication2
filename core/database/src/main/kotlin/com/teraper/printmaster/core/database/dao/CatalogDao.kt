@@ -88,10 +88,14 @@ interface CatalogDao {
 
     @Query(
         """
-        SELECT c.id AS client_id, c.name AS client_name, i.place AS place
+        SELECT c.id AS client_id, c.name AS client_name, i.place AS place, 0 AS as_part
         FROM client_items i JOIN clients c ON c.id = i.client_id
         WHERE i.item_id = :itemId
-        ORDER BY c.name
+        UNION
+        SELECT c.id AS client_id, c.name AS client_name, i.place AS place, 1 AS as_part
+        FROM client_item_parts p JOIN client_items i ON i.id = p.client_item_id JOIN clients c ON c.id = i.client_id
+        WHERE p.item_id = :itemId
+        ORDER BY client_name
         """,
     )
     fun observeOwners(itemId: Long): Flow<List<ItemOwnerRow>>
@@ -101,10 +105,19 @@ interface CatalogDao {
         """
         SELECT (SELECT COUNT(*) FROM client_items WHERE item_id = :itemId)
              + (SELECT COUNT(*) FROM client_item_parts WHERE item_id = :itemId)
-             + (SELECT COUNT(*) FROM stock_moves WHERE item_id = :itemId)
         """,
     )
     suspend fun countUses(itemId: Long): Int
+
+    @Query("SELECT COUNT(*) FROM stock_moves WHERE item_id = :itemId")
+    suspend fun countStockMoves(itemId: Long): Int
+
+    /** In every warehouse together. */
+    @Query("SELECT COALESCE(SUM(quantity), 0) FROM stock_moves WHERE item_id = :itemId")
+    suspend fun stockOnHand(itemId: Long): Int
+
+    @Query("DELETE FROM stock_moves WHERE item_id = :itemId")
+    suspend fun deleteStockMoves(itemId: Long)
 
     @Insert
     suspend fun insertItem(item: ItemEntity): Long

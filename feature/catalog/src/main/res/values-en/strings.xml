@@ -38,7 +38,7 @@
     <string name="feature_catalog_keep_editing">Keep editing</string>
     <string name="feature_catalog_delete_title">Delete from the catalog?</string>
     <string name="feature_catalog_in_use_title">Can\'t delete</string>
-    <string name="feature_catalog_in_use_message">Clients have this. Delete or change it on their cards first.</string>
+    <string name="feature_catalog_in_use_message">These clients have it. Remove or change it on their cards first (tap a name).</string>
     <plurals name="feature_catalog_owned_count">
         <item quantity="one">%1$d client has it</item>
         <item quantity="other">%1$d clients have it</item>
@@ -230,4 +230,7 @@
     <string name="feature_catalog_ai_unavailable">AI isn\'t available: no internet, or Firebase AI Logic isn\'t turned on.</string>
     <string name="feature_catalog_ai_camera">Camera</string>
     <string name="feature_catalog_ai_gallery">Gallery</string>
+    <string name="feature_catalog_owner_as_part">as a part</string>
+    <string name="feature_catalog_delete_with_stock">"%1$s" has warehouse records. Delete it together with them?</string>
+    <string name="feature_catalog_delete_with_stock_count">"%1$s" has warehouse records, %2$d in stock now. Delete it together with them?</string>
 </resources>
