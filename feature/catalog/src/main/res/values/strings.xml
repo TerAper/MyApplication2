@@ -218,4 +218,8 @@
     <string name="feature_catalog_keep_at_least">Պահել առնվազն</string>
     <string name="feature_catalog_keep_at_least_hint">Պահեստում հատ — 0՝ չհետևել</string>
     <string name="feature_catalog_in_stock">Պահեստում՝ %1$d հատ ›</string>
+    <string name="feature_catalog_new_code_title">Նոր կոդ</string>
+    <string name="feature_catalog_new_code_text">%1$s կոդով ապրանք չկա։ Ավելացնե՞լ նորը այս կոդով։</string>
+    <string name="feature_catalog_new_code_add">Ավելացնել</string>
+    <string name="feature_catalog_cancel_scan">Չեղարկել</string>
 </resources>

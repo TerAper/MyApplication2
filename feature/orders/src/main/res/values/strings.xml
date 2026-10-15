@@ -162,4 +162,7 @@
     <string name="feature_orders_masters_map_title">Վարպետները քարտեզում</string>
     <string name="feature_orders_masters_map_empty">Այժմ ոչ մի վարպետ տեղը չի փոխանցում։</string>
     <string name="feature_orders_masters_map_no_point">դեռ կետ չկա</string>
+    <string name="feature_orders_scan_goods">Սկանավորել ապրանքը</string>
+    <string name="feature_orders_scan_not_found">Այս կոդով վաճառվող ապրանք չկա կատալոգում։</string>
+    <string name="feature_orders_scan_unavailable">Սկաները հասանելի չէ այս հեռախոսում։</string>
 </resources>

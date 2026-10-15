@@ -53,4 +53,11 @@
     <string name="feature_warehouse_reason_other">Այլ</string>
     <string name="feature_warehouse_paid_each">%1$s/հատ</string>
     <string name="feature_warehouse_mine">Իմը</string>
+    <string name="feature_warehouse_scan">Սկանավորել</string>
+    <string name="feature_warehouse_scanned">%1$s՝ +1 → %2$d</string>
+    <string name="feature_warehouse_undo">Չեղարկել</string>
+    <string name="feature_warehouse_new_code_title">Նոր կոդ</string>
+    <string name="feature_warehouse_new_code_text">%1$s կոդով ապրանք չկա։ Ավելացնե՞լ որպես նոր ապրանք։</string>
+    <string name="feature_warehouse_new_code_add">Ավելացնել</string>
+    <string name="feature_warehouse_scan_unavailable">Սկաները հասանելի չէ այս հեռախոսում։</string>
 </resources>

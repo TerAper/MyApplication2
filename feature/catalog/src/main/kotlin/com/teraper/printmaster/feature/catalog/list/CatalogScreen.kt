@@ -21,6 +21,16 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import com.teraper.printmaster.core.designsystem.component.ScanOutcome
+import com.teraper.printmaster.core.designsystem.component.rememberCodeScanner
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.AlertDialog
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.LaunchedEffect
+import android.widget.Toast
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -53,11 +63,44 @@ internal fun CatalogRoute(
     onItemClick: (Long) -> Unit,
     onAddItem: (typeId: Long) -> Unit,
     onOpenTypes: () -> Unit,
+    onNewWithBarcode: (String) -> Unit = {},
     viewModel: CatalogViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val query by viewModel.query.collectAsStateWithLifecycle()
+    val context = LocalContext.current
+    var newCode by remember { mutableStateOf<String?>(null) }
+    val scan = rememberCodeScanner { outcome ->
+        when (outcome) {
+            is ScanOutcome.Read -> viewModel.onScanned(outcome.text)
+            ScanOutcome.Unavailable -> Toast.makeText(context, R.string.feature_catalog_scan_unavailable, Toast.LENGTH_LONG).show()
+            ScanOutcome.Closed -> Unit
+        }
+    }
+    LaunchedEffect(viewModel) {
+        viewModel.scans.collect { found ->
+            when (found) {
+                is CatalogScan.Found -> onItemClick(found.itemId)
+                is CatalogScan.New -> newCode = found.barcode
+            }
+        }
+    }
+    newCode?.let { code ->
+        AlertDialog(
+            onDismissRequest = { newCode = null },
+            title = { Text(stringResource(R.string.feature_catalog_new_code_title)) },
+            text = { Text(stringResource(R.string.feature_catalog_new_code_text, code)) },
+            confirmButton = {
+                TextButton(onClick = {
+                    newCode = null
+                    onNewWithBarcode(code)
+                }) { Text(stringResource(R.string.feature_catalog_new_code_add)) }
+            },
+            dismissButton = { TextButton(onClick = { newCode = null }) { Text(stringResource(R.string.feature_catalog_cancel_scan)) } },
+        )
+    }
     CatalogScreen(
+        onScan = scan,
         state = state,
         query = query,
         onQueryChange = viewModel::onQueryChange,
@@ -80,6 +123,7 @@ internal fun CatalogScreen(
     onAddItem: (typeId: Long) -> Unit,
     onOpenTypes: () -> Unit,
     modifier: Modifier = Modifier,
+    onScan: () -> Unit = {},
 ) {
     Box(modifier.fillMaxSize().background(PmTheme.colors.background)) {
         Column(Modifier.fillMaxSize()) {
@@ -88,6 +132,12 @@ internal fun CatalogScreen(
                 navigationLabel = stringResource(R.string.feature_catalog_back),
                 onNavigate = onBack,
                 actions = {
+                    // A product's barcode: opens its item, or adds a new one with it.
+                    if (state.types.isNotEmpty()) {
+                        IconButton(onClick = onScan) {
+                            Icon(PmIcons.Scan, contentDescription = stringResource(R.string.feature_catalog_scan), tint = PmTheme.colors.primary)
+                        }
+                    }
                     // Types and templates: a labelled button, so it's found without guessing an icon.
                     TextButton(onClick = onOpenTypes) {
                         Icon(PmIcons.ItemTypes, contentDescription = null, tint = PmTheme.colors.primary, modifier = Modifier.padding(end = 6.dp))

@@ -96,6 +96,9 @@ sealed interface RepairEditDialog {
 
 sealed interface RepairEditEvent {
     data object Close : RepairEditEvent
+
+    /** A scanned code is not goods of the catalog. */
+    data object ScanNotFound : RepairEditEvent
 }
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -104,7 +107,7 @@ class RepairEditViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     ordersRepository: OrdersRepository,
     clientItemsRepository: ClientItemsRepository,
-    catalogRepository: CatalogRepository,
+    private val catalogRepository: CatalogRepository,
     priceListRepository: PriceListRepository,
     private val repairsRepository: RepairsRepository,
     warehouseRepository: WarehouseRepository,
@@ -215,6 +218,14 @@ class RepairEditViewModel @Inject constructor(
 
     /** More than the warehouse has is marked "to buy". */
     fun onPickGoods(goods: CatalogItem) = editDraft { it.plus(goods, inStock = goodsStock.value[goods.id] ?: 0) }
+
+    /** Goods by their barcode: added like a tap on them (the sheet stays where it is). */
+    fun onGoodsScanned(code: String) {
+        viewModelScope.launch {
+            val goods = catalogRepository.findByBarcode(code)?.takeIf { it.isGoods && uiState.value.goodsAvailable }
+            if (goods == null) _events.send(RepairEditEvent.ScanNotFound) else onPickGoods(goods)
+        }
+    }
 
     fun onToBuyChange(index: Int, toBuy: Boolean) = editDraft { it.withToBuy(index, toBuy) }
 

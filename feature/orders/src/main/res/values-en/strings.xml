@@ -162,4 +162,7 @@
     <string name="feature_orders_masters_map_title">Masters on the map</string>
     <string name="feature_orders_masters_map_empty">No master shares the location now.</string>
     <string name="feature_orders_masters_map_no_point">no position yet</string>
+    <string name="feature_orders_scan_goods">Scan goods</string>
+    <string name="feature_orders_scan_not_found">No goods with this code in the catalog.</string>
+    <string name="feature_orders_scan_unavailable">The scanner isn\'t available on this phone.</string>
 </resources>

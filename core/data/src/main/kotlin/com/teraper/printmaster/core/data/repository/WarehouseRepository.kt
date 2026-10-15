@@ -52,6 +52,12 @@ interface WarehouseRepository {
 
     suspend fun save(draft: StockDraft): SaveStockResult
 
+    /** Scanned in: one more of [itemId] received (price not known); returns the movement, to undo it. */
+    suspend fun scanIn(itemId: Long): Long
+
+    /** Takes back a receive made by [scanIn]. */
+    suspend fun undoReceive(moveId: Long)
+
     /** What masters attached to the user's companies see: counts only (default) or prices too. */
     fun observeMastersSee(): Flow<MastersSee>
 
@@ -88,6 +94,12 @@ internal class OfflineWarehouseRepository @Inject constructor(
     )
 
     override fun observeMode(): Flow<WarehouseMode> = mode.asStateFlow()
+
+    override suspend fun scanIn(itemId: Long): Long = stockDao.insert(
+        StockMoveEntity(itemId = itemId, companyId = currentWarehouse(), quantity = 1, kind = StockKind.RECEIVE, at = clock.millis()),
+    )
+
+    override suspend fun undoReceive(moveId: Long) = stockDao.deleteReceive(moveId)
 
     override fun observeMastersSee(): Flow<MastersSee> = mastersSee.asStateFlow()
 

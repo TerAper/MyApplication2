@@ -218,4 +218,8 @@
     <string name="feature_catalog_keep_at_least">Keep at least</string>
     <string name="feature_catalog_keep_at_least_hint">Pieces in the warehouse — 0 to not watch</string>
     <string name="feature_catalog_in_stock">In the warehouse: %1$d ›</string>
+    <string name="feature_catalog_new_code_title">New code</string>
+    <string name="feature_catalog_new_code_text">No item has the code %1$s. Add a new one with it?</string>
+    <string name="feature_catalog_new_code_add">Add</string>
+    <string name="feature_catalog_cancel_scan">Cancel</string>
 </resources>

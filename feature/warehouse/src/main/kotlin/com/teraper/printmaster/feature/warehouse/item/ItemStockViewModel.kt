@@ -17,6 +17,7 @@ import com.teraper.printmaster.core.model.StockKind
 import com.teraper.printmaster.core.model.StockMove
 import com.teraper.printmaster.core.model.WarehouseMode
 import com.teraper.printmaster.feature.warehouse.navigation.ITEM_ID_ARG
+import com.teraper.printmaster.feature.warehouse.navigation.RECEIVE_ARG
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -25,6 +26,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.first
 import javax.inject.Inject
 
 data class ItemStockUiState(
@@ -53,6 +55,17 @@ class ItemStockViewModel @Inject constructor(
 
     private val itemId: Long = checkNotNull(savedStateHandle[ITEM_ID_ARG])
     private val sheet = MutableStateFlow<Pair<StockDraft?, Set<StockDraftError>>>(null to emptySet())
+
+    init {
+        // Just added from a scanned code: receiving it is the next step (once, not again after rotating).
+        if (savedStateHandle.get<Boolean>(RECEIVE_ARG) == true) {
+            savedStateHandle[RECEIVE_ARG] = false
+            viewModelScope.launch {
+                val cost = catalog.observeItem(itemId).first()?.cost?.dram?.takeIf { it > 0 }?.toString().orEmpty()
+                open(StockDraft(itemId, StockKind.RECEIVE, quantityDigits = "1", costDigits = cost))
+            }
+        }
+    }
 
     private val companyInfo = combine(companies.observeCompanies(), companies.observeActiveCompany(), warehouse.observeMode()) { all, active, mode ->
         val targets = if (mode == WarehouseMode.PER_COMPANY) all.filter { it.kind == CompanyKind.OWN && it.id != active?.id } else emptyList()

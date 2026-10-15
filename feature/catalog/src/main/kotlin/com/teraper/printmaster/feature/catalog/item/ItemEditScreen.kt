@@ -66,6 +66,7 @@ internal fun ItemEditRoute(
     onOpenClient: (Long) -> Unit,
     onOpenItem: (itemId: Long, typeId: Long, intoId: Long) -> Unit,
     onOpenStock: (Long) -> Unit = {},
+    onReceive: (Long) -> Unit = {},
     viewModel: ItemEditViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
@@ -74,6 +75,7 @@ internal fun ItemEditRoute(
             when (event) {
                 ItemEditEvent.Close -> onClose()
                 is ItemEditEvent.OpenItem -> onOpenItem(event.itemId, event.typeId, event.intoId)
+                is ItemEditEvent.Receive -> onReceive(event.itemId)
             }
         }
     }

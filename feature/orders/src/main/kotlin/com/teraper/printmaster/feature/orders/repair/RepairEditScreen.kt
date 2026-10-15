@@ -23,6 +23,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import com.teraper.printmaster.core.designsystem.component.ScanOutcome
+import com.teraper.printmaster.core.designsystem.component.rememberCodeScanner
+import androidx.compose.ui.platform.LocalContext
+import android.widget.Toast
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -67,15 +71,24 @@ import com.teraper.printmaster.feature.orders.R
 @Composable
 internal fun RepairEditRoute(onClose: () -> Unit, viewModel: RepairEditViewModel = hiltViewModel()) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val context = LocalContext.current
 
     LaunchedEffect(viewModel) {
         viewModel.events.collect { event ->
             when (event) {
                 RepairEditEvent.Close -> onClose()
+                RepairEditEvent.ScanNotFound -> Toast.makeText(context, R.string.feature_orders_scan_not_found, Toast.LENGTH_LONG).show()
             }
         }
     }
     BackHandler(onBack = viewModel::onCloseRequest)
+    val scanGoods = rememberCodeScanner { outcome ->
+        when (outcome) {
+            is ScanOutcome.Read -> viewModel.onGoodsScanned(outcome.text)
+            ScanOutcome.Unavailable -> Toast.makeText(context, R.string.feature_orders_scan_unavailable, Toast.LENGTH_LONG).show()
+            ScanOutcome.Closed -> Unit
+        }
+    }
 
     RepairEditScreen(
         state = state,
@@ -93,6 +106,7 @@ internal fun RepairEditRoute(onClose: () -> Unit, viewModel: RepairEditViewModel
             onPickerQueryChange = viewModel::onPickerQueryChange,
             onPickItem = viewModel::onPickItem,
             onPickGoods = viewModel::onPickGoods,
+            onScanGoods = scanGoods,
             onPickerGoods = viewModel::onPickerGoods,
             onClosePicker = viewModel::onClosePicker,
             onAddCustomClick = viewModel::onAddCustomClick,
@@ -119,6 +133,7 @@ internal data class RepairEditActions(
     val onPickerQueryChange: (String) -> Unit = {},
     val onPickItem: (PriceItem) -> Unit = {},
     val onPickGoods: (CatalogItem) -> Unit = {},
+    val onScanGoods: () -> Unit = {},
     val onPickerGoods: (Boolean) -> Unit = {},
     val onClosePicker: () -> Unit = {},
     val onAddCustomClick: () -> Unit = {},
@@ -249,6 +264,7 @@ internal fun RepairEditScreen(state: RepairEditUiState, actions: RepairEditActio
             goodsStock = state.goodsStock,
             onGoodsMode = actions.onPickerGoods,
             onPickGoods = actions.onPickGoods,
+            onScanGoods = actions.onScanGoods,
         )
     }
 

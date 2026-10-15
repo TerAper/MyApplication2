@@ -21,6 +21,8 @@ import com.teraper.printmaster.core.model.ItemType
 import com.teraper.printmaster.core.model.ItemTypes
 import com.teraper.printmaster.core.model.LinkDraft
 import com.teraper.printmaster.feature.catalog.navigation.INTO_ID_ARG
+import com.teraper.printmaster.feature.catalog.navigation.BARCODE_ARG
+import com.teraper.printmaster.feature.catalog.navigation.RECEIVE_ARG
 import com.teraper.printmaster.feature.catalog.navigation.ITEM_ID_ARG
 import com.teraper.printmaster.feature.catalog.navigation.TYPE_ID_ARG
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -86,6 +88,9 @@ sealed interface ItemEditEvent {
 
     /** Open a part's own form: an existing one ([itemId]) or a new one of [typeId] going into [intoId]. */
     data class OpenItem(val itemId: Long, val typeId: Long, val intoId: Long) : ItemEditEvent
+
+    /** Added from a scanned code in the warehouse: receive it now. */
+    data class Receive(val itemId: Long) : ItemEditEvent
 }
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -100,7 +105,8 @@ class ItemEditViewModel @Inject constructor(
     /** 0 until the item is saved for the first time. */
     private val itemId = MutableStateFlow<Long>(savedStateHandle[ITEM_ID_ARG] ?: 0L)
     private val intoId: Long = savedStateHandle[INTO_ID_ARG] ?: 0L
-    private var initialDraft = ItemDraft(typeId = savedStateHandle[TYPE_ID_ARG] ?: 0L)
+    private var initialDraft = ItemDraft(typeId = savedStateHandle[TYPE_ID_ARG] ?: 0L, barcode = savedStateHandle[BARCODE_ARG] ?: "")
+    private val receiveAfterSave: Boolean = savedStateHandle[RECEIVE_ARG] ?: false
     private var triedToSave = false
 
     private val form = MutableStateFlow(ItemForm(isLoading = itemId.value != 0L || intoId != 0L, draft = initialDraft))
@@ -213,7 +219,9 @@ class ItemEditViewModel @Inject constructor(
     }
 
     fun onSave() {
-        viewModelScope.launch { if (save()) _events.send(ItemEditEvent.Close) }
+        viewModelScope.launch {
+            if (save()) _events.send(if (receiveAfterSave) ItemEditEvent.Receive(itemId.value) else ItemEditEvent.Close)
+        }
     }
 
     /**

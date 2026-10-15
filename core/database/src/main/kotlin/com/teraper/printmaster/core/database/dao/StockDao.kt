@@ -25,6 +25,9 @@ interface StockDao {
     @Insert
     suspend fun insert(move: StockMoveEntity): Long
 
+    @Query("DELETE FROM stock_moves WHERE id = :id AND kind = 'RECEIVE'")
+    suspend fun deleteReceive(id: Long)
+
     /** Fires on any change of stock or of the catalog, so the masters' copy can be brought up to date. */
     @Query("SELECT (SELECT COUNT(*) FROM stock_moves) + (SELECT COUNT(*) FROM items)")
     fun observeChanges(): Flow<Int>

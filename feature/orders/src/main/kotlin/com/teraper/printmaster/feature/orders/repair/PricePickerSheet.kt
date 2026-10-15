@@ -16,6 +16,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
@@ -66,6 +67,7 @@ internal fun PricePickerSheet(
     goodsStock: Map<Long, Int> = emptyMap(),
     onGoodsMode: (Boolean) -> Unit = {},
     onPickGoods: (CatalogItem) -> Unit = {},
+    onScanGoods: () -> Unit = {},
 ) {
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -87,12 +89,19 @@ internal fun PricePickerSheet(
                 )
             }
             if (picker.goods) {
-                PmSearchField(
-                    query = picker.query,
-                    onQueryChange = onQueryChange,
-                    placeholder = stringResource(R.string.feature_orders_repair_search_hint),
-                    clearLabel = stringResource(R.string.feature_orders_repair_clear_search),
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    PmSearchField(
+                        query = picker.query,
+                        onQueryChange = onQueryChange,
+                        placeholder = stringResource(R.string.feature_orders_repair_search_hint),
+                        clearLabel = stringResource(R.string.feature_orders_repair_clear_search),
+                        modifier = Modifier.weight(1f),
+                    )
+                    // The box's barcode adds it.
+                    IconButton(onClick = onScanGoods) {
+                        Icon(PmIcons.Scan, contentDescription = stringResource(R.string.feature_orders_scan_goods), tint = PmTheme.colors.primary)
+                    }
+                }
             } else if (!priceListIsEmpty) {
                 PmSearchField(
                     query = picker.query,

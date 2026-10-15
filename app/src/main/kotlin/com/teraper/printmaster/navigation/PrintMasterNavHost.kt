@@ -124,8 +124,20 @@ fun PrintMasterNavHost(navController: NavHostController, modifier: Modifier = Mo
                 onOpenCatalogItem = { navController.navigate(ItemEditDestination(itemId = it)) },
                 onNewCatalogItem = { navController.navigate(ItemEditDestination()) },
             )
-            catalogScreens(navController, onOpenClient = navController::openClientFromOtherTab, onOpenStock = navController::navigateToItemStock)
-            warehouseScreens(navController, onOpenCatalogItem = { navController.navigate(ItemEditDestination(itemId = it)) })
+            catalogScreens(
+                navController,
+                onOpenClient = navController::openClientFromOtherTab,
+                onOpenStock = { navController.navigateToItemStock(it) },
+                // Added from a scanned code: straight on to receiving it, the form closed.
+                onReceive = { itemId ->
+                    navController.navigateToItemStock(itemId, receive = true) { popUpTo<ItemEditDestination> { inclusive = true } }
+                },
+            )
+            warehouseScreens(
+                navController,
+                onOpenCatalogItem = { navController.navigate(ItemEditDestination(itemId = it)) },
+                onNewItem = { code -> navController.navigate(ItemEditDestination(barcode = code, receive = true)) },
+            )
             accountScreens(navController)
             settingsScreens(navController)
             reportsScreens(navController, onOpenClient = navController::openClientFromOtherTab, onOpenExpenses = navController::navigateToExpenses)

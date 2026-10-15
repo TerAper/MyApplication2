@@ -22,6 +22,11 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import com.teraper.printmaster.core.data.repository.CatalogRepository
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.receiveAsFlow
+import kotlinx.coroutines.flow.first
 import javax.inject.Inject
 
 data class WarehouseUiState(
@@ -45,15 +50,34 @@ data class WarehouseUiState(
     val companyId: Long? = null,
     /** That company's stock, searched; by name. */
     val companyLines: List<CompanyStockLine> = emptyList(),
+    /** The last scanned item, received +1 (it can be undone). */
+    val scanned: ScannedIn? = null,
+    /** A scanned code no item has: offer to add one. */
+    val newCode: String? = null,
 )
+
+/** "CF283A: +1 → 5"; [moveId] to take it back. */
+data class ScannedIn(val title: String, val count: Int, val moveId: Long)
+
+sealed interface WarehouseEvent {
+    /** Received: the scanner opens again for the next one. */
+    data object ScanNext : WarehouseEvent
+
+    /** Add a new item with this barcode, then receive it. */
+    data class NewItem(val barcode: String) : WarehouseEvent
+}
 
 @HiltViewModel
 class WarehouseViewModel @Inject constructor(
     private val warehouse: WarehouseRepository,
     companies: CompaniesRepository,
+    private val catalog: CatalogRepository,
 ) : ViewModel() {
 
     private val ui = MutableStateFlow(WarehouseUiState())
+
+    private val _events = Channel<WarehouseEvent>(Channel.BUFFERED)
+    val events: Flow<WarehouseEvent> = _events.receiveAsFlow()
 
     private val shared = combine(warehouse.observeCompanyStock(), companies.observeAttachedCompanies()) { lines, attached ->
         attached.filter { c -> lines.any { it.companyId == c.id } } to lines
@@ -89,6 +113,41 @@ class WarehouseViewModel @Inject constructor(
     fun onQueryChange(query: String) = ui.update { it.copy(query = query) }
 
     fun onFilterChange(filter: StockFilter) = ui.update { it.copy(filter = filter) }
+
+    /**
+     * Scan, scan, scan: a known item comes in +1 and the scanner opens again; an unknown code
+     * (or a one-of-a-kind item, which has no stock) asks to add a new item.
+     */
+    fun onScanned(code: String) {
+        viewModelScope.launch {
+            val item = catalog.findByBarcode(code)?.takeUnless { it.type.perClient }
+            if (item == null) {
+                ui.update { it.copy(newCode = code.trim(), scanned = null) }
+                return@launch
+            }
+            val before = uiState.value.lines.firstOrNull { it.item.id == item.id }?.count
+                ?: warehouse.observeStock().first().firstOrNull { it.item.id == item.id }?.count ?: 0
+            val moveId = warehouse.scanIn(item.id)
+            ui.update { it.copy(scanned = ScannedIn(item.title, before + 1, moveId), companyId = null) }
+            _events.send(WarehouseEvent.ScanNext)
+        }
+    }
+
+    fun onUndoScan() {
+        val scanned = ui.value.scanned ?: return
+        ui.update { it.copy(scanned = null) }
+        viewModelScope.launch { warehouse.undoReceive(scanned.moveId) }
+    }
+
+    fun onDismissScanned() = ui.update { it.copy(scanned = null) }
+
+    fun onAddNewCode() {
+        val code = ui.value.newCode ?: return
+        ui.update { it.copy(newCode = null) }
+        viewModelScope.launch { _events.send(WarehouseEvent.NewItem(code)) }
+    }
+
+    fun onDismissNewCode() = ui.update { it.copy(newCode = null) }
 
     /** Null = the user's own warehouse. */
     fun onCompanyChange(companyId: Long?) = ui.update { it.copy(companyId = companyId) }

@@ -28,6 +28,9 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
+import kotlinx.coroutines.flow.first
+import com.teraper.printmaster.feature.warehouse.list.ScannedIn
+import com.teraper.printmaster.feature.warehouse.list.WarehouseEvent
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class WarehouseViewModelsTest {
@@ -38,6 +41,7 @@ class WarehouseViewModelsTest {
     private val toner = CatalogItem(1, cartridge, "Toner", cost = Money.ofDram(1_000))
     private val chip = CatalogItem(2, cartridge, "Chip", cost = Money.ofDram(500), keepAtLeast = 5)
     private val drum = CatalogItem(3, cartridge, "Drum", cost = Money.ofDram(4_000))
+    private val catalog = com.teraper.printmaster.core.testing.FakeCatalogRepository()
     private val warehouse = FakeWarehouseRepository(listOf(StockLine(toner, 3), StockLine(chip, 2, 5), StockLine(drum, 0)))
 
     @Test
@@ -48,7 +52,7 @@ class WarehouseViewModelsTest {
             com.teraper.printmaster.core.model.CompanyStockLine(7, "Cartridge", "CF283A", 4, Money.ofDram(9_000)),
             com.teraper.printmaster.core.model.CompanyStockLine(7, "Drum", "DR-1", 0),
         )
-        val vm = WarehouseViewModel(warehouse, companies)
+        val vm = WarehouseViewModel(warehouse, companies, catalog)
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.uiState.collect {} }
         // Only companies that share something get a chip; the own warehouse shows first.
         assertEquals(listOf("Xerox"), vm.uiState.value.companies.map { it.name })
@@ -62,7 +66,7 @@ class WarehouseViewModelsTest {
 
     @Test
     fun listsLowFirstThenInStockAndSums() = runTest {
-        val vm = WarehouseViewModel(warehouse, FakeCompaniesRepository())
+        val vm = WarehouseViewModel(warehouse, FakeCompaniesRepository(), catalog)
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.uiState.collect {} }
         val state = vm.uiState.value
         assertEquals(listOf("Chip", "Toner", "Drum"), state.lines.map { it.item.name })
@@ -81,7 +85,7 @@ class WarehouseViewModelsTest {
 
     @Test
     fun modeCanBeChosenWithTwoCompanies() = runTest {
-        val vm = WarehouseViewModel(warehouse, FakeCompaniesRepository(listOf(Company(1, "Main"), Company(2, "Second"))))
+        val vm = WarehouseViewModel(warehouse, FakeCompaniesRepository(listOf(Company(1, "Main"), Company(2, "Second"))), catalog)
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.uiState.collect {} }
         assertTrue(vm.uiState.value.canSplit)
         vm.onShowMode()
@@ -147,5 +151,33 @@ class WarehouseViewModelsTest {
         vm.onQuantityChange("3")
         vm.onSave()
         assertEquals(setOf(StockDraftError.NOT_ENOUGH), vm.uiState.value.errors)
+    }
+
+    @Test
+    fun scanningAKnownCodeReceivesOneAndCanBeUndone() = runTest {
+        val coded = toner.copy(barcode = "4960999123456")
+        catalog.entries.value = listOf(com.teraper.printmaster.core.model.CatalogEntry(coded))
+        val vm = WarehouseViewModel(warehouse, FakeCompaniesRepository(), catalog)
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.uiState.collect {} }
+
+        vm.onScanned("4960999123456")
+        assertEquals(WarehouseEvent.ScanNext, vm.events.first())
+        assertEquals(ScannedIn("Toner", 4, 1), vm.uiState.value.scanned)
+        assertEquals(4, warehouse.lines.value.first { it.item.id == 1L }.count)
+
+        vm.onUndoScan()
+        assertEquals(3, warehouse.lines.value.first { it.item.id == 1L }.count)
+        assertEquals(null, vm.uiState.value.scanned)
+    }
+
+    @Test
+    fun anUnknownCodeOffersANewItem() = runTest {
+        val vm = WarehouseViewModel(warehouse, FakeCompaniesRepository(), catalog)
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.uiState.collect {} }
+        vm.onScanned(" 123 ")
+        assertEquals("123", vm.uiState.value.newCode)
+        vm.onAddNewCode()
+        assertEquals(WarehouseEvent.NewItem("123"), vm.events.first())
+        assertEquals(null, vm.uiState.value.newCode)
     }
 }

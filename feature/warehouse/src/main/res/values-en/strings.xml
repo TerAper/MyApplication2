@@ -53,4 +53,11 @@
     <string name="feature_warehouse_reason_other">Other</string>
     <string name="feature_warehouse_paid_each">%1$s each</string>
     <string name="feature_warehouse_mine">Mine</string>
+    <string name="feature_warehouse_scan">Scan</string>
+    <string name="feature_warehouse_scanned">%1$s: +1 → %2$d</string>
+    <string name="feature_warehouse_undo">Undo</string>
+    <string name="feature_warehouse_new_code_title">New code</string>
+    <string name="feature_warehouse_new_code_text">No item has the code %1$s. Add it as a new item?</string>
+    <string name="feature_warehouse_new_code_add">Add</string>
+    <string name="feature_warehouse_scan_unavailable">The scanner isn\'t available on this phone.</string>
 </resources>

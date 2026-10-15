@@ -14,10 +14,11 @@ data object CatalogDestination
 
 /**
  * [itemId] 0 = add a new item, of type [typeId] when it's known (0 = choose). [intoId]: a new part
- * made from its item's form goes into that item.
+ * made from its item's form goes into that item. [barcode]: a scanned code the new item gets;
+ * with [receive] the item is received in the warehouse right after saving.
  */
 @Serializable
-data class ItemEditDestination(val itemId: Long = 0, val typeId: Long = 0, val intoId: Long = 0)
+data class ItemEditDestination(val itemId: Long = 0, val typeId: Long = 0, val intoId: Long = 0, val barcode: String = "", val receive: Boolean = false)
 
 @Serializable
 data object ItemTypesDestination
@@ -29,6 +30,8 @@ data class TypeEditDestination(val typeId: Long = 0)
 internal const val ITEM_ID_ARG = "itemId"
 internal const val TYPE_ID_ARG = "typeId"
 internal const val INTO_ID_ARG = "intoId"
+internal const val BARCODE_ARG = "barcode"
+internal const val RECEIVE_ARG = "receive"
 
 fun NavController.navigateToCatalog() = navigate(CatalogDestination)
 
@@ -38,12 +41,18 @@ fun NavController.navigateToItemTypes() = navigate(ItemTypesDestination)
  * Catalog screens; the app puts them inside the More tab.
  * [onOpenClient] opens a client card (Clients feature), wired by the app.
  */
-fun NavGraphBuilder.catalogScreens(navController: NavController, onOpenClient: (Long) -> Unit, onOpenStock: (Long) -> Unit = {}) {
+fun NavGraphBuilder.catalogScreens(
+    navController: NavController,
+    onOpenClient: (Long) -> Unit,
+    onOpenStock: (Long) -> Unit = {},
+    onReceive: (Long) -> Unit = {},
+) {
     composable<CatalogDestination> {
         CatalogRoute(
             onBack = navController::popBackStack,
             onItemClick = { navController.navigate(ItemEditDestination(it)) },
             onAddItem = { typeId -> navController.navigate(ItemEditDestination(typeId = typeId)) },
+            onNewWithBarcode = { code -> navController.navigate(ItemEditDestination(barcode = code)) },
             onOpenTypes = { navController.navigate(ItemTypesDestination) },
         )
     }
@@ -53,6 +62,7 @@ fun NavGraphBuilder.catalogScreens(navController: NavController, onOpenClient: (
             onOpenClient = onOpenClient,
             onOpenItem = { itemId, typeId, intoId -> navController.navigate(ItemEditDestination(itemId, typeId, intoId)) },
             onOpenStock = onOpenStock,
+            onReceive = onReceive,
         )
     }
     composable<ItemTypesDestination> {

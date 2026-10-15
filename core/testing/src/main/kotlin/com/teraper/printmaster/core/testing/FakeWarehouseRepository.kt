@@ -31,6 +31,19 @@ class FakeWarehouseRepository(lines: List<StockLine> = emptyList()) : WarehouseR
 
     override fun observeCount(itemId: Long): Flow<Int> = lines.map { all -> all.firstOrNull { it.item.id == itemId }?.count ?: 0 }
 
+    override suspend fun scanIn(itemId: Long): Long {
+        val id = moves.value.size + 1L
+        moves.update { it + StockMove(id, itemId, 1, StockKind.RECEIVE, 0L) }
+        lines.update { all -> all.map { if (it.item.id == itemId) it.copy(count = it.count + 1) else it } }
+        return id
+    }
+
+    override suspend fun undoReceive(moveId: Long) {
+        val move = moves.value.firstOrNull { it.id == moveId } ?: return
+        moves.update { it - move }
+        lines.update { all -> all.map { if (it.item.id == move.itemId) it.copy(count = it.count - move.quantity) else it } }
+    }
+
     val mastersSee = MutableStateFlow(MastersSee.COUNTS)
     val companyStock = MutableStateFlow<List<CompanyStockLine>>(emptyList())
 

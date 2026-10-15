@@ -23,6 +23,11 @@ import androidx.compose.material3.RadioButtonDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import com.teraper.printmaster.core.designsystem.component.ScanOutcome
+import com.teraper.printmaster.core.designsystem.component.rememberCodeScanner
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.runtime.LaunchedEffect
+import android.widget.Toast
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -52,9 +57,42 @@ import com.teraper.printmaster.core.model.WarehouseMode
 import com.teraper.printmaster.feature.warehouse.R
 
 @Composable
-internal fun WarehouseRoute(onBack: () -> Unit, onItemClick: (Long) -> Unit, viewModel: WarehouseViewModel = hiltViewModel()) {
+internal fun WarehouseRoute(
+    onBack: () -> Unit,
+    onItemClick: (Long) -> Unit,
+    onNewItem: (barcode: String) -> Unit = {},
+    viewModel: WarehouseViewModel = hiltViewModel(),
+) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val context = LocalContext.current
+    val scan = rememberCodeScanner { outcome ->
+        when (outcome) {
+            is ScanOutcome.Read -> viewModel.onScanned(outcome.text)
+            ScanOutcome.Unavailable -> Toast.makeText(context, R.string.feature_warehouse_scan_unavailable, Toast.LENGTH_LONG).show()
+            ScanOutcome.Closed -> Unit
+        }
+    }
+    LaunchedEffect(viewModel) {
+        viewModel.events.collect { event ->
+            when (event) {
+                WarehouseEvent.ScanNext -> scan()
+                is WarehouseEvent.NewItem -> onNewItem(event.barcode)
+            }
+        }
+    }
+    state.newCode?.let { code ->
+        AlertDialog(
+            onDismissRequest = viewModel::onDismissNewCode,
+            title = { Text(stringResource(R.string.feature_warehouse_new_code_title)) },
+            text = { Text(stringResource(R.string.feature_warehouse_new_code_text, code)) },
+            confirmButton = { TextButton(onClick = viewModel::onAddNewCode) { Text(stringResource(R.string.feature_warehouse_new_code_add)) } },
+            dismissButton = { TextButton(onClick = viewModel::onDismissNewCode) { Text(stringResource(R.string.feature_warehouse_cancel)) } },
+        )
+    }
     WarehouseScreen(
+        onScan = scan,
+        onUndoScan = viewModel::onUndoScan,
+        onDismissScanned = viewModel::onDismissScanned,
         state = state,
         onBack = onBack,
         onItemClick = onItemClick,
@@ -76,6 +114,9 @@ internal fun WarehouseScreen(
     onShowMode: () -> Unit = {},
     onCompanyChange: (Long?) -> Unit = {},
     modifier: Modifier = Modifier,
+    onScan: () -> Unit = {},
+    onUndoScan: () -> Unit = {},
+    onDismissScanned: () -> Unit = {},
 ) {
     Column(modifier.fillMaxSize().background(PmTheme.colors.background)) {
         PmTopBar(
@@ -83,6 +124,10 @@ internal fun WarehouseScreen(
             navigationLabel = stringResource(R.string.feature_warehouse_back),
             onNavigate = onBack,
             actions = {
+                // Scan, scan, scan: each known code comes in +1.
+                IconButton(onClick = onScan) {
+                    Icon(PmIcons.Scan, contentDescription = stringResource(R.string.feature_warehouse_scan), tint = PmTheme.colors.primary)
+                }
                 if (state.canSplit) {
                     IconButton(onClick = onShowMode) {
                         Icon(PmIcons.Company, contentDescription = stringResource(R.string.feature_warehouse_mode), tint = PmTheme.colors.primary)
@@ -91,6 +136,21 @@ internal fun WarehouseScreen(
             },
         )
         if (state.isLoading) return@Column
+        state.scanned?.let { scanned ->
+            Row(
+                Modifier.fillMaxWidth().background(PmTheme.colors.paidContainer).padding(start = 16.dp, end = 4.dp, top = 4.dp, bottom = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    stringResource(R.string.feature_warehouse_scanned, scanned.title, scanned.count),
+                    modifier = Modifier.weight(1f),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = PmTheme.colors.paid,
+                )
+                TextButton(onClick = onUndoScan) { Text(stringResource(R.string.feature_warehouse_undo)) }
+                IconButton(onClick = onDismissScanned) { Icon(PmIcons.Close, contentDescription = stringResource(R.string.feature_warehouse_cancel)) }
+            }
+        }
         if (state.companies.isNotEmpty()) {
             // Master's phone: his own warehouse, or the stock a company he works for shares.
             Row(

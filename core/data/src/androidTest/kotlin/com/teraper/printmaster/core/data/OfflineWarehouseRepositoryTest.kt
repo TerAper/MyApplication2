@@ -107,4 +107,18 @@ class OfflineWarehouseRepositoryTest {
         warehouse.setMode(WarehouseMode.SHARED)
         assertEquals(6, warehouse.observeCount(toner).first())
     }
+
+    @Test
+    fun scanInAddsOneAndUndoTakesItBack() = runTest {
+        val first = warehouse.scanIn(toner)
+        warehouse.scanIn(toner)
+        assertEquals(2, warehouse.observeCount(toner).first())
+        warehouse.undoReceive(first)
+        assertEquals(1, warehouse.observeCount(toner).first())
+        // Only receives can be taken back this way.
+        save(StockDraft(toner, kind = StockKind.ADJUST).withQuantity("5"))
+        val adjust = warehouse.observeMoves(toner).first().first().id
+        warehouse.undoReceive(adjust)
+        assertEquals(5, warehouse.observeCount(toner).first())
+    }
 }
