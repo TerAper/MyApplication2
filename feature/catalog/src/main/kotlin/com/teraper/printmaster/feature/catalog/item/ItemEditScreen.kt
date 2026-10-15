@@ -21,6 +21,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import com.teraper.printmaster.core.designsystem.component.rememberPhotoCapture
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.foundation.layout.size
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -80,6 +84,8 @@ internal fun ItemEditRoute(
         }
     }
     BackHandler(onBack = viewModel::onCloseRequest)
+    val language = LocalContext.current.resources.configuration.locales[0]?.language.orEmpty()
+    val aiPhoto = rememberPhotoCapture { uri -> viewModel.onAiPhoto(uri, language) }
     val scanBarcode = rememberCodeScanner { outcome ->
         when (outcome) {
             is ScanOutcome.Read -> viewModel.onBarcodeScanned(outcome.text)
@@ -101,6 +107,9 @@ internal fun ItemEditRoute(
             onOpenStock = { state.form.draft.id.takeIf { it != 0L }?.let(onOpenStock) },
             onBarcodeChange = viewModel::onBarcodeChange,
             onScanBarcode = scanBarcode,
+            onAiCamera = aiPhoto.camera,
+            onAiGallery = aiPhoto.gallery,
+            onDismissAiOutcome = viewModel::onDismissAiOutcome,
             onAddPhoto = viewModel::onAddPhoto,
             onDeletePhoto = viewModel::onDeletePhoto,
             onLinkQueryChange = viewModel::onLinkQueryChange,
@@ -128,6 +137,9 @@ internal data class ItemEditActions(
     val onOpenStock: () -> Unit = {},
     val onBarcodeChange: (String) -> Unit = {},
     val onScanBarcode: () -> Unit = {},
+    val onAiCamera: () -> Unit = {},
+    val onAiGallery: () -> Unit = {},
+    val onDismissAiOutcome: () -> Unit = {},
     val onAddPhoto: (String) -> Unit = {},
     val onDeletePhoto: (Photo) -> Unit = {},
     val onLinkQueryChange: (Long, String) -> Unit = { _, _ -> },
@@ -173,6 +185,7 @@ internal fun ItemEditScreen(
             Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
+            AiFillCard(form, actions)
             if (state.isNew && !state.typeLocked) {
                 SectionTitle(stringResource(R.string.feature_catalog_type))
                 Row(Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -444,5 +457,42 @@ private fun ItemEditScreenPreview() {
             ),
             actions = ItemEditActions(),
         )
+    }
+}
+
+/** "Fill from a photo": the AI reads the box or label; what it filled is checked before saving. */
+@Composable
+private fun AiFillCard(form: ItemForm, actions: ItemEditActions) {
+    PmCard(Modifier.fillMaxWidth(), containerColor = PmTheme.colors.primaryContainer, borderColor = PmTheme.colors.primary) {
+        Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                Icon(PmIcons.AutoFill, contentDescription = null, tint = PmTheme.colors.primary)
+                Text(stringResource(R.string.feature_catalog_ai_title), Modifier.weight(1f), style = MaterialTheme.typography.titleSmall)
+            }
+            if (form.aiReading) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                    CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp, color = PmTheme.colors.primary)
+                    Text(stringResource(R.string.feature_catalog_ai_reading), style = MaterialTheme.typography.bodyMedium)
+                }
+                return@Column
+            }
+            form.aiOutcome?.let { outcome ->
+                Text(
+                    stringResource(
+                        when (outcome) {
+                            AiOutcome.FILLED -> R.string.feature_catalog_ai_filled
+                            AiOutcome.NOTHING -> R.string.feature_catalog_ai_nothing
+                            AiOutcome.UNAVAILABLE -> R.string.feature_catalog_ai_unavailable
+                        },
+                    ),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = if (outcome == AiOutcome.FILLED) PmTheme.colors.paid else PmTheme.colors.warning,
+                )
+            } ?: Text(stringResource(R.string.feature_catalog_ai_hint), style = MaterialTheme.typography.bodySmall, color = PmTheme.colors.inkSecondary)
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                PmSecondaryButton(stringResource(R.string.feature_catalog_ai_camera), actions.onAiCamera, Modifier.weight(1f), icon = PmIcons.Camera)
+                PmSecondaryButton(stringResource(R.string.feature_catalog_ai_gallery), actions.onAiGallery, Modifier.weight(1f), icon = PmIcons.Gallery)
+            }
+        }
     }
 }

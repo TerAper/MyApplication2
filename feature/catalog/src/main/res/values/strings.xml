@@ -222,4 +222,12 @@
     <string name="feature_catalog_new_code_text">%1$s կոդով ապրանք չկա։ Ավելացնե՞լ նորը այս կոդով։</string>
     <string name="feature_catalog_new_code_add">Ավելացնել</string>
     <string name="feature_catalog_cancel_scan">Չեղարկել</string>
+    <string name="feature_catalog_ai_title">Լրացնել լուսանկարից (AI)</string>
+    <string name="feature_catalog_ai_hint">Նկարեք տուփը կամ պիտակը․ AI-ը կկարդա և կլրացնի տեսակը, անունը, դաշտերը և համապատասխան մոդելները։ Ստուգեք՝ պահպանելուց առաջ։</string>
+    <string name="feature_catalog_ai_reading">Կարդում է պիտակը…</string>
+    <string name="feature_catalog_ai_filled">Լրացված է AI-ով։ Ստուգեք և ուղղեք՝ պահպանելուց առաջ։</string>
+    <string name="feature_catalog_ai_nothing">Ոչինչ չհաջողվեց կարդալ։ Նկարեք ավելի մոտիկից, որ տեքստը պարզ երևա։</string>
+    <string name="feature_catalog_ai_unavailable">AI-ը հասանելի չէ․ ինտերնետ չկա կամ Firebase AI Logic-ը միացված չէ։</string>
+    <string name="feature_catalog_ai_camera">Նկարել</string>
+    <string name="feature_catalog_ai_gallery">Նկարներից</string>
 </resources>

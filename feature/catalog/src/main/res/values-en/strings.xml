@@ -222,4 +222,12 @@
     <string name="feature_catalog_new_code_text">No item has the code %1$s. Add a new one with it?</string>
     <string name="feature_catalog_new_code_add">Add</string>
     <string name="feature_catalog_cancel_scan">Cancel</string>
+    <string name="feature_catalog_ai_title">Fill from a photo (AI)</string>
+    <string name="feature_catalog_ai_hint">Take a photo of the box or label: the AI reads it and fills the type, name, fields and the models it fits. Check before saving.</string>
+    <string name="feature_catalog_ai_reading">Reading the label…</string>
+    <string name="feature_catalog_ai_filled">Filled by AI. Check and correct it before saving.</string>
+    <string name="feature_catalog_ai_nothing">Nothing could be read. Take the photo closer so the text is sharp.</string>
+    <string name="feature_catalog_ai_unavailable">AI isn\'t available: no internet, or Firebase AI Logic isn\'t turned on.</string>
+    <string name="feature_catalog_ai_camera">Camera</string>
+    <string name="feature_catalog_ai_gallery">Gallery</string>
 </resources>

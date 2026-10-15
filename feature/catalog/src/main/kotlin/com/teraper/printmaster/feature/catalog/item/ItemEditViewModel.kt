@@ -41,6 +41,9 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import com.teraper.printmaster.core.data.ai.ItemReader
+import com.teraper.printmaster.core.data.ai.ReadResult
+import com.teraper.printmaster.core.model.ItemReadings
 import javax.inject.Inject
 
 data class ItemForm(
@@ -58,7 +61,15 @@ data class ItemForm(
     val isSaving: Boolean = false,
     val hasChanges: Boolean = false,
     val dialog: ItemEditDialog? = null,
+    /** The AI is reading a photo of the box or label. */
+    val aiReading: Boolean = false,
+    /** What the last reading did, to say so. */
+    val aiOutcome: AiOutcome? = null,
+    /** The photo the AI read: it becomes the item's photo once saved. */
+    val aiPhoto: String? = null,
 )
+
+enum class AiOutcome { FILLED, NOTHING, UNAVAILABLE }
 
 /** Links to items of [type]: what this item goes into ([isParent]) or a kind of its parts. */
 data class LinkSection(val type: ItemType, val isParent: Boolean, val links: List<LinkDraft>, val query: String, val candidates: List<ItemRef>)
@@ -100,6 +111,7 @@ class ItemEditViewModel @Inject constructor(
     private val catalogRepository: CatalogRepository,
     private val photoRepository: PhotoRepository,
     warehouseRepository: WarehouseRepository,
+    private val itemReader: ItemReader,
 ) : ViewModel() {
 
     /** 0 until the item is saved for the first time. */
@@ -218,6 +230,32 @@ class ItemEditViewModel @Inject constructor(
         if (section.isParent) draft.copy(fitsInto = draft.fitsInto.filterNot { it.key == key }) else draft.copy(parts = draft.parts.filterNot { it.key == key })
     }
 
+    /**
+     * A photo of the box or label: the AI fills what it can read into empty places (type only when
+     * none is chosen). The user checks it before saving; nothing is saved by the AI.
+     */
+    fun onAiPhoto(uri: String, language: String) {
+        if (form.value.aiReading) return
+        form.update { it.copy(aiReading = true, aiOutcome = null) }
+        viewModelScope.launch {
+            val types = uiState.value.types
+            val result = itemReader.read(uri, form.value.draft.barcode, types, language)
+            when (result) {
+                is ReadResult.Read -> {
+                    val known = catalogRepository.observeCatalog().first().map { it.item.ref() }
+                    editDraft { ItemReadings.apply(it, result.reading, types, known) }
+                    form.update { it.copy(aiReading = false, aiOutcome = AiOutcome.FILLED, aiPhoto = if (itemId.value == 0L) uri else it.aiPhoto) }
+                    // An item already saved gets the photo now.
+                    if (itemId.value != 0L) onAddPhoto(uri)
+                }
+                ReadResult.NothingFound -> form.update { it.copy(aiReading = false, aiOutcome = AiOutcome.NOTHING) }
+                ReadResult.Unavailable -> form.update { it.copy(aiReading = false, aiOutcome = AiOutcome.UNAVAILABLE) }
+            }
+        }
+    }
+
+    fun onDismissAiOutcome() = form.update { it.copy(aiOutcome = null) }
+
     fun onSave() {
         viewModelScope.launch {
             if (save()) _events.send(if (receiveAfterSave) ItemEditEvent.Receive(itemId.value) else ItemEditEvent.Close)
@@ -252,8 +290,11 @@ class ItemEditViewModel @Inject constructor(
         return when (val result = catalogRepository.saveItem(draft)) {
             is SaveItemResult.Saved -> {
                 initialDraft = draft.copy(id = result.itemId)
-                form.update { it.copy(isSaving = false, hasChanges = false, draft = initialDraft) }
+                // The box the AI read becomes the item's first photo.
+                val photo = form.value.aiPhoto
+                form.update { it.copy(isSaving = false, hasChanges = false, draft = initialDraft, aiPhoto = null) }
                 itemId.value = result.itemId
+                if (photo != null && uiState.value.type?.hasPhotos != false) photoRepository.add(PhotoOwner.CATALOG_ITEM, result.itemId, photo)
                 true
             }
             is SaveItemResult.Invalid -> {

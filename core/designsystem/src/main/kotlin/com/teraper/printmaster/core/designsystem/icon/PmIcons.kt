@@ -2,6 +2,7 @@ package com.teraper.printmaster.core.designsystem.icon
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.MyLocation
+import androidx.compose.material.icons.rounded.AutoAwesome
 import androidx.compose.material.icons.automirrored.rounded.ArrowBack
 import androidx.compose.material.icons.automirrored.rounded.Backspace
 import androidx.compose.material.icons.automirrored.rounded.KeyboardArrowRight
@@ -72,6 +73,7 @@ object PmIcons {
     val Call: ImageVector = Icons.Rounded.Call
     val Map: ImageVector = Icons.Rounded.Place
     val MyLocation: ImageVector = Icons.Rounded.MyLocation
+    val AutoFill: ImageVector = Icons.Rounded.AutoAwesome
     val ImportExcel: ImageVector = Icons.Rounded.UploadFile
     val Edit: ImageVector = Icons.Rounded.Edit
     val Delete: ImageVector = Icons.Rounded.Delete

@@ -18,6 +18,7 @@ dependencies {
     implementation(libs.firebase.auth)
     implementation(libs.firebase.firestore)
     implementation(libs.firebase.analytics)
+    implementation(libs.firebase.ai)
     implementation(libs.kotlinx.coroutines.play.services)
     implementation(libs.play.services.location)
 

@@ -130,6 +130,9 @@ internal abstract class DataModule {
     abstract fun bindTrackingRepository(impl: com.teraper.printmaster.core.data.tracking.FirebaseTrackingRepository): com.teraper.printmaster.core.data.tracking.TrackingRepository
 
     @Binds
+    abstract fun bindItemReader(impl: com.teraper.printmaster.core.data.ai.GeminiItemReader): com.teraper.printmaster.core.data.ai.ItemReader
+
+    @Binds
     abstract fun bindNamesRepository(impl: PrefsNamesRepository): NamesRepository
 
     companion object {

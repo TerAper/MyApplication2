@@ -62,8 +62,11 @@ class CatalogViewModelsTest {
         ),
     )
 
+    private val photos = com.teraper.printmaster.core.testing.FakePhotoRepository()
+    private val reader = com.teraper.printmaster.core.testing.FakeItemReader()
+
     private fun TestScope.itemVm(itemId: Long = 0, typeId: Long = 0) =
-        ItemEditViewModel(SavedStateHandle(mapOf("itemId" to itemId, "typeId" to typeId)), repo, com.teraper.printmaster.core.testing.FakePhotoRepository(), com.teraper.printmaster.core.testing.FakeWarehouseRepository()).also { vm ->
+        ItemEditViewModel(SavedStateHandle(mapOf("itemId" to itemId, "typeId" to typeId)), repo, photos, com.teraper.printmaster.core.testing.FakeWarehouseRepository(), reader).also { vm ->
             backgroundScope.launch(UnconfinedTestDispatcher()) { vm.uiState.collect {} }
         }
 
@@ -134,7 +137,7 @@ class CatalogViewModelsTest {
 
     @Test
     fun aNewPartMadeFromItsItemGoesIntoIt() = runTest {
-        val vm = ItemEditViewModel(SavedStateHandle(mapOf("itemId" to 0L, "typeId" to cartridge.id, "intoId" to 2L)), repo, com.teraper.printmaster.core.testing.FakePhotoRepository(), com.teraper.printmaster.core.testing.FakeWarehouseRepository())
+        val vm = ItemEditViewModel(SavedStateHandle(mapOf("itemId" to 0L, "typeId" to cartridge.id, "intoId" to 2L)), repo, photos, com.teraper.printmaster.core.testing.FakeWarehouseRepository(), reader)
         backgroundScope.launch(UnconfinedTestDispatcher()) { vm.uiState.collect {} }
         assertEquals(listOf("HP M125"), vm.uiState.value.form.draft.fitsInto.map { it.title })
         assertFalse(vm.uiState.value.form.hasChanges)
@@ -228,5 +231,37 @@ class CatalogViewModelsTest {
         vm.onSave()
         assertEquals("CF283X", vm.uiState.value.form.barcodeTakenBy)
         assertFalse(vm.uiState.value.form.isSaving)
+    }
+
+    @Test
+    fun aPhotoReadByAiFillsTheNewItemAndBecomesItsPhoto() = runTest {
+        reader.result = com.teraper.printmaster.core.data.ai.ReadResult.Read(
+            com.teraper.printmaster.core.model.ItemReading(type = "Cartridge", name = "CF283A", fitsInto = listOf("M125")),
+        )
+        val vm = ItemEditViewModel(
+            SavedStateHandle(mapOf("itemId" to 0L, "typeId" to 0L, "barcode" to "4960999")), repo, photos,
+            com.teraper.printmaster.core.testing.FakeWarehouseRepository(), reader,
+        ).also { backgroundScope.launch(UnconfinedTestDispatcher()) { it.uiState.collect {} } }
+
+        vm.onAiPhoto("content://box.jpg", "hy")
+        assertEquals(listOf("4960999"), reader.asked)
+        val form = vm.uiState.value.form
+        assertEquals(com.teraper.printmaster.feature.catalog.item.AiOutcome.FILLED, form.aiOutcome)
+        assertEquals(2L, form.draft.typeId)
+        assertEquals("CF283A", form.draft.name)
+        // "M125" is HP M125 already in the catalog: linked, not a new printer.
+        assertEquals(listOf(2L), form.draft.fitsInto.map { it.id })
+
+        vm.onSave()
+        assertEquals(listOf("content://box.jpg"), photos.photos.value.map { it.fullPath })
+    }
+
+    @Test
+    fun withoutAiTheFormSaysSoAndStaysAsTyped() = runTest {
+        val vm = itemVm(typeId = cartridge.id)
+        vm.onNameChange("Typed")
+        vm.onAiPhoto("content://box.jpg", "en")
+        assertEquals(com.teraper.printmaster.feature.catalog.item.AiOutcome.UNAVAILABLE, vm.uiState.value.form.aiOutcome)
+        assertEquals("Typed", vm.uiState.value.form.draft.name)
     }
 }
