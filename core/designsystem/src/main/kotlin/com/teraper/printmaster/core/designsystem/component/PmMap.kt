@@ -1,10 +1,12 @@
 package com.teraper.printmaster.core.designsystem.component
 
 import android.content.Context
+import android.graphics.drawable.GradientDrawable
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.viewinterop.AndroidView
@@ -22,7 +24,7 @@ import org.osmdroid.views.overlay.Marker
 import org.osmdroid.views.overlay.Polyline
 
 /** One way on the map: a line through [points], and a pin at the last one titled [title] / [snippet]. */
-data class MapWay(val id: Long, val title: String, val snippet: String, val points: List<MapPoint>, val colorIndex: Int = 0)
+data class MapWay(val id: Long, val title: String, val snippet: String, val points: List<MapPoint>, val colorIndex: Int = 0, val isMe: Boolean = false)
 
 /**
  * An OpenStreetMap map (free, no key) with people's ways. It fits them all when the set of ways
@@ -48,7 +50,8 @@ fun PmMap(ways: List<MapWay>, modifier: Modifier = Modifier) {
         }
     }
     val key = remember(ways.map { it.id }.toSet(), ways.any { it.points.isNotEmpty() }) { Any() }
-    AndroidView(factory = { map }, modifier = modifier) { view ->
+    // The map draws its tiles past its edges unless clipped.
+    AndroidView(factory = { map }, modifier = modifier.clipToBounds()) { view ->
         view.overlays.clear()
         ways.forEach { way ->
             if (way.points.isEmpty()) return@forEach
@@ -65,7 +68,18 @@ fun PmMap(ways: List<MapWay>, modifier: Modifier = Modifier) {
                 position = geo.last()
                 title = way.title
                 snippet = way.snippet
-                setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
+                if (way.isMe) {
+                    // Where the user stands: a blue dot, not a pin like the places around.
+                    icon = GradientDrawable().apply {
+                        shape = GradientDrawable.OVAL
+                        setColor(color)
+                        setStroke(6, android.graphics.Color.WHITE)
+                        setSize(44, 44)
+                    }
+                    setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER)
+                } else {
+                    setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_BOTTOM)
+                }
             }
         }
         // Fit everything once per set of ways (the key), not on every new point.

@@ -70,6 +70,11 @@ data class ClientAddressEntity(
     val label: String = "",
     /** The exact point ("geo:lat,lon…") or a map link, picked on a map; null = only the text. */
     @ColumnInfo(name = "map_link") val mapLink: String? = null,
+    /** Where it is on the map (from the link, or looked up from the text); null = not known. */
+    val lat: Double? = null,
+    val lng: Double? = null,
+    /** The address and link [lat]/[lng] were found for; another value = look it up again. */
+    @ColumnInfo(name = "geo_key") val geoKey: String? = null,
 )
 
 /**

@@ -41,4 +41,6 @@
     <string name="feature_more_team_sub">Պատվերներ վարպետների հեռախոսներին</string>
     <string name="feature_more_expenses">Ծախսեր</string>
     <string name="feature_more_expenses_sub">Ապրանքներ, նյութեր, վառելիք, վարձ… ըստ օրերի</string>
+    <string name="feature_more_nearby">Մոտակա հաճախորդներ</string>
+    <string name="feature_more_nearby_sub">Ով է ձեզ մոտ՝ ըստ հեռավորության</string>
 </resources>

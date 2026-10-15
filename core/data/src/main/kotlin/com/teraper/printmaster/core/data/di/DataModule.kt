@@ -133,6 +133,9 @@ internal abstract class DataModule {
     abstract fun bindItemReader(impl: com.teraper.printmaster.core.data.ai.GeminiItemReader): com.teraper.printmaster.core.data.ai.ItemReader
 
     @Binds
+    abstract fun bindNearbyRepository(impl: com.teraper.printmaster.core.data.nearby.GeocoderNearbyRepository): com.teraper.printmaster.core.data.nearby.NearbyRepository
+
+    @Binds
     abstract fun bindNamesRepository(impl: PrefsNamesRepository): NamesRepository
 
     companion object {

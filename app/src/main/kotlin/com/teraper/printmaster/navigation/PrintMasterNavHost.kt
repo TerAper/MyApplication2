@@ -17,6 +17,8 @@ import com.teraper.printmaster.feature.calls.navigation.navigateToCalls
 import com.teraper.printmaster.feature.catalog.navigation.ItemEditDestination
 import com.teraper.printmaster.feature.catalog.navigation.TypeEditDestination
 import com.teraper.printmaster.feature.catalog.navigation.catalogScreens
+import com.teraper.printmaster.feature.clients.navigation.navigateToNearbyClients
+import com.teraper.printmaster.feature.clients.navigation.nearbyClientsScreen
 import com.teraper.printmaster.feature.catalog.navigation.navigateToCatalog
 import com.teraper.printmaster.feature.catalog.navigation.navigateToItemTypes
 import com.teraper.printmaster.feature.clients.navigation.ClientEditDestination
@@ -103,6 +105,7 @@ fun PrintMasterNavHost(navController: NavHostController, modifier: Modifier = Mo
                 onOpenPriceList = navController::navigateToPriceList,
                 onOpenCatalog = navController::navigateToCatalog,
                 onOpenWarehouse = navController::navigateToWarehouse,
+                onOpenNearby = navController::navigateToNearbyClients,
                 onOpenCompanies = navController::navigateToCompanies,
                 onOpenCompany = navController::navigateToCompany,
                 onOpenMasters = navController::navigateToMasters,
@@ -124,6 +127,7 @@ fun PrintMasterNavHost(navController: NavHostController, modifier: Modifier = Mo
                 onOpenCatalogItem = { navController.navigate(ItemEditDestination(itemId = it)) },
                 onNewCatalogItem = { navController.navigate(ItemEditDestination()) },
             )
+            nearbyClientsScreen(navController, onOpenClient = navController::openClientFromOtherTab)
             catalogScreens(
                 navController,
                 onOpenClient = navController::openClientFromOtherTab,

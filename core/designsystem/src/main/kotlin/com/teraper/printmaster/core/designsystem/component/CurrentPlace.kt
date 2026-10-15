@@ -18,6 +18,7 @@ import androidx.core.content.ContextCompat
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
 import com.google.android.gms.tasks.CancellationTokenSource
+import com.teraper.printmaster.core.model.MapPoint
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
@@ -53,18 +54,44 @@ fun rememberCurrentPlace(onResult: (CurrentPlace?) -> Unit): () -> Unit {
     }
 }
 
+/**
+ * Where the phone is now, without its street: asks for location permission when needed.
+ * [onResult] gets null when it couldn't be found.
+ */
+@Composable
+fun rememberCurrentPoint(onResult: (MapPoint?) -> Unit): () -> Unit {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+    val result by rememberUpdatedState(onResult)
+    val find = { scope.launch { result(context.currentLocation()?.let { MapPoint(it.latitude, it.longitude, it.time) }) } }
+    val permission = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { granted ->
+        if (granted.values.any { it }) find() else result(null)
+    }
+    return {
+        if (context.hasLocationPermission()) {
+            find()
+        } else {
+            permission.launch(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION))
+        }
+    }
+}
+
 fun Context.hasLocationPermission(): Boolean =
     listOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION)
         .any { ContextCompat.checkSelfPermission(this, it) == PackageManager.PERMISSION_GRANTED }
 
 @SuppressLint("MissingPermission")
-private suspend fun Context.currentPlace(): CurrentPlace? {
+private suspend fun Context.currentLocation(): android.location.Location? {
     if (!hasLocationPermission()) return null
     val client = LocationServices.getFusedLocationProviderClient(this)
-    val location = runCatching {
+    return runCatching {
         withTimeoutOrNull(20_000) { client.getCurrentLocation(Priority.PRIORITY_HIGH_ACCURACY, CancellationTokenSource().token).await() }
             ?: client.lastLocation.await()
-    }.getOrNull() ?: return null
+    }.getOrNull()
+}
+
+private suspend fun Context.currentPlace(): CurrentPlace? {
+    val location = currentLocation() ?: return null
     val address = withContext(Dispatchers.IO) { streetAddress(location.latitude, location.longitude) }
     return CurrentPlace(address.orEmpty(), "geo:${location.latitude},${location.longitude}?q=${location.latitude},${location.longitude}")
 }

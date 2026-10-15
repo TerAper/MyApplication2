@@ -131,6 +131,8 @@ import com.teraper.printmaster.core.database.entity.SyncStateEntity
         AutoMigration(from = 19, to = 20),
         // 21: asking a master to share his location on an order, and his answer.
         AutoMigration(from = 20, to = 21),
+        // 22: where clients' addresses are on the map (clients nearby).
+        AutoMigration(from = 21, to = 22),
     ],
 )
 abstract class PrintMasterDatabase : RoomDatabase() {
@@ -150,7 +152,7 @@ abstract class PrintMasterDatabase : RoomDatabase() {
     abstract fun stockDao(): StockDao
 
     companion object {
-        const val VERSION = 21
+        const val VERSION = 22
 
         /** Oldest version a backup file may have; older ones only existed on development phones. */
         const val OLDEST_RESTORABLE_VERSION = 2

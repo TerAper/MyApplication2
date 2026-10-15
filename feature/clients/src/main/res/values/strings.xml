@@ -206,4 +206,17 @@
     <string name="feature_clients_my_location">Իմ գտնվելու վայրը</string>
     <string name="feature_clients_no_location">Չհաջողվեց գտնել, թե որտեղ եք։ Միացրեք տեղորոշումը և թույլատրեք այն։</string>
     <string name="feature_clients_location_no_street">Կետը պահված է, բայց փողոցը չգտնվեց։ Գրեք հասցեն։</string>
+    <string name="feature_clients_nearby_title">Մոտակա հաճախորդներ</string>
+    <string name="feature_clients_nearby_refresh">Թարմացնել իմ տեղը</string>
+    <string name="feature_clients_nearby_finding">Գտնում է, թե որտեղ եք…</string>
+    <string name="feature_clients_nearby_no_location">Չհաջողվեց գտնել, թե որտեղ եք։ Միացրեք տեղորոշումը և թույլատրեք այն։</string>
+    <string name="feature_clients_nearby_try_again">Կրկին փորձել</string>
+    <string name="feature_clients_nearby_you">Դուք</string>
+    <string name="feature_clients_nearby_count">%1$d հաճախորդ %2$s շառավղով</string>
+    <string name="feature_clients_nearby_none">%1$s շառավղով հաճախորդ չկա։ Ընտրեք ավելի մեծ հեռավորություն։</string>
+    <string name="feature_clients_nearby_locating">Հասցեները գտնում է քարտեզում… %1$d / %2$d</string>
+    <string name="feature_clients_nearby_offline">Ինտերնետ չկա․ գրված հասցեներից մի քանիսը դեռ քարտեզում չեն։</string>
+    <string name="feature_clients_nearby_not_found">%1$d հասցե չգտնվեց քարտեզում․ ճշտեք դրանք «Իմ գտնվելու վայրը» կամ քարտեզի կոճակով։</string>
+    <string name="feature_clients_nearby_meters">%1$d մ</string>
+    <string name="feature_clients_nearby_km">%1$s կմ</string>
 </resources>

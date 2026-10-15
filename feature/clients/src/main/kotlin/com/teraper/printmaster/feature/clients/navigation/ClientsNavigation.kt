@@ -120,3 +120,17 @@ fun NavGraphBuilder.clientsGraph(
         }
     }
 }
+
+/** More → Clients nearby: clients within a distance of where the user stands. */
+@Serializable
+data object NearbyClientsDestination
+
+fun NavController.navigateToNearbyClients() = navigate(NearbyClientsDestination)
+
+/** Clients nearby, outside the Clients tab (the app puts it in More); [onOpenClient] opens a client card. */
+fun NavGraphBuilder.nearbyClientsScreen(navController: NavController, onOpenClient: (Long) -> Unit) {
+    composable<NearbyClientsDestination> {
+        com.teraper.printmaster.feature.clients.nearby.NearbyRoute(onBack = navController::popBackStack, onOpenClient = onOpenClient)
+    }
+}
+

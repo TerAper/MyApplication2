@@ -206,4 +206,17 @@
     <string name="feature_clients_my_location">My location</string>
     <string name="feature_clients_no_location">Couldn\'t find where you are. Turn location on and allow it.</string>
     <string name="feature_clients_location_no_street">The point is saved but no street was found. Type the address.</string>
+    <string name="feature_clients_nearby_title">Clients nearby</string>
+    <string name="feature_clients_nearby_refresh">Update my location</string>
+    <string name="feature_clients_nearby_finding">Finding where you are…</string>
+    <string name="feature_clients_nearby_no_location">Couldn\'t find where you are. Turn location on and allow it.</string>
+    <string name="feature_clients_nearby_try_again">Try again</string>
+    <string name="feature_clients_nearby_you">You</string>
+    <string name="feature_clients_nearby_count">%1$d clients within %2$s</string>
+    <string name="feature_clients_nearby_none">No clients within %1$s. Choose a larger distance.</string>
+    <string name="feature_clients_nearby_locating">Finding addresses on the map… %1$d / %2$d</string>
+    <string name="feature_clients_nearby_offline">No internet: some typed addresses aren\'t on the map yet.</string>
+    <string name="feature_clients_nearby_not_found">%1$d addresses weren\'t found on the map; fix them with "My location" or the map button.</string>
+    <string name="feature_clients_nearby_meters">%1$d m</string>
+    <string name="feature_clients_nearby_km">%1$s km</string>
 </resources>

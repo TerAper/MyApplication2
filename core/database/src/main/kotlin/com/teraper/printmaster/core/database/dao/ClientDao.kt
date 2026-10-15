@@ -94,6 +94,34 @@ interface ClientDao {
     @Upsert
     suspend fun upsertAddresses(addresses: List<ClientAddressEntity>)
 
+    /** Every address with its client's name and what's known of its place on the map. */
+    @Query(
+        """
+        SELECT a.id AS address_id, a.client_id AS client_id, c.name AS client_name, a.address AS address,
+               a.map_link AS map_link, a.lat AS lat, a.lng AS lng, a.geo_key AS geo_key
+        FROM client_addresses a JOIN clients c ON c.id = a.client_id
+        WHERE TRIM(a.address) != '' OR a.map_link IS NOT NULL
+        """,
+    )
+    fun observeAddressPlaces(): Flow<List<AddressPlaceRow>>
+
+    /** [lat]/[lng] null = looked up for [key] and not found. */
+    @Query("UPDATE client_addresses SET lat = :lat, lng = :lng, geo_key = :key WHERE id = :id")
+    suspend fun setPlace(id: Long, lat: Double?, lng: Double?, key: String)
+
     @Query("DELETE FROM client_addresses WHERE client_id = :clientId AND id NOT IN (:keepIds)")
     suspend fun deleteAddressesExcept(clientId: Long, keepIds: List<Long>)
 }
+
+/** An address and its place on the map, for clients nearby. */
+data class AddressPlaceRow(
+    @androidx.room.ColumnInfo(name = "address_id") val addressId: Long,
+    @androidx.room.ColumnInfo(name = "client_id") val clientId: Long,
+    @androidx.room.ColumnInfo(name = "client_name") val clientName: String,
+    val address: String,
+    @androidx.room.ColumnInfo(name = "map_link") val mapLink: String?,
+    val lat: Double?,
+    val lng: Double?,
+    @androidx.room.ColumnInfo(name = "geo_key") val geoKey: String?,
+)
+
