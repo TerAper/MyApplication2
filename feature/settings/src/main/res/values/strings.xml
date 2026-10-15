@@ -60,4 +60,12 @@
     <string name="feature_settings_columns_default">Սկզբնական՝ %1$s</string>
     <string name="feature_settings_columns_use_default">Օգտագործել սկզբնականը</string>
     <string name="feature_settings_columns_save">Պահել</string>
+    <string name="feature_settings_section_names">ԱՆՎԱՆՈՒՄՆԵՐ</string>
+    <string name="feature_settings_names_title">Ձեր անվանումները</string>
+    <string name="feature_settings_names_sub">Վարպետ, պատվեր, հաճախորդ՝ ձեր բառերով</string>
+    <string name="feature_settings_names_intro">Գրեք, թե ինչպես եք դուք դրանք անվանում (օրինակ՝ առաքիչ, առաքում, գնորդ)։ Ամբողջ ծրագիրը կօգտագործի ձեր բառերը։ Դատարկ թողեք՝ ծրագրի բառը պահելու համար։</string>
+    <string name="feature_settings_names_one">Մեկը</string>
+    <string name="feature_settings_names_many">Շատը</string>
+    <string name="feature_settings_names_reset">Վերադարձնել</string>
+    <string name="feature_settings_names_save">Պահպանել</string>
 </resources>

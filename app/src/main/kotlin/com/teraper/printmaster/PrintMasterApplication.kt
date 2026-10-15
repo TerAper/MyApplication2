@@ -1,6 +1,7 @@
 package com.teraper.printmaster
 
 import android.app.Application
+import com.teraper.printmaster.core.data.AppNames
 import com.teraper.printmaster.core.data.calls.CallRecordingsSync
 import com.teraper.printmaster.core.data.repository.CallRecordingsRepository
 import com.teraper.printmaster.core.data.repository.PhotoRepository
@@ -34,6 +35,6 @@ class PrintMasterApplication : Application() {
         liveSync.start(appScope)
         // Photos of deleted client items, parts, orders and expenses.
         appScope.launch { photos.cleanUp() }
-        appScope.launch { syncRunner.reports.collect { SyncNotifications.show(this@PrintMasterApplication, it) } }
+        appScope.launch { syncRunner.reports.collect { SyncNotifications.show(AppNames.wrap(this@PrintMasterApplication), it) } }
     }
 }

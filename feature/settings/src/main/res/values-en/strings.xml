@@ -60,4 +60,12 @@
     <string name="feature_settings_columns_default">Default: %1$s</string>
     <string name="feature_settings_columns_use_default">Use default</string>
     <string name="feature_settings_columns_save">Save</string>
+    <string name="feature_settings_section_names">NAMES</string>
+    <string name="feature_settings_names_title">Your own names</string>
+    <string name="feature_settings_names_sub">Master, order, client in your words</string>
+    <string name="feature_settings_names_intro">Write what you call them (for example courier, delivery, customer). The whole app will use your words. Leave a field empty to keep the app\'s word.</string>
+    <string name="feature_settings_names_one">One</string>
+    <string name="feature_settings_names_many">Many</string>
+    <string name="feature_settings_names_reset">Reset</string>
+    <string name="feature_settings_names_save">Save</string>
 </resources>

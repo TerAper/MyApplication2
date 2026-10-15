@@ -5,6 +5,7 @@ import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
 import com.teraper.printmaster.feature.settings.backup.BackupRoute
 import com.teraper.printmaster.feature.settings.columns.ExcelColumnsRoute
+import com.teraper.printmaster.feature.settings.names.NamesRoute
 import com.teraper.printmaster.feature.settings.settings.SettingsRoute
 import kotlinx.serialization.Serializable
 
@@ -16,6 +17,9 @@ data object SettingsDestination
 
 @Serializable
 data object ExcelColumnsDestination
+
+@Serializable
+data object NamesDestination
 
 fun NavController.navigateToBackup() = navigate(BackupDestination)
 
@@ -29,9 +33,16 @@ fun NavGraphBuilder.settingsScreens(navController: NavController) {
         BackupRoute(onBack = navController::popBackStack)
     }
     composable<SettingsDestination> {
-        SettingsRoute(onBack = navController::popBackStack, onOpenColumns = navController::navigateToExcelColumns)
+        SettingsRoute(
+            onBack = navController::popBackStack,
+            onOpenColumns = navController::navigateToExcelColumns,
+            onOpenNames = { navController.navigate(NamesDestination) },
+        )
     }
     composable<ExcelColumnsDestination> {
         ExcelColumnsRoute(onBack = navController::popBackStack)
+    }
+    composable<NamesDestination> {
+        NamesRoute(onBack = navController::popBackStack)
     }
 }

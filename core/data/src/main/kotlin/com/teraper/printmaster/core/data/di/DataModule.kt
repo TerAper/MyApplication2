@@ -44,6 +44,8 @@ import com.teraper.printmaster.core.data.repository.OfflinePhotoRepository
 import com.teraper.printmaster.core.data.repository.PhotoRepository
 import com.teraper.printmaster.core.data.repository.ExpensesRepository
 import com.teraper.printmaster.core.data.repository.OfflineExpensesRepository
+import com.teraper.printmaster.core.data.repository.NamesRepository
+import com.teraper.printmaster.core.data.repository.PrefsNamesRepository
 import dagger.Binds
 import dagger.Module
 import dagger.Provides
@@ -123,6 +125,9 @@ internal abstract class DataModule {
 
     @Binds
     abstract fun bindExpensesRepository(impl: OfflineExpensesRepository): ExpensesRepository
+
+    @Binds
+    abstract fun bindNamesRepository(impl: PrefsNamesRepository): NamesRepository
 
     companion object {
         @Provides

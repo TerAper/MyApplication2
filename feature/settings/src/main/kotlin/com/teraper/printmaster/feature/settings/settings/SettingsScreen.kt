@@ -42,7 +42,7 @@ import com.teraper.printmaster.core.model.AppLanguage
 import com.teraper.printmaster.feature.settings.R
 
 @Composable
-internal fun SettingsRoute(onBack: () -> Unit, onOpenColumns: () -> Unit, viewModel: SettingsViewModel = hiltViewModel()) {
+internal fun SettingsRoute(onBack: () -> Unit, onOpenColumns: () -> Unit, onOpenNames: () -> Unit = {}, viewModel: SettingsViewModel = hiltViewModel()) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
     val context = LocalContext.current
     val version = remember(context) { context.versionName() }
@@ -53,7 +53,7 @@ internal fun SettingsRoute(onBack: () -> Unit, onOpenColumns: () -> Unit, viewMo
             }
         }
     }
-    SettingsScreen(state = state, version = version, onBack = onBack, onLanguageClick = viewModel::onLanguageClick, onOpenColumns = onOpenColumns)
+    SettingsScreen(state = state, version = version, onBack = onBack, onLanguageClick = viewModel::onLanguageClick, onOpenColumns = onOpenColumns, onOpenNames = onOpenNames)
 }
 
 @Composable
@@ -63,6 +63,7 @@ internal fun SettingsScreen(
     onBack: () -> Unit,
     onLanguageClick: (AppLanguage) -> Unit,
     onOpenColumns: () -> Unit = {},
+    onOpenNames: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     Column(modifier.fillMaxSize().background(PmTheme.colors.background)) {
@@ -83,6 +84,11 @@ internal fun SettingsScreen(
                         LanguageRow(language, selected = language == state.language, onClick = { onLanguageClick(language) })
                     }
                 }
+            }
+
+            SectionTitle(stringResource(R.string.feature_settings_section_names))
+            PmCard(Modifier.fillMaxWidth()) {
+                LinkRow(stringResource(R.string.feature_settings_names_title), stringResource(R.string.feature_settings_names_sub), onOpenNames)
             }
 
             SectionTitle(stringResource(R.string.feature_settings_section_import))
@@ -118,6 +124,20 @@ internal fun SettingsScreen(
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun LinkRow(title: String, subtitle: String, onClick: () -> Unit) {
+    Row(
+        Modifier.fillMaxWidth().clickable(onClick = onClick).padding(horizontal = 14.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Column(Modifier.weight(1f).padding(end = 12.dp)) {
+            Text(title, style = MaterialTheme.typography.titleSmall)
+            Text(subtitle, style = MaterialTheme.typography.bodySmall, color = PmTheme.colors.inkMuted)
+        }
+        Icon(PmIcons.Chevron, contentDescription = null, tint = PmTheme.colors.outlineStrong)
     }
 }
 
