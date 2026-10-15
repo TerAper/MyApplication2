@@ -101,6 +101,7 @@ internal fun OrderEditRoute(
             onPhoneChange = viewModel::onPhoneChange,
             onMasterChange = viewModel::onMasterChange,
             onHandedOverChange = viewModel::onHandedOverChange,
+            onAskLocationChange = viewModel::onAskLocationChange,
             onDescriptionChange = viewModel::onDescriptionChange,
             onSave = viewModel::onSave,
             onDiscardConfirmed = viewModel::onDiscardConfirmed,
@@ -139,6 +140,7 @@ internal data class OrderEditActions(
     val onPhoneChange: (Long?) -> Unit = {},
     val onMasterChange: (Long?) -> Unit = {},
     val onHandedOverChange: (Boolean) -> Unit = {},
+    val onAskLocationChange: (Boolean) -> Unit = {},
     val onDescriptionChange: (String) -> Unit = {},
     val onSave: () -> Unit = {},
     val onDiscardConfirmed: () -> Unit = {},
@@ -233,6 +235,22 @@ internal fun OrderEditScreen(state: OrderEditUiState, actions: OrderEditActions,
                                 onCheckedChange = actions.onHandedOverChange,
                                 colors = SwitchDefaults.colors(checkedTrackColor = PmTheme.colors.primary),
                             )
+                        }
+                    }
+                    // Working for the company: it may ask to see where he is while doing it (he decides).
+                    if (!draft.handedOver) {
+                        PmCard(Modifier.fillMaxWidth()) {
+                            Row(Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                                Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                                    Text(stringResource(R.string.feature_orders_ask_location), style = MaterialTheme.typography.titleSmall)
+                                    Text(stringResource(R.string.feature_orders_ask_location_hint), style = MaterialTheme.typography.bodySmall, color = PmTheme.colors.inkSecondary)
+                                }
+                                Switch(
+                                    checked = draft.askLocation,
+                                    onCheckedChange = actions.onAskLocationChange,
+                                    colors = SwitchDefaults.colors(checkedTrackColor = PmTheme.colors.primary),
+                                )
+                            }
                         }
                     }
                 }

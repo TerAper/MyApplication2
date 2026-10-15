@@ -127,6 +127,9 @@ internal abstract class DataModule {
     abstract fun bindExpensesRepository(impl: OfflineExpensesRepository): ExpensesRepository
 
     @Binds
+    abstract fun bindTrackingRepository(impl: com.teraper.printmaster.core.data.tracking.FirebaseTrackingRepository): com.teraper.printmaster.core.data.tracking.TrackingRepository
+
+    @Binds
     abstract fun bindNamesRepository(impl: PrefsNamesRepository): NamesRepository
 
     companion object {

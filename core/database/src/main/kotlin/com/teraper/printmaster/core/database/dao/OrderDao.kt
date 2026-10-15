@@ -73,6 +73,45 @@ interface OrderDao {
     @Query("DELETE FROM orders WHERE id = :id")
     suspend fun deleteOrder(id: Long): Int
 
+    /**
+     * Master's phone: orders of attached companies he agreed to share his location on and still
+     * does (accepted, open, not given to him as his own).
+     */
+    @Query(
+        """
+        SELECT o.id AS order_id, o.sync_id AS order_sync_id, c.space_id AS space_id FROM orders o
+        JOIN companies c ON c.id = o.company_id
+        WHERE c.kind = 'ATTACHED' AND c.space_id IS NOT NULL AND o.sync_id IS NOT NULL
+          AND o.ask_location = 1 AND o.sharing_location = 1 AND o.accepted_at IS NOT NULL
+          AND o.handed_over = 0 AND o.declined_reason IS NULL AND o.status IN ('NEW', 'IN_PROGRESS')
+        """,
+    )
+    fun observeLocationShares(): Flow<List<TrackRef>>
+
+    @Query(
+        """
+        SELECT o.id AS order_id, o.sync_id AS order_sync_id, c.space_id AS space_id FROM orders o
+        JOIN companies c ON c.id = o.company_id
+        WHERE c.kind = 'ATTACHED' AND c.space_id IS NOT NULL AND o.sync_id IS NOT NULL
+          AND o.ask_location = 1 AND o.sharing_location = 1 AND o.accepted_at IS NOT NULL
+          AND o.handed_over = 0 AND o.declined_reason IS NULL AND o.status IN ('NEW', 'IN_PROGRESS')
+        """,
+    )
+    suspend fun getLocationShares(): List<TrackRef>
+
+    /** Where an order's shared location lives: its space and its id there. */
+    @Query(
+        """
+        SELECT o.id AS order_id, o.sync_id AS order_sync_id, c.space_id AS space_id FROM orders o
+        JOIN companies c ON c.id = o.company_id
+        WHERE o.id = :orderId AND o.sync_id IS NOT NULL AND c.space_id IS NOT NULL
+        """,
+    )
+    suspend fun getTrackRef(orderId: Long): TrackRef?
+
+    @Query("UPDATE orders SET sharing_location = :sharing WHERE id = :id")
+    suspend fun setSharingLocation(id: Long, sharing: Boolean)
+
     private companion object {
         /** A master's day holds his own company's orders and those attached companies gave him. */
         const val COMPANY_OR_ATTACHED = "(o.company_id = :companyId OR o.company_id IN (SELECT id FROM companies WHERE kind = 'ATTACHED'))"
@@ -91,6 +130,13 @@ interface OrderDao {
         """
     }
 }
+
+/** An order's shared location: document [orderSyncId] in space [spaceId]. */
+data class TrackRef(
+    @ColumnInfo(name = "order_id") val orderId: Long,
+    @ColumnInfo(name = "order_sync_id") val orderSyncId: String,
+    @ColumnInfo(name = "space_id") val spaceId: String,
+)
 
 data class OrderRow(
     @Embedded val order: OrderEntity,

@@ -85,6 +85,10 @@ data class SharedOrder(
     val handedOver: Boolean = false,
     /** The master accepted it. */
     val accepted: Boolean = false,
+    /** The company asks the master to share where he is while doing it. */
+    val askLocation: Boolean = false,
+    /** The master shares it. */
+    val sharingLocation: Boolean = false,
 )
 
 /** Someone who joined a company's shared space with its code. */

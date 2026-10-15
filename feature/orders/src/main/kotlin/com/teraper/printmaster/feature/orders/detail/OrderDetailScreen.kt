@@ -21,6 +21,18 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import com.teraper.printmaster.core.designsystem.component.hasLocationPermission
+import com.teraper.printmaster.core.designsystem.component.MapWay
+import com.teraper.printmaster.core.designsystem.component.PmMap
+import androidx.compose.foundation.layout.height
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.mutableStateOf
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.compose.rememberLauncherForActivityResult
+import android.widget.Toast
+import android.os.Build
+import android.Manifest
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -79,9 +91,49 @@ internal fun OrderDetailRoute(
             }
         }
     }
+    // Location permission first; [pendingLocation] gets whether it was given.
+    var pendingLocation by remember { mutableStateOf<((Boolean) -> Unit)?>(null) }
+    val locationPermission = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { granted ->
+        val ok = granted.filterKeys { it != Manifest.permission.POST_NOTIFICATIONS }.values.any { it }
+        pendingLocation?.invoke(ok)
+        pendingLocation = null
+    }
+    val withLocation: ((Boolean) -> Unit) -> Unit = { action ->
+        if (context.hasLocationPermission()) {
+            action(true)
+        } else {
+            pendingLocation = action
+            locationPermission.launch(
+                buildList {
+                    add(Manifest.permission.ACCESS_FINE_LOCATION)
+                    add(Manifest.permission.ACCESS_COARSE_LOCATION)
+                    // The "sharing your location" notice.
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) add(Manifest.permission.POST_NOTIFICATIONS)
+                }.toTypedArray(),
+            )
+        }
+    }
+    val notAllowed = stringResource(R.string.feature_orders_location_not_allowed)
     OrderDetailScreen(
         state = state,
         actions = OrderDetailActions(
+            onAcceptSharing = {
+                withLocation { ok ->
+                    if (ok) {
+                        viewModel.onAcceptSharing()
+                    } else {
+                        viewModel.onAccept()
+                        Toast.makeText(context, notAllowed, Toast.LENGTH_LONG).show()
+                    }
+                }
+            },
+            onShareLocation = { share ->
+                if (!share) {
+                    viewModel.onShareLocation(false)
+                } else {
+                    withLocation { ok -> if (ok) viewModel.onShareLocation(true) else Toast.makeText(context, notAllowed, Toast.LENGTH_LONG).show() }
+                }
+            },
             onBack = onBack,
             onEdit = onEdit,
             onOpenClient = onOpenClient,
@@ -133,6 +185,8 @@ internal data class OrderDetailActions(
     val onFinish: (paidInCash: Boolean) -> Unit = {},
     val onBought: (itemId: Long) -> Unit = {},
     val onAccept: () -> Unit = {},
+    val onAcceptSharing: () -> Unit = {},
+    val onShareLocation: (Boolean) -> Unit = {},
     val onAcceptInto: (companyId: Long) -> Unit = {},
     val onDismissCompanyChoice: () -> Unit = {},
     val onDecline: () -> Unit = {},
@@ -279,6 +333,68 @@ private fun DeclineDialog(state: OrderDetailUiState.Loaded, actions: OrderDetail
  * Orders between owners, in their own colors: what the other side was asked, what it answered,
  * and whose money it is.
  */
+/**
+ * Where the master is. Master's phone: sharing or not, with Stop / Share. Company's phone: waiting
+ * for his answer, not shared, or a map of his way with the last time he was seen.
+ */
+@Composable
+private fun LocationCard(state: OrderDetailUiState.Loaded, actions: OrderDetailActions) {
+    val order = state.order
+    when {
+        state.canShareLocation -> PmCard(Modifier.fillMaxWidth()) {
+            Row(Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Icon(PmIcons.MyLocation, contentDescription = null, tint = if (order.sharingLocation) PmTheme.colors.paid else PmTheme.colors.inkMuted)
+                Text(
+                    if (order.sharingLocation) {
+                        stringResource(R.string.feature_orders_location_sharing_you, order.companyName)
+                    } else {
+                        stringResource(R.string.feature_orders_location_asked_short, order.companyName)
+                    },
+                    modifier = Modifier.weight(1f),
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+                TextButton(onClick = { actions.onShareLocation(!order.sharingLocation) }) {
+                    Text(stringResource(if (order.sharingLocation) R.string.feature_orders_location_stop else R.string.feature_orders_location_share))
+                }
+            }
+        }
+        state.followsMaster -> Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Text(
+                stringResource(R.string.feature_orders_location_title),
+                modifier = Modifier.padding(start = 2.dp),
+                style = MaterialTheme.typography.labelSmall,
+                color = PmTheme.colors.inkMuted,
+            )
+            val master = order.masterName.orEmpty()
+            val last = state.way.lastOrNull()
+            PmCard(Modifier.fillMaxWidth()) {
+                Column {
+                    if (order.locationLive && last != null) {
+                        PmMap(
+                            ways = listOf(MapWay(order.id, master, order.clientName, state.way)),
+                            modifier = Modifier.fillMaxWidth().height(240.dp),
+                        )
+                    }
+                    Text(
+                        when {
+                            order.acceptedAt == null -> stringResource(R.string.feature_orders_location_waiting)
+                            !order.sharingLocation -> stringResource(R.string.feature_orders_location_refused, master)
+                            last == null -> stringResource(R.string.feature_orders_location_no_point, master)
+                            else -> stringResource(R.string.feature_orders_location_last, master, last.at.timeText())
+                        },
+                        modifier = Modifier.padding(14.dp),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = if (order.locationLive) PmTheme.colors.ink else PmTheme.colors.inkMuted,
+                    )
+                }
+            }
+        }
+    }
+}
+
+private fun Long.timeText(): String =
+    LocalDateTime.ofInstant(java.time.Instant.ofEpochMilli(this), java.time.ZoneId.systemDefault()).toLocalTime().formatTime()
+
 @Composable
 private fun HandOverCard(order: Order) {
     val company = order.companyName
@@ -345,6 +461,7 @@ private fun OrderContent(state: OrderDetailUiState.Loaded, actions: OrderDetailA
             }
             if (order.description.isNotBlank()) Text(order.description, style = MaterialTheme.typography.bodyLarge, color = PmTheme.colors.ink)
             HandOverCard(order)
+            LocationCard(state, actions)
 
             PmCard(Modifier.fillMaxWidth()) {
                 InfoRow(PmIcons.Clients, order.clientName, stringResource(R.string.feature_orders_open_client)) { actions.onOpenClient(order.clientId) }
@@ -419,6 +536,20 @@ private fun OrderContent(state: OrderDetailUiState.Loaded, actions: OrderDetailA
             when {
                 order.declinedHere -> {
                     Text(stringResource(R.string.feature_orders_ho_closed), style = MaterialTheme.typography.bodySmall, color = PmTheme.colors.inkMuted)
+                    return@Column
+                }
+                // Asked to share where he is: he decides, and may still take the order without it.
+                order.awaitsAnswer && order.askLocation && !order.handedOver -> {
+                    Text(
+                        stringResource(R.string.feature_orders_location_asked_master, order.companyName),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = PmTheme.colors.inkSecondary,
+                    )
+                    PmPrimaryButton(stringResource(R.string.feature_orders_accept_share), actions.onAcceptSharing, Modifier.fillMaxWidth(), containerColor = PmTheme.colors.paid, icon = PmIcons.MyLocation)
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        PmSecondaryButton(stringResource(R.string.feature_orders_accept_no_share), actions.onAccept, Modifier.weight(1f))
+                        PmSecondaryButton(stringResource(R.string.feature_orders_reject), actions.onDecline, Modifier.weight(1f))
+                    }
                     return@Column
                 }
                 order.awaitsAnswer -> {

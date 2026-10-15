@@ -57,6 +57,16 @@ service cloud.firestore {
         allow write: if isOwner(w) && mine();
       }
 
+      // Where a master is while doing an order the company asked about, only with his yes.
+      // The id is the order's: only the master it's assigned to writes it, only the owner reads it.
+      match /tracks/{id} {
+        allow read: if isOwner(w);
+        allow create, update: if isMember(w) && request.resource.data.masterUid == request.auth.uid
+                                 && get(/databases/$(db)/documents/workspaces/$(w)/orders/$(id)).data.masterUid == request.auth.uid
+                                 && (resource == null || resource.data.masterUid == request.auth.uid);
+        allow delete: if isOwner(w) || (isMember(w) && resource.data.masterUid == request.auth.uid);
+      }
+
       // Stock counts (no costs): masters see how many there are, only the owner changes them.
       match /stock/{id} {
         allow read: if isOwner(w) || isMember(w);

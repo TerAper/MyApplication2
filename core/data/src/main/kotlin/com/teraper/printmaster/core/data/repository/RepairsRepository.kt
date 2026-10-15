@@ -38,8 +38,9 @@ interface RepairsRepository {
      * The master says yes to an order another company gave him. One given to him as his own moves
      * into his company [companyId] (the client is copied there, or found by tax ID or name): his
      * prices, his money; the giving company only follows it. One he does for the company stays its.
+     * [shareLocation]: he agrees to share where he is, when the company asked (only for its own work).
      */
-    suspend fun acceptOrder(orderId: Long, companyId: Long?): Boolean
+    suspend fun acceptOrder(orderId: Long, companyId: Long?, shareLocation: Boolean = false): Boolean
 
     /**
      * The master turns down an order another company gave him (before or after accepting it);

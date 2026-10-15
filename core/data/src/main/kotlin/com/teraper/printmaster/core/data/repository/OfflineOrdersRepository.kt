@@ -73,6 +73,8 @@ internal class OfflineOrdersRepository @Inject constructor(
         val description = draft.description.trim()
         // Only an attached master (one using PrintMaster) can be given an order as his own.
         val handedOver = draft.handedOver && draft.masterId?.let { orderDao.isAttachedMaster(it) } == true
+        // Only an attached master working for the company can be asked where he is.
+        val askLocation = draft.askLocation && !handedOver && draft.masterId?.let { orderDao.isAttachedMaster(it) } == true
         return if (draft.isNew) {
             val companyId = companies.observeActiveCompany().first()?.id ?: return SaveOrderResult.Invalid(emptySet())
             val id = orderDao.insertOrder(
@@ -86,6 +88,7 @@ internal class OfflineOrdersRepository @Inject constructor(
                     description = description,
                     createdAt = clock.millis(),
                     handedOver = handedOver,
+                    askLocation = askLocation,
                 ),
             )
             SaveOrderResult.Saved(id)
@@ -97,6 +100,9 @@ internal class OfflineOrdersRepository @Inject constructor(
             orderDao.updateOrder(
                 existing.copy(
                     handedOver = handedOver,
+                    askLocation = askLocation,
+                    // Another master or deal: his earlier "yes, share" no longer applies.
+                    sharingLocation = existing.sharingLocation && !newDeal && askLocation,
                     acceptedAt = if (newDeal) null else existing.acceptedAt,
                     declinedBy = if (newDeal) null else existing.declinedBy,
                     declinedReason = if (newDeal) null else existing.declinedReason,
@@ -155,5 +161,7 @@ internal class OfflineOrdersRepository @Inject constructor(
         handedOver = order.handedOver,
         acceptedAt = order.acceptedAt?.let { LocalDateTime.ofInstant(Instant.ofEpochMilli(it), zone) },
         masterAttached = masterAttached,
+        askLocation = order.askLocation,
+        sharingLocation = order.sharingLocation,
     )
 }

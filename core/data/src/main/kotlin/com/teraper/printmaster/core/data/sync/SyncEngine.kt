@@ -310,6 +310,8 @@ class SyncEngine @Inject internal constructor(
             declinedReason = order.declinedReason,
             handedOver = order.handedOver,
             accepted = order.acceptedAt != null,
+            askLocation = order.askLocation,
+            sharingLocation = order.sharingLocation,
         )
     }
 
@@ -394,6 +396,8 @@ class SyncEngine @Inject internal constructor(
                         sync.setAccepted(id, clock.millis())
                         accepted++
                     }
+                    // The master's answer about sharing where he is.
+                    if (!isMember && local != null && local.sharingLocation != order.sharingLocation) sync.setSharingLocation(id, order.sharingLocation)
                     when {
                         isMember -> updateMemberOrder(id, order)
                         local?.isOpenOrder() != true -> Unit
@@ -543,6 +547,7 @@ class SyncEngine @Inject internal constructor(
                 createdAt = clock.millis(),
                 syncId = order.id,
                 handedOver = isMember && order.handedOver,
+                askLocation = isMember && order.askLocation,
             ),
         )
     }
@@ -553,6 +558,11 @@ class SyncEngine @Inject internal constructor(
         sync.updateOrderFields(id, order.status.name, order.doneAt ?: local.doneAt, order.scheduledAt, order.description)
         // Until he answers, the company may still change whether it's given to him.
         if (local.acceptedAt == null && local.handedOver != order.handedOver) sync.setHandedOver(id, order.handedOver)
+        // The company may ask (or stop asking) any time; not asked = nothing is shared.
+        if (local.askLocation != order.askLocation) {
+            sync.setAskLocation(id, order.askLocation)
+            if (!order.askLocation) sync.setSharingLocation(id, false)
+        }
     }
 
     /** The work as the master entered it; costs come from this phone's price list. */

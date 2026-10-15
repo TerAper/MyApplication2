@@ -11,6 +11,8 @@ import com.teraper.printmaster.core.data.repository.PhotoRepository
 import com.teraper.printmaster.core.data.repository.RepairsRepository
 import com.teraper.printmaster.core.data.repository.WarehouseRepository
 import com.teraper.printmaster.core.model.GoodsShortage
+import com.teraper.printmaster.core.model.MapPoint
+import com.teraper.printmaster.core.data.tracking.TrackingRepository
 import com.teraper.printmaster.core.model.CallRecording
 import com.teraper.printmaster.core.model.Company
 import com.teraper.printmaster.core.model.Order
@@ -60,7 +62,16 @@ sealed interface OrderDetailUiState {
         val declineReason: String = "",
         /** Goods the order still lacks (to buy, or not in the warehouse); it can't be finished before. */
         val goodsShortages: List<GoodsShortage> = emptyList(),
+        /** Company's phone: the master's way on this order while he shares it; the last point is where he is. */
+        val way: List<MapPoint> = emptyList(),
     ) : OrderDetailUiState {
+        /** Master's phone: the company asked to see where he is on this order (after accepting it, while open). */
+        val canShareLocation: Boolean
+            get() = order.fromAttachedCompany && order.askLocation && !order.handedOver && order.acceptedAt != null && order.isOpen && !order.declinedHere
+
+        /** Company's phone: it asked the master to share where he is on this open order. */
+        val followsMaster: Boolean get() = !order.fromAttachedCompany && order.askLocation && order.masterAttached && order.isOpen
+
         /**
          * Work can be added or changed only while the order is open, and not on another owner's order
          * before it's accepted, nor (owner) on an order given to an attached master as his.
@@ -89,6 +100,7 @@ class OrderDetailViewModel @Inject constructor(
     callRecordingsRepository: CallRecordingsRepository,
     private val photoRepository: PhotoRepository,
     warehouseRepository: WarehouseRepository,
+    private val tracking: TrackingRepository,
     clock: Clock,
 ) : ViewModel() {
 
@@ -125,6 +137,11 @@ class OrderDetailViewModel @Inject constructor(
         },
     ) { work, stock -> work to if (work.isBilled) emptyList() else work.goodsShortages(stock) }
 
+    /** Company's phone: the master's way, only while he shares it on this open order. */
+    private val way = order.map { o -> o?.takeIf { !it.fromAttachedCompany && it.locationLive }?.id }.distinctUntilChanged().flatMapLatest { id ->
+        if (id == null) flowOf(emptyList()) else tracking.observeWay(id)
+    }
+
     init {
         // A call that just ended shows up here without waiting for the background check.
         viewModelScope.launch { callRecordingsRepository.refresh() }
@@ -153,12 +170,12 @@ class OrderDetailViewModel @Inject constructor(
     val uiState: StateFlow<OrderDetailUiState> = combine(
         order,
         work,
-        calls,
+        combine(calls, way, ::Pair),
         view,
-    ) { order, (work, shortages), calls, view ->
+    ) { order, (work, shortages), (calls, way), view ->
         when {
             order != null -> OrderDetailUiState.Loaded(
-                order, today, work, view.dialog, calls, view.playing, view.photos, view.choosingCompany, view.companies, view.declineReason, shortages,
+                order, today, work, view.dialog, calls, view.playing, view.photos, view.choosingCompany, view.companies, view.declineReason, shortages, way,
             )
             view.deleting -> OrderDetailUiState.Loading
             else -> OrderDetailUiState.NotFound
@@ -197,6 +214,16 @@ class OrderDetailViewModel @Inject constructor(
             companies.size == 1 -> viewModelScope.launch { repairsRepository.acceptOrder(orderId, companies.single().id) }
             else -> choosingCompany.value = true
         }
+    }
+
+    /** Yes, and he shares where he is while doing it (the company asked; location permission given). */
+    fun onAcceptSharing() {
+        viewModelScope.launch { repairsRepository.acceptOrder(orderId, null, shareLocation = true) }
+    }
+
+    /** Master's phone: starts or stops sharing where he is on this order. */
+    fun onShareLocation(share: Boolean) {
+        viewModelScope.launch { tracking.setSharing(orderId, share) }
     }
 
     fun onAcceptInto(companyId: Long) {

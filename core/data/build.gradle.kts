@@ -19,6 +19,7 @@ dependencies {
     implementation(libs.firebase.firestore)
     implementation(libs.firebase.analytics)
     implementation(libs.kotlinx.coroutines.play.services)
+    implementation(libs.play.services.location)
 
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.test.runner)

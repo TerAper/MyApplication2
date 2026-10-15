@@ -45,6 +45,7 @@ import com.teraper.printmaster.core.designsystem.component.PmConfirmDialog
 import com.teraper.printmaster.core.designsystem.component.PmPrimaryButton
 import com.teraper.printmaster.core.designsystem.component.PmSegmentedButtons
 import com.teraper.printmaster.core.designsystem.component.PmTextField
+import com.teraper.printmaster.core.designsystem.component.rememberCurrentPlace
 import com.teraper.printmaster.core.designsystem.component.PmTopBar
 import com.teraper.printmaster.core.designsystem.icon.PmIcons
 import com.teraper.printmaster.core.designsystem.theme.PmTheme
@@ -64,6 +65,16 @@ internal fun ClientEditRoute(
     val context = LocalContext.current
     // Which phone row the picked contact goes into; -1 = a new row.
     var pickFor by rememberSaveable { mutableIntStateOf(-1) }
+    // Which address row takes where the phone is now.
+    var placeFor by rememberSaveable { mutableIntStateOf(-1) }
+    val currentPlace = rememberCurrentPlace { place ->
+        if (place == null) {
+            Toast.makeText(context, R.string.feature_clients_no_location, Toast.LENGTH_LONG).show()
+        } else {
+            viewModel.onCurrentPlace(placeFor, place.address, place.mapLink)
+            if (place.address.isBlank()) Toast.makeText(context, R.string.feature_clients_location_no_street, Toast.LENGTH_LONG).show()
+        }
+    }
     val contactPicker = rememberLauncherForActivityResult(PickPhoneNumber()) { uri ->
         val picked = uri?.let { context.readPickedPhone(it) } ?: return@rememberLauncherForActivityResult
         viewModel.onContactPicked(pickFor.takeIf { it >= 0 }, picked.first, picked.second)
@@ -101,6 +112,10 @@ internal fun ClientEditRoute(
                 }
             },
             onPickOnMap = viewModel::onPickOnMap,
+            onMyLocation = { index ->
+                placeFor = index
+                currentPlace()
+            },
             onClearMapPoint = viewModel::onClearMapPoint,
             onSave = viewModel::onSave,
             onDiscardConfirmed = viewModel::onDiscardConfirmed,
@@ -123,6 +138,7 @@ internal data class ClientEditActions(
     /** Phone row index, or null for a new row. */
     val onPickContact: (Int?) -> Unit = {},
     val onPickOnMap: (Int) -> Unit = {},
+    val onMyLocation: (Int) -> Unit = {},
     val onClearMapPoint: (Int) -> Unit = {},
     val onSave: () -> Unit = {},
     val onDiscardConfirmed: () -> Unit = {},
@@ -278,6 +294,10 @@ private fun ContactSection(
                     )
                 }
                 if (list == ContactList.ADDRESSES) {
+                    // Standing at the client's place: take it as the address without opening a map.
+                    IconButton(onClick = { actions.onMyLocation(index) }, modifier = Modifier.padding(top = 8.dp)) {
+                        Icon(PmIcons.MyLocation, contentDescription = stringResource(R.string.feature_clients_my_location), tint = PmTheme.colors.primary)
+                    }
                     IconButton(onClick = { actions.onPickOnMap(index) }, modifier = Modifier.padding(top = 8.dp)) {
                         Icon(PmIcons.Map, contentDescription = stringResource(R.string.feature_clients_pick_on_map), tint = PmTheme.colors.primary)
                     }

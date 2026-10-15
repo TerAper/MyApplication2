@@ -143,4 +143,23 @@
     <string name="feature_orders_goods_hint">Գնեք կամ հանեք դրանք աշխատանքից, որ պատվերն ավարտվի։</string>
     <string name="feature_orders_goods_missing">Գնել %1$d · պահեստում %2$d / պետք է %3$d</string>
     <string name="feature_orders_goods_bought">Գնված է</string>
+    <string name="feature_orders_ask_location">Տեսնել, թե որտեղ է վարպետը</string>
+    <string name="feature_orders_ask_location_hint">Նա է որոշում․ կարող է ընդունել առանց փոխանցելու կամ դադարեցնել ցանկացած պահի։ Միայն մինչ պատվերը բաց է։</string>
+    <string name="feature_orders_location_asked_master">%1$s-ը ուզում է տեսնել, թե որտեղ եք դուք այս պատվերի ընթացքում։ Միայն մինչ պատվերը բաց է․ կարող եք դադարեցնել ցանկացած պահի։</string>
+    <string name="feature_orders_location_asked_short">%1$s-ը ուզում է տեսնել, թե որտեղ եք</string>
+    <string name="feature_orders_accept_share">Ընդունել և փոխանցել տեղը</string>
+    <string name="feature_orders_accept_no_share">Ընդունել առանց</string>
+    <string name="feature_orders_location_sharing_you">Ձեր տեղը փոխանցվում է %1$s-ին</string>
+    <string name="feature_orders_location_stop">Դադարեցնել</string>
+    <string name="feature_orders_location_share">Փոխանցել</string>
+    <string name="feature_orders_location_not_allowed">Տեղորոշումը թույլատրված չէ, ուստի տեղը չի փոխանցվում։</string>
+    <string name="feature_orders_location_title">ՈՐՏԵՂ Է ՎԱՐՊԵՏԸ</string>
+    <string name="feature_orders_location_waiting">Խնդրել եք փոխանցել տեղը․ սպասում է պատասխանի</string>
+    <string name="feature_orders_location_refused">%1$s-ը տեղը չի փոխանցում</string>
+    <string name="feature_orders_location_no_point">%1$s-ը փոխանցում է տեղը․ դեռ կետ չկա</string>
+    <string name="feature_orders_location_last">%1$s · վերջին անգամ՝ %2$s</string>
+    <string name="feature_orders_masters_map">Վարպետները քարտեզում (%1$d)</string>
+    <string name="feature_orders_masters_map_title">Վարպետները քարտեզում</string>
+    <string name="feature_orders_masters_map_empty">Այժմ ոչ մի վարպետ տեղը չի փոխանցում։</string>
+    <string name="feature_orders_masters_map_no_point">դեռ կետ չկա</string>
 </resources>

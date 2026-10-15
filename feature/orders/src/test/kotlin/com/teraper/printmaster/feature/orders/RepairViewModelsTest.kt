@@ -22,6 +22,7 @@ import com.teraper.printmaster.core.testing.FakeCatalogRepository
 import com.teraper.printmaster.core.testing.FakeClientItemsRepository
 import com.teraper.printmaster.core.testing.FakeRepairsRepository
 import com.teraper.printmaster.core.testing.FakeWarehouseRepository
+import com.teraper.printmaster.core.testing.FakeTrackingRepository
 import com.teraper.printmaster.core.model.StockLine
 import com.teraper.printmaster.core.testing.MainDispatcherRule
 import com.teraper.printmaster.feature.orders.detail.OrderDetailDialog
@@ -62,6 +63,7 @@ class RepairViewModelsTest {
     private val priceList = FakePriceListRepository(listOf(refill, drum))
     private val repairs = FakeRepairsRepository()
     private val warehouse = FakeWarehouseRepository()
+    private val tracking = FakeTrackingRepository()
 
     private fun editVm(items: List<ClientItem> = listOf(printer), repairId: Long = 0) = RepairEditViewModel(
         SavedStateHandle(mapOf("orderId" to 1L, "repairId" to repairId)),
@@ -134,7 +136,7 @@ class RepairViewModelsTest {
     @Test
     fun detailFinishesWithWorkAndAsksBeforeReopening() = runTest {
         repairs.repairs.value = listOf(Repair(3, 1, lines = listOf(RepairLine(1, "Refill", Money.ofDram(3_000), quantity = 2))))
-        val vm = OrderDetailViewModel(SavedStateHandle(mapOf("orderId" to 1L)), orders, repairs, FakeCompaniesRepository(), FakeCallRecordingsRepository(), FakePhotoRepository(), warehouse, clock)
+        val vm = OrderDetailViewModel(SavedStateHandle(mapOf("orderId" to 1L)), orders, repairs, FakeCompaniesRepository(), FakeCallRecordingsRepository(), FakePhotoRepository(), warehouse, tracking, clock)
         backgroundScope.launch(UnconfinedTestDispatcher()) { vm.uiState.collect {} }
         val loaded = { vm.uiState.value as OrderDetailUiState.Loaded }
         assertTrue(loaded().canFinishWithWork)
@@ -199,7 +201,7 @@ class RepairViewModelsTest {
         val toner = CatalogItem(3, cartridgeType, "CF283A", price = Money.ofDram(12_000))
         warehouse.lines.value = listOf(StockLine(toner, 0))
         repairs.repairs.value = listOf(Repair(3, 1, lines = listOf(RepairLine(null, "CF283A", Money.ofDram(12_000), itemId = 3, toBuy = true))))
-        val vm = OrderDetailViewModel(SavedStateHandle(mapOf("orderId" to 1L)), orders, repairs, FakeCompaniesRepository(), FakeCallRecordingsRepository(), FakePhotoRepository(), warehouse, clock)
+        val vm = OrderDetailViewModel(SavedStateHandle(mapOf("orderId" to 1L)), orders, repairs, FakeCompaniesRepository(), FakeCallRecordingsRepository(), FakePhotoRepository(), warehouse, tracking, clock)
         backgroundScope.launch(UnconfinedTestDispatcher()) { vm.uiState.collect {} }
         val loaded = { vm.uiState.value as OrderDetailUiState.Loaded }
         assertEquals(listOf(3L to 1), loaded().goodsShortages.map { it.itemId to it.missing })
@@ -209,5 +211,46 @@ class RepairViewModelsTest {
         // The fake doesn't stock it, so it's still short of the warehouse; once there, nothing is missing.
         warehouse.lines.value = listOf(StockLine(toner, 1))
         assertTrue(loaded().goodsShortages.isEmpty())
+    }
+
+    @Test
+    fun companySeesTheWayOnlyWhileTheMasterShares() = runTest {
+        val asked = Order(1, 1, 7, "Firm", LocalDateTime.of(2026, 10, 8, 10, 0), "Refill", masterName = "Armen", masterAttached = true, masterId = 3, askLocation = true)
+        val orders = FakeOrdersRepository(listOf(asked))
+        tracking.ways.value = mapOf(1L to listOf(com.teraper.printmaster.core.model.MapPoint(40.18, 44.51, 1_000)))
+        val vm = OrderDetailViewModel(SavedStateHandle(mapOf("orderId" to 1L)), orders, repairs, FakeCompaniesRepository(), FakeCallRecordingsRepository(), FakePhotoRepository(), warehouse, tracking, clock)
+        backgroundScope.launch(UnconfinedTestDispatcher()) { vm.uiState.collect {} }
+        val loaded = { vm.uiState.value as OrderDetailUiState.Loaded }
+        // Asked, no answer yet: nothing to show on the map.
+        assertTrue(loaded().followsMaster)
+        assertTrue(loaded().way.isEmpty())
+
+        orders.orders.value = listOf(asked.copy(acceptedAt = LocalDateTime.of(2026, 10, 8, 9, 0), sharingLocation = true))
+        assertEquals(1, loaded().way.size)
+    }
+
+    @Test
+    fun masterSharesAndStopsOnTheOrder() = runTest {
+        val given = Order(
+            1, 1, 7, "Firm", LocalDateTime.of(2026, 10, 8, 10, 0), "Refill",
+            fromAttachedCompany = true, companyName = "Xerox", askLocation = true, acceptedAt = LocalDateTime.of(2026, 10, 8, 9, 0),
+        )
+        val vm = OrderDetailViewModel(SavedStateHandle(mapOf("orderId" to 1L)), FakeOrdersRepository(listOf(given)), repairs, FakeCompaniesRepository(), FakeCallRecordingsRepository(), FakePhotoRepository(), warehouse, tracking, clock)
+        backgroundScope.launch(UnconfinedTestDispatcher()) { vm.uiState.collect {} }
+        assertTrue((vm.uiState.value as OrderDetailUiState.Loaded).canShareLocation)
+        vm.onShareLocation(true)
+        assertEquals(setOf(1L), tracking.sharing.value)
+        vm.onShareLocation(false)
+        assertTrue(tracking.sharing.value.isEmpty())
+    }
+
+    @Test
+    fun acceptingWithSharingTellsTheRepository() = runTest {
+        val asked = Order(1, 1, 7, "Firm", LocalDateTime.of(2026, 10, 8, 10, 0), "Refill", fromAttachedCompany = true, askLocation = true)
+        val vm = OrderDetailViewModel(SavedStateHandle(mapOf("orderId" to 1L)), FakeOrdersRepository(listOf(asked)), repairs, FakeCompaniesRepository(), FakeCallRecordingsRepository(), FakePhotoRepository(), warehouse, tracking, clock)
+        backgroundScope.launch(UnconfinedTestDispatcher()) { vm.uiState.collect {} }
+        vm.onAcceptSharing()
+        assertEquals(mapOf(1L to null), repairs.accepted)
+        assertEquals(setOf(1L), repairs.sharedLocation)
     }
 }

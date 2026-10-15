@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -34,6 +35,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.teraper.printmaster.core.designsystem.component.PmEmptyState
 import com.teraper.printmaster.core.designsystem.component.PmOrderCard
 import com.teraper.printmaster.core.designsystem.component.PmScreenTitle
+import com.teraper.printmaster.core.designsystem.component.PmSecondaryButton
 import com.teraper.printmaster.core.designsystem.component.relativeLabel
 import com.teraper.printmaster.core.designsystem.component.weekdayShort
 import com.teraper.printmaster.core.designsystem.icon.PmIcons
@@ -48,10 +50,11 @@ import java.time.LocalTime
 internal fun OrdersRoute(
     onOrderClick: (Long) -> Unit,
     onNewOrder: (LocalDate) -> Unit,
+    onOpenMap: () -> Unit = {},
     viewModel: OrdersViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
-    OrdersScreen(state, viewModel::onDateSelected, onOrderClick, onNewOrder)
+    OrdersScreen(state, viewModel::onDateSelected, onOrderClick, onNewOrder, onOpenMap = onOpenMap)
 }
 
 @Composable
@@ -61,10 +64,19 @@ internal fun OrdersScreen(
     onOrderClick: (Long) -> Unit,
     onNewOrder: (LocalDate) -> Unit,
     modifier: Modifier = Modifier,
+    onOpenMap: () -> Unit = {},
 ) {
     Box(modifier.fillMaxSize().background(PmTheme.colors.background)) {
         Column(Modifier.fillMaxSize()) {
             PmScreenTitle(title = stringResource(R.string.feature_orders_title))
+            if (state.mastersOnMap > 0) {
+                PmSecondaryButton(
+                    text = stringResource(R.string.feature_orders_masters_map, state.mastersOnMap),
+                    onClick = onOpenMap,
+                    icon = PmIcons.MyLocation,
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp),
+                )
+            }
             DayStrip(state, onDateSelected)
             Text(
                 state.selectedDate.relativeLabel(state.today) +

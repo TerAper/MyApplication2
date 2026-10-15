@@ -31,4 +31,7 @@
         <item quantity="one">%d order accepted by a master</item>
         <item quantity="other">%d orders accepted by masters</item>
     </plurals>
+    <string name="location_channel">Location sharing</string>
+    <string name="location_sharing_title">Sharing your location</string>
+    <string name="location_sharing_text">The company sees where you are while the order is open. Stop it on the order page.</string>
 </resources>

@@ -203,4 +203,7 @@
         <item quantity="one">%1$d պատվեր</item>
         <item quantity="other">%1$d պատվեր</item>
     </plurals>
+    <string name="feature_clients_my_location">Իմ գտնվելու վայրը</string>
+    <string name="feature_clients_no_location">Չհաջողվեց գտնել, թե որտեղ եք։ Միացրեք տեղորոշումը և թույլատրեք այն։</string>
+    <string name="feature_clients_location_no_street">Կետը պահված է, բայց փողոցը չգտնվեց։ Գրեք հասցեն։</string>
 </resources>

@@ -195,13 +195,13 @@ internal class OfflineRepairsRepository @Inject constructor(
         return FinishOrderResult.FINISHED
     }
 
-    override suspend fun acceptOrder(orderId: Long, companyId: Long?): Boolean {
+    override suspend fun acceptOrder(orderId: Long, companyId: Long?, shareLocation: Boolean): Boolean {
         val order = orderDao.getOrder(orderId) ?: return false
         val from = db.companyDao().getCompany(order.companyId)
         if (!order.isOpen() || order.acceptedAt != null || order.declinedReason != null || from?.kind != CompanyKind.ATTACHED) return false
         val accepted = order.copy(acceptedAt = clock.millis())
         if (!order.handedOver) {
-            orderDao.updateOrder(accepted)
+            orderDao.updateOrder(accepted.copy(sharingLocation = shareLocation && order.askLocation))
             return true
         }
         val target = companyId?.let { db.companyDao().getCompany(it) }

@@ -51,6 +51,7 @@ dependencies {
     implementation(projects.feature.warehouse)
 
     implementation(libs.androidx.core.ktx)
+    implementation(libs.play.services.location)
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.navigation.compose)

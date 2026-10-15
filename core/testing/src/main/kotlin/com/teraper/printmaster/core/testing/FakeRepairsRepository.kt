@@ -71,8 +71,11 @@ class FakeRepairsRepository(initial: List<Repair> = emptyList()) : RepairsReposi
     val accepted = mutableMapOf<Long, Long?>()
     val declined = mutableMapOf<Long, String>()
 
-    override suspend fun acceptOrder(orderId: Long, companyId: Long?): Boolean {
+    val sharedLocation = mutableSetOf<Long>()
+
+    override suspend fun acceptOrder(orderId: Long, companyId: Long?, shareLocation: Boolean): Boolean {
         accepted[orderId] = companyId
+        if (shareLocation) sharedLocation += orderId
         return true
     }
 

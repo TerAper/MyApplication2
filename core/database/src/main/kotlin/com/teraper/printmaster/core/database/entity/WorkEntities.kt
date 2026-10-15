@@ -85,6 +85,10 @@ data class OrderEntity(
     @ColumnInfo(name = "handed_over", defaultValue = "0") val handedOver: Boolean = false,
     /** When the attached master accepted it; null = not yet (or he turned it down). */
     @ColumnInfo(name = "accepted_at") val acceptedAt: Long? = null,
+    /** The company asks the attached master to share where he is while doing it. */
+    @ColumnInfo(name = "ask_location", defaultValue = "0") val askLocation: Boolean = false,
+    /** The master shares it (his choice; he can stop any time). */
+    @ColumnInfo(name = "sharing_location", defaultValue = "0") val sharingLocation: Boolean = false,
 )
 
 /** One line of the price list; [typeId] is the item type it's work on, null = general. */

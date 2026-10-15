@@ -143,6 +143,11 @@ class ClientEditViewModel @Inject constructor(
         viewModelScope.launch { _events.send(ClientEditEvent.OpenMap(query)) }
     }
 
+    /** Where the phone is now becomes address row [index]: its street (when found) and exact point. */
+    fun onCurrentPlace(index: Int, address: String, mapLink: String) = editContacts(ContactList.ADDRESSES) { rows ->
+        rows.mapIndexed { i, r -> if (i == index) r.copy(value = address.ifBlank { r.value }, mapLink = mapLink) else r }
+    }
+
     fun onClearMapPoint(index: Int) =
         editContacts(ContactList.ADDRESSES) { rows -> rows.mapIndexed { i, r -> if (i == index) r.copy(mapLink = null) else r } }
 

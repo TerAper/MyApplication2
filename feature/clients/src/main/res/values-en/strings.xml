@@ -203,4 +203,7 @@
         <item quantity="one">%1$d order</item>
         <item quantity="other">%1$d orders</item>
     </plurals>
+    <string name="feature_clients_my_location">My location</string>
+    <string name="feature_clients_no_location">Couldn\'t find where you are. Turn location on and allow it.</string>
+    <string name="feature_clients_location_no_street">The point is saved but no street was found. Type the address.</string>
 </resources>

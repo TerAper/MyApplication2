@@ -34,4 +34,7 @@
         <item quantity="one">%d պատվեր վարպետն ընդունեց</item>
         <item quantity="other">%d պատվեր վարպետներն ընդունեցին</item>
     </plurals>
+    <string name="location_channel">Գտնվելու վայրի փոխանցում</string>
+    <string name="location_sharing_title">Ձեր գտնվելու վայրը փոխանցվում է</string>
+    <string name="location_sharing_text">Ընկերությունը տեսնում է, թե որտեղ եք, մինչ պատվերը բաց է։ Դադարեցնել կարող եք պատվերի էջում։</string>
 </resources>

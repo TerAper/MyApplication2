@@ -131,6 +131,12 @@ interface SyncDao {
     @Query("UPDATE orders SET accepted_at = :at WHERE id = :id")
     suspend fun setAccepted(id: Long, at: Long)
 
+    @Query("UPDATE orders SET ask_location = :ask WHERE id = :id")
+    suspend fun setAskLocation(id: Long, ask: Boolean)
+
+    @Query("UPDATE orders SET sharing_location = :sharing WHERE id = :id")
+    suspend fun setSharingLocation(id: Long, sharing: Boolean)
+
     @Query("UPDATE orders SET handed_over = :handedOver WHERE id = :id")
     suspend fun setHandedOver(id: Long, handedOver: Boolean)
 

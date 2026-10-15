@@ -43,7 +43,14 @@ data class Order(
     val acceptedAt: LocalDateTime? = null,
     /** Owner's phone: assigned to a master who uses PrintMaster (attached with a code). */
     val masterAttached: Boolean = false,
+    /** The company asks the master to share where he is while doing it. */
+    val askLocation: Boolean = false,
+    /** The master shares it (his choice; he can stop any time). */
+    val sharingLocation: Boolean = false,
 ) {
+    /** Location is shared right now: asked, agreed, accepted and still open. */
+    val locationLive: Boolean get() = askLocation && sharingLocation && acceptedAt != null && isOpen && !handedOver
+
     /** Between two owners: given by another company, or to an attached master. */
     val isShared: Boolean get() = fromAttachedCompany || takenFrom != null || (masterAttached && masterId != null) || declinedBy != null
 
@@ -71,6 +78,8 @@ data class OrderDraft(
     val description: String = "",
     /** With an attached master: give it to him as his own order (his money) rather than work for the company. */
     val handedOver: Boolean = false,
+    /** With an attached master working for the company: ask him to share where he is during it. */
+    val askLocation: Boolean = false,
 ) {
     val isNew: Boolean get() = id == 0L
     val scheduledAt: LocalDateTime get() = date.atTime(time)
@@ -105,6 +114,7 @@ data class OrderDraft(
             masterId = order.masterId,
             description = order.description,
             handedOver = order.handedOver,
+            askLocation = order.askLocation,
         )
     }
 }

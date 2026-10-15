@@ -85,6 +85,8 @@ internal object FirestoreMapping {
         "declinedReason" to declinedReason,
         "handedOver" to handedOver,
         "accepted" to accepted,
+        "askLocation" to askLocation,
+        "sharingLocation" to sharingLocation,
     )
 
     fun order(id: String, d: Map<String, Any?>) = SharedOrder(
@@ -112,6 +114,8 @@ internal object FirestoreMapping {
         declinedReason = d["declinedReason"] as? String,
         handedOver = d["handedOver"] == true,
         accepted = d["accepted"] == true,
+        askLocation = d["askLocation"] == true,
+        sharingLocation = d["sharingLocation"] == true,
     )
 
     fun SharedPriceItem.toMap(): Map<String, Any?> = mapOf(

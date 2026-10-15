@@ -143,4 +143,23 @@
     <string name="feature_orders_goods_hint">Buy them or take them off the work to finish the order.</string>
     <string name="feature_orders_goods_missing">Buy %1$d · in stock %2$d of %3$d needed</string>
     <string name="feature_orders_goods_bought">Bought</string>
+    <string name="feature_orders_ask_location">See where the master is</string>
+    <string name="feature_orders_ask_location_hint">The master decides: can accept without sharing or stop any time. Only while the order is open.</string>
+    <string name="feature_orders_location_asked_master">%1$s asks to see where you are while you do this order. Only while it\'s open; you can stop any time.</string>
+    <string name="feature_orders_location_asked_short">%1$s asks to see where you are</string>
+    <string name="feature_orders_accept_share">Accept and share location</string>
+    <string name="feature_orders_accept_no_share">Accept without</string>
+    <string name="feature_orders_location_sharing_you">You share your location with %1$s</string>
+    <string name="feature_orders_location_stop">Stop</string>
+    <string name="feature_orders_location_share">Share</string>
+    <string name="feature_orders_location_not_allowed">Location isn\'t allowed, so it isn\'t shared.</string>
+    <string name="feature_orders_location_title">WHERE THE MASTER IS</string>
+    <string name="feature_orders_location_waiting">Asked to share the location; waiting for the answer</string>
+    <string name="feature_orders_location_refused">%1$s doesn\'t share the location</string>
+    <string name="feature_orders_location_no_point">%1$s shares the location; no position yet</string>
+    <string name="feature_orders_location_last">%1$s · last seen at %2$s</string>
+    <string name="feature_orders_masters_map">Masters on the map (%1$d)</string>
+    <string name="feature_orders_masters_map_title">Masters on the map</string>
+    <string name="feature_orders_masters_map_empty">No master shares the location now.</string>
+    <string name="feature_orders_masters_map_no_point">no position yet</string>
 </resources>

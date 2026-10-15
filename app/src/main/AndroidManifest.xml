@@ -6,6 +6,13 @@
     <uses-permission android:name="android.permission.READ_CONTACTS" />
     <!-- "Master finished 2 orders" (Android 13+ asks the user). -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- A master shares where he is during an order, only when the company asks and he agrees.
+         Only while the app shows a notification about it (no background location). Also "my
+         location" as a client's address. -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
 
     <application
         android:name=".PrintMasterApplication"
@@ -46,6 +53,11 @@
                 <data android:mimeType="text/plain" />
             </intent-filter>
         </activity>
+
+        <service
+            android:name=".LocationShareService"
+            android:exported="false"
+            android:foregroundServiceType="location" />
     </application>
 
 </manifest>

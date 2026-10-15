@@ -3,6 +3,7 @@ package com.teraper.printmaster.feature.orders.list
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.teraper.printmaster.core.data.repository.OrdersRepository
+import com.teraper.printmaster.feature.orders.map.followedOrders
 import com.teraper.printmaster.core.model.Order
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -27,6 +28,8 @@ data class OrdersUiState(
     val orders: List<Order> = emptyList(),
     /** Unfinished orders from earlier days; shown on today only. */
     val overdue: List<Order> = emptyList(),
+    /** Masters sharing where they are on today's orders: the map button shows with them. */
+    val mastersOnMap: Int = 0,
 )
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -45,8 +48,9 @@ class OrdersViewModel @Inject constructor(
         selected.flatMapLatest { ordersRepository.observeOrdersOn(it) },
         selected.flatMapLatest { if (it == today) ordersRepository.observeOverdue(today) else flowOf(emptyList()) },
         ordersRepository.observeDayCounts(days.first(), days.last()),
-    ) { date, orders, overdue, counts ->
-        OrdersUiState(false, today, date, days, counts, orders, overdue)
+        followedOrders(ordersRepository, today),
+    ) { date, orders, overdue, counts, followed ->
+        OrdersUiState(false, today, date, days, counts, orders, overdue, followed.size)
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), OrdersUiState(today = today, selectedDate = today, days = days))
 
     fun onDateSelected(date: LocalDate) {

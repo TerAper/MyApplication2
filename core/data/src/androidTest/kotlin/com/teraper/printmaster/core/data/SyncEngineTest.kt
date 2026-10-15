@@ -342,4 +342,36 @@ class SyncEngineTest {
         armenEngine.sync()
         assertTrue(armen.warehouse.observeCompanyStock().first().isEmpty())
     }
+
+    @Test
+    fun askingToSeeTheMasterTravelsAndHisAnswerComesBack() = runTest {
+        setUp()
+        // Apo asks Armen to share where he is on the order.
+        val order = apoOrder()
+        apo.orders.saveOrder(com.teraper.printmaster.core.model.OrderDraft.from(order).copy(askLocation = true))
+        apoEngine.sync()
+        armenEngine.sync()
+        val id = armenOrderId()
+        assertTrue(armen.orders.observeOrder(id).first()!!.askLocation)
+
+        // Armen accepts and shares: Apo sees it live.
+        assertTrue(armen.repairs.acceptOrder(id, null, shareLocation = true))
+        armenEngine.sync()
+        apoEngine.sync()
+        assertTrue(apoOrder().locationLive)
+
+        // Apo stops asking: Armen's phone stops sharing.
+        apo.orders.saveOrder(com.teraper.printmaster.core.model.OrderDraft.from(apoOrder()).copy(askLocation = false))
+        apoEngine.sync()
+        armenEngine.sync()
+        val after = armen.orders.observeOrder(id).first()!!
+        assertTrue(!after.askLocation && !after.sharingLocation)
+    }
+
+    @Test
+    fun aGivenOrderIsNeverTracked() = runTest {
+        setUp(given = true)
+        apo.orders.saveOrder(com.teraper.printmaster.core.model.OrderDraft.from(apoOrder()).copy(askLocation = true))
+        assertTrue(!apoOrder().askLocation)
+    }
 }
