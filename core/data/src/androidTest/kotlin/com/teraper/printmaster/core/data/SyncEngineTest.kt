@@ -33,6 +33,10 @@ import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import com.teraper.printmaster.core.model.MastersSee
+import com.teraper.printmaster.core.model.StockKind
+import com.teraper.printmaster.core.model.StockDraft
+import com.teraper.printmaster.core.data.repository.SaveItemResult
 import org.junit.runner.RunWith
 import java.time.Clock
 import java.time.Instant
@@ -303,5 +307,39 @@ class SyncEngineTest {
         assertFalse(david.type.hasSerial)
         // The child is not put in the master's catalog.
         assertTrue(armen.catalog.observeCatalog().first().none { it.item.typeId == david.type.id })
+    }
+
+    @Test
+    fun mastersSeeStockCountsAndPricesOnlyWhenAllowed() = runTest {
+        setUp()
+        val cartridge = apo.printerTypes().second
+        val toner = (apo.catalog.saveItem(ItemDraft(typeId = cartridge, name = "CE285A").withPrice("9000").withCost("6000")) as SaveItemResult.Saved).itemId
+        apo.warehouse.save(StockDraft(toner).withQuantity("5"))
+        apoEngine.sync()
+        armenEngine.sync()
+
+        val line = armen.warehouse.observeCompanyStock().first().single()
+        assertEquals(armenXerox, line.companyId)
+        assertEquals("CE285A", line.name)
+        assertEquals(5, line.count)
+        assertNull(line.price)
+        // Costs never leave Apo's phone; nothing changed = nothing sent again.
+        assertTrue(cloud.stock("w-x").none { it.toString().contains("6000") })
+        assertEquals(0, apoEngine.sync().sent)
+
+        apo.warehouse.setMastersSee(MastersSee.COUNTS_AND_PRICES)
+        apo.warehouse.save(StockDraft(toner, kind = StockKind.ADJUST).withQuantity("3"))
+        apoEngine.sync()
+        armenEngine.sync()
+        val priced = armen.warehouse.observeCompanyStock().first().single()
+        assertEquals(3, priced.count)
+        assertEquals(Money.ofDram(9_000), priced.price)
+
+        // Not sold and none left: gone from Armen's list.
+        apo.warehouse.save(StockDraft(toner, kind = StockKind.ADJUST).withQuantity("0"))
+        apo.catalog.saveItem(ItemDraft.from(apo.catalog.observeItem(toner).first()!!).withPrice(""))
+        apoEngine.sync()
+        armenEngine.sync()
+        assertTrue(armen.warehouse.observeCompanyStock().first().isEmpty())
     }
 }

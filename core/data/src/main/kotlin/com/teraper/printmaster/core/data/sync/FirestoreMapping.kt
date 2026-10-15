@@ -7,6 +7,7 @@ import com.teraper.printmaster.core.model.SharedContact
 import com.teraper.printmaster.core.model.SharedLine
 import com.teraper.printmaster.core.model.SharedOrder
 import com.teraper.printmaster.core.model.SharedPriceItem
+import com.teraper.printmaster.core.model.SharedStockItem
 import com.teraper.printmaster.core.model.SharedItem
 import com.teraper.printmaster.core.model.SharedField
 import com.teraper.printmaster.core.model.SharedPart
@@ -124,6 +125,19 @@ internal object FirestoreMapping {
         description = d.string("description"),
         priceMinor = d.long("priceMinor") ?: 0,
         archived = d["archived"] == true,
+    )
+
+    fun SharedStockItem.toMap(): Map<String, Any?> = mapOf(
+        "type" to type, "name" to name, "count" to count, "priceMinor" to priceMinor, "removed" to removed,
+    )
+
+    fun stockItem(id: String, d: Map<String, Any?>) = SharedStockItem(
+        id = id,
+        type = d.string("type"),
+        name = d.string("name"),
+        count = (d.long("count") ?: 0).toInt(),
+        priceMinor = d.long("priceMinor"),
+        removed = d["removed"] == true,
     )
 
     private fun SharedField.toMap() = mapOf("name" to name, "kind" to kind.name, "options" to options, "inTitle" to inTitle)

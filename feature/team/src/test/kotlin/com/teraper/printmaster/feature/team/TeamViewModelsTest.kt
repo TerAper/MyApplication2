@@ -30,10 +30,20 @@ class TeamViewModelsTest {
     private val companies = FakeCompaniesRepository(listOf(Company(1, "Delta"), Company(2, "Zeta")))
     private val team = FakeTeamRepository(companies = companies)
     private val sync = FakeSyncController()
+    private val warehouse = com.teraper.printmaster.core.testing.FakeWarehouseRepository()
 
     private suspend fun TestScope.signedInVm(): TeamViewModel {
         team.signIn("token")
-        return TeamViewModel(team, sync, companies).also { vm -> backgroundScope.launch(UnconfinedTestDispatcher()) { vm.uiState.collect {} } }
+        return TeamViewModel(team, sync, companies, warehouse).also { vm -> backgroundScope.launch(UnconfinedTestDispatcher()) { vm.uiState.collect {} } }
+    }
+
+    @Test
+    fun ownerChoosesWhatMastersSeeInTheWarehouse() = runTest {
+        val vm = signedInVm()
+        assertEquals(com.teraper.printmaster.core.model.MastersSee.COUNTS, vm.uiState.value.mastersSee)
+        vm.onMastersSeeChange(com.teraper.printmaster.core.model.MastersSee.COUNTS_AND_PRICES)
+        assertEquals(com.teraper.printmaster.core.model.MastersSee.COUNTS_AND_PRICES, warehouse.mastersSee.value)
+        assertEquals(com.teraper.printmaster.core.model.MastersSee.COUNTS_AND_PRICES, vm.uiState.value.mastersSee)
     }
 
     @Test

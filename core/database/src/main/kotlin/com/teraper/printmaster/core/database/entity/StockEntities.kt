@@ -44,3 +44,26 @@ data class StockMoveEntity(
     /** The other company of a move. */
     @ColumnInfo(name = "other_company_id") val otherCompanyId: Long? = null,
 )
+
+/** On a master's phone: an attached company's stock of one item, as it shares it ([docId] is its id there). */
+@Entity(
+    tableName = "attached_stock",
+    primaryKeys = ["attached_company_id", "doc_id"],
+    foreignKeys = [
+        ForeignKey(
+            entity = CompanyEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["attached_company_id"],
+            onDelete = ForeignKey.CASCADE,
+        ),
+    ],
+)
+data class AttachedStockEntity(
+    @ColumnInfo(name = "attached_company_id") val attachedCompanyId: Long,
+    @ColumnInfo(name = "doc_id") val docId: String,
+    val type: String,
+    val name: String,
+    val count: Int,
+    /** Null = the company doesn't show prices. */
+    @ColumnInfo(name = "price_minor") val priceMinor: Long? = null,
+)

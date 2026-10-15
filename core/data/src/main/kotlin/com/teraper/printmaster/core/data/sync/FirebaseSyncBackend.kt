@@ -30,7 +30,8 @@ internal class FirebaseSyncBackend @Inject constructor(private val team: Firebas
         val uid = checkNotNull(myUid)
         val writes = changes.clients.map { "clients" to (it.id to it.toMap()) } +
             changes.orders.map { "orders" to (it.id to it.toMap()) } +
-            changes.priceItems.map { "prices" to (it.id to it.toMap()) }
+            changes.priceItems.map { "prices" to (it.id to it.toMap()) } +
+            changes.stock.map { "stock" to (it.id to it.toMap()) }
         // Firestore takes up to 500 writes per batch.
         writes.chunked(400).forEach { chunk ->
             val batch = team.firestore.batch()
@@ -51,8 +52,10 @@ internal class FirebaseSyncBackend @Inject constructor(private val team: Firebas
         val orders = if (asOwner) newer(ref.collection("orders")) else ref.collection("orders").whereEqualTo("masterUid", uid)
         val clients = if (asOwner) newer(ref.collection("clients")) else ref.collection("clients").whereArrayContains("visibleTo", uid)
         val prices = newer(ref.collection("prices"))
+        // The owner writes the stock; only masters read it.
+        val stock = newer(ref.collection("stock"))
 
-        val docs = listOf(orders, clients, prices).map { it.get().await().documents }
+        val docs = (listOf(orders, clients, prices) + listOfNotNull(stock.takeUnless { asOwner })).map { it.get().await().documents }
         var latest = cursor?.toLongOrNull() ?: 0L
         fun DocumentSnapshot.fresh(): Boolean {
             val at = getTimestamp("updatedAt")?.toDate()?.time ?: return false
@@ -63,6 +66,7 @@ internal class FirebaseSyncBackend @Inject constructor(private val team: Firebas
             clients = docs[1].filter { it.fresh() }.map { FirestoreMapping.client(it.id, it.data.orEmpty()) },
             orders = docs[0].filter { it.fresh() }.map { FirestoreMapping.order(it.id, it.data.orEmpty()) },
             priceItems = docs[2].filter { it.fresh() }.map { FirestoreMapping.priceItem(it.id, it.data.orEmpty()) },
+            stock = docs.getOrNull(3).orEmpty().filter { it.fresh() }.map { FirestoreMapping.stockItem(it.id, it.data.orEmpty()) },
         )
         return changes to latest.toString()
     }

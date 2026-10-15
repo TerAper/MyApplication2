@@ -7,6 +7,8 @@ import com.teraper.printmaster.core.model.StockKind
 import com.teraper.printmaster.core.model.StockLine
 import com.teraper.printmaster.core.model.StockMove
 import com.teraper.printmaster.core.model.WarehouseMode
+import com.teraper.printmaster.core.model.MastersSee
+import com.teraper.printmaster.core.model.CompanyStockLine
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.map
@@ -28,6 +30,17 @@ class FakeWarehouseRepository(lines: List<StockLine> = emptyList()) : WarehouseR
     override fun observeStock(): Flow<List<StockLine>> = lines
 
     override fun observeCount(itemId: Long): Flow<Int> = lines.map { all -> all.firstOrNull { it.item.id == itemId }?.count ?: 0 }
+
+    val mastersSee = MutableStateFlow(MastersSee.COUNTS)
+    val companyStock = MutableStateFlow<List<CompanyStockLine>>(emptyList())
+
+    override fun observeMastersSee(): Flow<MastersSee> = mastersSee
+
+    override suspend fun setMastersSee(see: MastersSee) {
+        mastersSee.value = see
+    }
+
+    override fun observeCompanyStock(): Flow<List<CompanyStockLine>> = companyStock
 
     override fun observeCountsFor(companyId: Long): Flow<Map<Long, Int>> = lines.map { all -> all.associate { it.item.id to it.count } }
 

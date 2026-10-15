@@ -44,6 +44,9 @@ import com.teraper.printmaster.core.model.FieldKind
 import com.teraper.printmaster.core.model.ItemField
 import com.teraper.printmaster.core.model.SharedRepair
 import com.teraper.printmaster.core.model.SharedPriceItem
+import com.teraper.printmaster.core.model.SharedStockItem
+import com.teraper.printmaster.core.database.entity.AttachedStockEntity
+import com.teraper.printmaster.core.data.repository.OfflineWarehouseRepository
 import com.teraper.printmaster.core.model.SyncReport
 import java.time.Clock
 import java.time.Instant
@@ -69,6 +72,7 @@ class SyncEngine @Inject internal constructor(
     private val catalogWriter: CatalogWriter,
     private val companyDao: CompanyDao,
     private val repairs: RepairsRepository,
+    private val warehouse: OfflineWarehouseRepository,
     private val backend: SyncBackend,
     private val clock: Clock,
 ) {
@@ -80,7 +84,7 @@ class SyncEngine @Inject internal constructor(
         if (spaces.isEmpty()) return SyncReport()
         // Masters who attached since last time get a local record first, so their orders can go out.
         spaces.filter { it.kind == CompanyKind.OWN }.forEach { linkMembers(it) }
-        var report = SyncReport(sent = push(spaces))
+        var report = SyncReport(sent = push(spaces) + pushStock(spaces.filter { it.kind == CompanyKind.OWN }))
         for (company in spaces) report += pull(company)
         return report
     }
@@ -139,6 +143,28 @@ class SyncEngine @Inject internal constructor(
             }
         }
         failure?.let { throw it }
+        return sent
+    }
+
+    /**
+     * Stock for the masters of each own company's space: only what changed since last sent
+     * (remembered per space as id → content), and items gone from the catalog as removed.
+     */
+    private suspend fun pushStock(ownSpaces: List<CompanyEntity>): Int {
+        var sent = 0
+        for (company in ownSpaces) {
+            val spaceId = checkNotNull(company.spaceId)
+            val key = "$STOCK:$spaceId"
+            val before = sync.getState(key).orEmpty().lines().filter { it.isNotBlank() }
+                .associate { it.substringBefore('\t') to it.substringAfter('\t') }
+            val now = warehouse.sharedStock(company.id).associateBy { it.id }
+            val changed = now.values.filter { before[it.id] != it.toString() } +
+                (before.keys - now.keys).map { SharedStockItem(it, "", "", 0, removed = true) }
+            if (changed.isEmpty()) continue
+            backend.push(spaceId, SharedChanges(stock = changed))
+            sync.setState(SyncStateEntity(key, now.values.joinToString("\n") { "${it.id}\t$it" }))
+            sent += changed.size
+        }
         return sent
     }
 
@@ -353,6 +379,7 @@ class SyncEngine @Inject internal constructor(
         db.withTransaction {
             applying {
                 if (isMember) changes.priceItems.forEach { applyPrice(it, company.id) }
+                if (isMember) changes.stock.forEach { applyStock(it, company.id) }
                 changes.clients.forEach { if (applyClient(it, isMember, attachedId)) newClients++ }
                 val pending = if (isMember) sync.getOutbox().filter { it.entity == ORDER }.map { it.rowId }.toSet() else emptySet()
                 for (order in changes.orders) {
@@ -399,7 +426,7 @@ class SyncEngine @Inject internal constructor(
             }
         }
         return SyncReport(
-            received = changes.clients.size + changes.orders.size + changes.priceItems.size,
+            received = changes.clients.size + changes.orders.size + changes.priceItems.size + changes.stock.size,
             newOrders = newOrders,
             finishedOrders = finishedByMaster.size,
             newClients = newClients,
@@ -586,6 +613,16 @@ class SyncEngine @Inject internal constructor(
         }
     }
 
+    /** On a master's phone: the attached company's stock of one item. */
+    private suspend fun applyStock(item: SharedStockItem, companyId: Long) {
+        val stock = db.stockDao()
+        if (item.removed) {
+            stock.deleteAttachedStock(companyId, item.id)
+        } else {
+            stock.upsertAttachedStock(AttachedStockEntity(companyId, item.id, item.type, item.name, item.count, item.priceMinor))
+        }
+    }
+
     // Helpers
 
     /** Runs [block] with the outbox triggers off, so received changes aren't sent back. */
@@ -607,6 +644,7 @@ class SyncEngine @Inject internal constructor(
         const val CLIENT = "client"
         const val PRICE = "price"
         const val CURSOR = "cursor"
+        const val STOCK = "stock"
         const val APPLYING = "applying"
     }
 }

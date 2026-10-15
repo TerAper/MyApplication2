@@ -24,6 +24,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import com.teraper.printmaster.core.model.MastersSee
+import androidx.compose.material3.RadioButtonDefaults
+import androidx.compose.material3.RadioButton
+import androidx.compose.ui.semantics.Role
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -101,6 +106,7 @@ internal fun TeamRoute(onBack: () -> Unit, viewModel: TeamViewModel = hiltViewMo
             onConfirmLeave = viewModel::onConfirmLeave,
             onDismissLeave = viewModel::onDismissLeave,
             onSyncNow = viewModel::onSyncNow,
+            onMastersSeeChange = viewModel::onMastersSeeChange,
             onDismissError = viewModel::onDismissError,
         ),
     )
@@ -132,6 +138,7 @@ internal data class TeamActions(
     val onConfirmLeave: () -> Unit = {},
     val onDismissLeave: () -> Unit = {},
     val onSyncNow: () -> Unit = {},
+    val onMastersSeeChange: (MastersSee) -> Unit = {},
     val onDismissError: () -> Unit = {},
 )
 
@@ -159,6 +166,7 @@ internal fun TeamScreen(state: TeamUiState, actions: TeamActions) {
                     Text(stringResource(R.string.feature_team_intro), style = MaterialTheme.typography.bodyMedium, color = PmTheme.colors.inkSecondary)
                     SectionTitle(stringResource(R.string.feature_team_my_companies))
                     state.own.forEach { OwnCompanyCard(it, busy = state.busyCompanyId == it.company.id, actions) }
+                    MastersSeeCard(state.mastersSee, actions.onMastersSeeChange)
                     SectionTitle(stringResource(R.string.feature_team_attached_companies))
                     AttachedCompaniesCard(state.attached, state.busyCompanyId, actions)
                     PmSecondaryButton(stringResource(R.string.feature_team_enter_code), actions.onAttachClick, Modifier.fillMaxWidth(), icon = PmIcons.Add)
@@ -169,6 +177,39 @@ internal fun TeamScreen(state: TeamUiState, actions: TeamActions) {
         }
     }
     Dialogs(state, actions)
+}
+
+/** What masters see of the warehouse: counts only, or prices too. Costs never. */
+@Composable
+private fun MastersSeeCard(see: MastersSee, onChange: (MastersSee) -> Unit) {
+    PmCard(Modifier.fillMaxWidth()) {
+        Column(Modifier.padding(vertical = 8.dp)) {
+            Text(
+                stringResource(R.string.feature_team_masters_see),
+                modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
+                style = MaterialTheme.typography.titleSmall,
+            )
+            MastersSee.entries.forEach { option ->
+                Row(
+                    Modifier.fillMaxWidth().selectable(selected = option == see, onClick = { onChange(option) }, role = Role.RadioButton)
+                        .padding(horizontal = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    RadioButton(selected = option == see, onClick = null, modifier = Modifier.padding(10.dp), colors = RadioButtonDefaults.colors(selectedColor = PmTheme.colors.primary))
+                    Text(
+                        stringResource(if (option == MastersSee.COUNTS) R.string.feature_team_masters_see_counts else R.string.feature_team_masters_see_prices),
+                        style = MaterialTheme.typography.bodyLarge,
+                    )
+                }
+            }
+            Text(
+                stringResource(R.string.feature_team_masters_see_help),
+                modifier = Modifier.padding(horizontal = 14.dp, vertical = 6.dp),
+                style = MaterialTheme.typography.bodySmall,
+                color = PmTheme.colors.inkMuted,
+            )
+        }
+    }
 }
 
 @Composable

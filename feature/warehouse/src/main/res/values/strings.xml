@@ -52,4 +52,5 @@
     <string name="feature_warehouse_reason_returned">Վերադարձ</string>
     <string name="feature_warehouse_reason_other">Այլ</string>
     <string name="feature_warehouse_paid_each">%1$s/հատ</string>
+    <string name="feature_warehouse_mine">Իմը</string>
 </resources>

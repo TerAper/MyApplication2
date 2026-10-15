@@ -6,6 +6,7 @@ import com.teraper.printmaster.core.model.SharedClient
 import com.teraper.printmaster.core.model.SharedMember
 import com.teraper.printmaster.core.model.SharedOrder
 import com.teraper.printmaster.core.model.SharedPriceItem
+import com.teraper.printmaster.core.model.SharedStockItem
 
 /**
  * Firestore in memory: spaces with members and documents, and the same read rules —
@@ -18,6 +19,7 @@ class FakeSharedSpace {
         val clients = HashMap<String, Doc<SharedClient>>()
         val orders = HashMap<String, Doc<SharedOrder>>()
         val prices = HashMap<String, Doc<SharedPriceItem>>()
+        val stock = HashMap<String, Doc<SharedStockItem>>()
         val members = LinkedHashMap<String, SharedMember>()
     }
 
@@ -27,6 +29,8 @@ class FakeSharedSpace {
     private fun space(id: String) = spaces.getOrPut(id) { Space() }
 
     fun orders(spaceId: String): List<SharedOrder> = space(spaceId).orders.values.map { it.value }
+
+    fun stock(spaceId: String): List<SharedStockItem> = space(spaceId).stock.values.map { it.value }
 
     /** Someone entered the space's code. */
     fun attach(spaceId: String, uid: String, name: String) {
@@ -41,6 +45,7 @@ class FakeSharedSpace {
             changes.clients.forEach { s.clients[it.id] = Doc(it, ++seq, uid) }
             changes.orders.forEach { s.orders[it.id] = Doc(it, ++seq, uid) }
             changes.priceItems.forEach { s.prices[it.id] = Doc(it, ++seq, uid) }
+            changes.stock.forEach { s.stock[it.id] = Doc(it, ++seq, uid) }
         }
 
         override suspend fun pull(spaceId: String, asOwner: Boolean, cursor: String?): Pair<SharedChanges, String?> {
@@ -49,7 +54,9 @@ class FakeSharedSpace {
             fun <T> List<Doc<T>>.fresh() = filter { it.seq > since && it.author != uid }.map { it.value }
             val myOrders = s.orders.values.filter { asOwner || it.value.masterUid == uid }
             val myClients = s.clients.values.filter { asOwner || uid in it.value.visibleTo }
-            return SharedChanges(myClients.fresh(), myOrders.fresh(), s.prices.values.toList().fresh()) to seq.toString()
+            // Only masters read the stock.
+            val stock = if (asOwner) emptyList() else s.stock.values.toList().fresh()
+            return SharedChanges(myClients.fresh(), myOrders.fresh(), s.prices.values.toList().fresh(), stock) to seq.toString()
         }
 
         override suspend fun members(spaceId: String): List<SharedMember> = space(spaceId).members.values.toList()

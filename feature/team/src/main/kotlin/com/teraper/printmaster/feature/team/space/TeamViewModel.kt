@@ -3,6 +3,8 @@ package com.teraper.printmaster.feature.team.space
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.teraper.printmaster.core.data.repository.CompaniesRepository
+import com.teraper.printmaster.core.data.repository.WarehouseRepository
+import com.teraper.printmaster.core.model.MastersSee
 import com.teraper.printmaster.core.data.sync.SyncController
 import com.teraper.printmaster.core.data.sync.SyncStatus
 import com.teraper.printmaster.core.data.team.TeamRepository
@@ -51,6 +53,8 @@ data class TeamUiState(
     val justAttached: AttachResult.Attached? = null,
     val confirmRemove: Pair<Company, Master>? = null,
     val confirmLeave: Company? = null,
+    /** What attached masters see of the warehouse. */
+    val mastersSee: MastersSee = MastersSee.COUNTS,
 ) {
     val sharesAnything: Boolean get() = attached.any { it.isShared } || own.any { it.company.joinCode != null }
 }
@@ -69,6 +73,7 @@ class TeamViewModel @Inject constructor(
     private val team: TeamRepository,
     private val syncRunner: SyncController,
     private val companies: CompaniesRepository,
+    private val warehouse: WarehouseRepository,
 ) : ViewModel() {
 
     private val local = MutableStateFlow(Local())
@@ -78,9 +83,9 @@ class TeamViewModel @Inject constructor(
     val uiState: StateFlow<TeamUiState> = combine(
         team.observeState(),
         combine(companies.observeCompanies(), companies.observeMasters(), companies.observeAttachedCompanies(), ::Triple),
-        syncRunner.status,
+        combine(syncRunner.status, warehouse.observeMastersSee(), ::Pair),
         local,
-    ) { team, (own, masters, attached), sync, local ->
+    ) { team, (own, masters, attached), (sync, mastersSee), local ->
         TeamUiState(
             isLoading = false,
             team = team,
@@ -93,6 +98,7 @@ class TeamViewModel @Inject constructor(
             justAttached = local.justAttached,
             confirmRemove = local.confirmRemove,
             confirmLeave = local.confirmLeave,
+            mastersSee = mastersSee,
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), TeamUiState())
 
@@ -102,6 +108,10 @@ class TeamViewModel @Inject constructor(
             return
         }
         viewModelScope.launch { if (!team.signIn(idToken)) local.update { it.copy(error = TeamError.SIGN_IN) } }
+    }
+
+    fun onMastersSeeChange(see: MastersSee) {
+        viewModelScope.launch { warehouse.setMastersSee(see) }
     }
 
     fun onSignOut() {

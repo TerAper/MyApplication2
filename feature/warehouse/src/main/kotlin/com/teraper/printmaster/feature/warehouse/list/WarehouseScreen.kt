@@ -61,6 +61,7 @@ internal fun WarehouseRoute(onBack: () -> Unit, onItemClick: (Long) -> Unit, vie
         onQueryChange = viewModel::onQueryChange,
         onFilterChange = viewModel::onFilterChange,
         onShowMode = viewModel::onShowMode,
+        onCompanyChange = viewModel::onCompanyChange,
     )
     if (state.showMode) ModeDialog(state.mode, onPick = viewModel::onModeChange, onDismiss = viewModel::onDismissMode)
 }
@@ -73,6 +74,7 @@ internal fun WarehouseScreen(
     onQueryChange: (String) -> Unit,
     onFilterChange: (StockFilter) -> Unit,
     onShowMode: () -> Unit = {},
+    onCompanyChange: (Long?) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     Column(modifier.fillMaxSize().background(PmTheme.colors.background)) {
@@ -89,6 +91,22 @@ internal fun WarehouseScreen(
             },
         )
         if (state.isLoading) return@Column
+        if (state.companies.isNotEmpty()) {
+            // Master's phone: his own warehouse, or the stock a company he works for shares.
+            Row(
+                Modifier.fillMaxWidth().horizontalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                PmFilterChip(text = stringResource(R.string.feature_warehouse_mine), selected = state.companyId == null, onClick = { onCompanyChange(null) })
+                state.companies.forEach { company ->
+                    PmFilterChip(text = company.name, selected = state.companyId == company.id, onClick = { onCompanyChange(company.id) })
+                }
+            }
+        }
+        if (state.companyId != null) {
+            CompanyStock(state, onQueryChange)
+            return@Column
+        }
         if (state.totalCount == 0) {
             PmEmptyState(PmIcons.Warehouse, stringResource(R.string.feature_warehouse_empty_title), stringResource(R.string.feature_warehouse_empty_message))
             return@Column
@@ -124,6 +142,52 @@ internal fun WarehouseScreen(
                 StockRow(line, onClick = { onItemClick(line.item.id) })
                 HorizontalDivider(color = PmTheme.colors.surfaceMuted)
             }
+        }
+    }
+}
+
+/** Another company's stock as it shares it: read only, prices when it shows them. */
+@Composable
+private fun CompanyStock(state: WarehouseUiState, onQueryChange: (String) -> Unit) {
+    LazyColumn(contentPadding = PaddingValues(bottom = 24.dp)) {
+        item {
+            Column(Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
+                PmSearchField(
+                    query = state.query,
+                    onQueryChange = onQueryChange,
+                    placeholder = stringResource(R.string.feature_warehouse_search_hint),
+                    clearLabel = stringResource(R.string.feature_warehouse_clear),
+                )
+            }
+        }
+        if (state.companyLines.isEmpty()) {
+            item {
+                Text(
+                    stringResource(R.string.feature_warehouse_no_results),
+                    modifier = Modifier.padding(24.dp),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = PmTheme.colors.inkMuted,
+                )
+            }
+        }
+        items(state.companyLines, key = { "${it.type}/${it.name}" }) { line ->
+            Row(
+                Modifier.fillMaxWidth().background(PmTheme.colors.surface).padding(horizontal = 16.dp, vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                Column(Modifier.weight(1f)) {
+                    Text(line.name, style = MaterialTheme.typography.titleSmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                    Text(line.type, style = MaterialTheme.typography.bodySmall, color = PmTheme.colors.inkMuted, maxLines = 1)
+                }
+                line.price?.let { AmountText(it, style = MaterialTheme.typography.bodyMedium) }
+                Text(
+                    stringResource(R.string.feature_warehouse_count, line.count),
+                    style = MaterialTheme.typography.titleMedium,
+                    color = if (line.count <= 0) PmTheme.colors.error else PmTheme.colors.ink,
+                )
+            }
+            HorizontalDivider(color = PmTheme.colors.surfaceMuted)
         }
     }
 }

@@ -27,6 +27,8 @@ import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.drop
+import com.teraper.printmaster.core.data.repository.OfflineWarehouseRepository
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import java.time.Duration
@@ -45,6 +47,7 @@ class LiveSync @Inject internal constructor(
     private val syncDao: SyncDao,
     private val companyDao: CompanyDao,
     private val runner: SyncRunner,
+    private val warehouse: OfflineWarehouseRepository,
 ) {
     private val requests = Channel<Unit>(Channel.CONFLATED)
     private var listeners: List<ListenerRegistration> = emptyList()
@@ -60,6 +63,8 @@ class LiveSync @Inject internal constructor(
             }
         }
         scope.launch { syncDao.observeOutboxCount().filter { it > 0 }.collect { requests.trySend(Unit) } }
+        // Stock or catalog changed, or what masters may see: their copy is brought up to date.
+        scope.launch { warehouse.observeSharedChanges().drop(1).collect { requests.trySend(Unit) } }
         scope.launch {
             // Listen to every space this phone shares: own companies that invited masters, attached companies.
             companyDao.observeSharedCompanies().map { list -> list.map { Triple(it.id, it.spaceId!!, it.kind) } }.distinctUntilChanged().collect { spaces ->
@@ -75,7 +80,7 @@ class LiveSync @Inject internal constructor(
                     val queries = if (kind == CompanyKind.OWN) {
                         listOf(ref.collection("orders"), ref.collection("clients"), ref.collection("members"))
                     } else {
-                        listOf(ref.collection("orders").whereEqualTo("masterUid", uid), ref.collection("clients").whereArrayContains("visibleTo", uid), ref.collection("prices"))
+                        listOf(ref.collection("orders").whereEqualTo("masterUid", uid), ref.collection("clients").whereArrayContains("visibleTo", uid), ref.collection("prices"), ref.collection("stock"))
                     }
                     queries.map { query ->
                         query.addSnapshotListener { snapshot, _ ->

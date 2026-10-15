@@ -7,6 +7,8 @@ import com.teraper.printmaster.core.data.repository.WarehouseRepository
 import com.teraper.printmaster.core.model.CatalogNames
 import com.teraper.printmaster.core.model.CatalogSearch
 import com.teraper.printmaster.core.model.CompanyKind
+import com.teraper.printmaster.core.model.Company
+import com.teraper.printmaster.core.model.CompanyStockLine
 import com.teraper.printmaster.core.model.Money
 import com.teraper.printmaster.core.model.StockFilter
 import com.teraper.printmaster.core.model.StockLine
@@ -37,6 +39,12 @@ data class WarehouseUiState(
     /** More than one own company: the warehouse can be split per company. */
     val canSplit: Boolean = false,
     val showMode: Boolean = false,
+    /** Master's phone: attached companies that share their stock with him. */
+    val companies: List<Company> = emptyList(),
+    /** The attached company whose stock is shown; null = the user's own warehouse. */
+    val companyId: Long? = null,
+    /** That company's stock, searched; by name. */
+    val companyLines: List<CompanyStockLine> = emptyList(),
 )
 
 @HiltViewModel
@@ -47,12 +55,19 @@ class WarehouseViewModel @Inject constructor(
 
     private val ui = MutableStateFlow(WarehouseUiState())
 
+    private val shared = combine(warehouse.observeCompanyStock(), companies.observeAttachedCompanies()) { lines, attached ->
+        attached.filter { c -> lines.any { it.companyId == c.id } } to lines
+    }
+
     val uiState: StateFlow<WarehouseUiState> = combine(
         ui,
         warehouse.observeStock(),
         warehouse.observeMode(),
         companies.observeCompanies(),
-    ) { ui, stock, mode, companies ->
+        shared,
+    ) { ui, stock, mode, companies, (sharing, companyStock) ->
+        val companyId = ui.companyId?.takeIf { id -> sharing.any { it.id == id } }
+        val query = ui.query.trim().lowercase()
         val shown = stock.filter { ui.filter.accepts(it) && CatalogSearch.matches(it.item, ui.query) }
         ui.copy(
             isLoading = false,
@@ -65,12 +80,18 @@ class WarehouseViewModel @Inject constructor(
             value = stock.map { it.value }.sum(),
             mode = mode,
             canSplit = companies.count { it.kind == CompanyKind.OWN } > 1 || mode == WarehouseMode.PER_COMPANY,
+            companies = sharing,
+            companyId = companyId,
+            companyLines = companyStock.filter { it.companyId == companyId && "${it.name} ${it.type}".lowercase().contains(query) },
         )
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), WarehouseUiState())
 
     fun onQueryChange(query: String) = ui.update { it.copy(query = query) }
 
     fun onFilterChange(filter: StockFilter) = ui.update { it.copy(filter = filter) }
+
+    /** Null = the user's own warehouse. */
+    fun onCompanyChange(companyId: Long?) = ui.update { it.copy(companyId = companyId) }
 
     fun onShowMode() = ui.update { it.copy(showMode = true) }
 

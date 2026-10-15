@@ -41,6 +41,26 @@ class WarehouseViewModelsTest {
     private val warehouse = FakeWarehouseRepository(listOf(StockLine(toner, 3), StockLine(chip, 2, 5), StockLine(drum, 0)))
 
     @Test
+    fun masterSeesTheStockAnAttachedCompanyShares() = runTest {
+        val companies = FakeCompaniesRepository()
+        companies.attached.value = listOf(Company(7, "Xerox"), Company(8, "Quiet"))
+        warehouse.companyStock.value = listOf(
+            com.teraper.printmaster.core.model.CompanyStockLine(7, "Cartridge", "CF283A", 4, Money.ofDram(9_000)),
+            com.teraper.printmaster.core.model.CompanyStockLine(7, "Drum", "DR-1", 0),
+        )
+        val vm = WarehouseViewModel(warehouse, companies)
+        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.uiState.collect {} }
+        // Only companies that share something get a chip; the own warehouse shows first.
+        assertEquals(listOf("Xerox"), vm.uiState.value.companies.map { it.name })
+        assertEquals(null, vm.uiState.value.companyId)
+
+        vm.onCompanyChange(7)
+        assertEquals(listOf("CF283A", "DR-1"), vm.uiState.value.companyLines.map { it.name })
+        vm.onQueryChange("drum")
+        assertEquals(listOf("DR-1"), vm.uiState.value.companyLines.map { it.name })
+    }
+
+    @Test
     fun listsLowFirstThenInStockAndSums() = runTest {
         val vm = WarehouseViewModel(warehouse, FakeCompaniesRepository())
         backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { vm.uiState.collect {} }

@@ -15,6 +15,9 @@ import com.teraper.printmaster.core.model.StockKind
 import com.teraper.printmaster.core.model.StockLine
 import com.teraper.printmaster.core.model.StockMove
 import com.teraper.printmaster.core.model.WarehouseMode
+import com.teraper.printmaster.core.model.MastersSee
+import com.teraper.printmaster.core.model.CompanyStockLine
+import com.teraper.printmaster.core.model.SharedStockItem
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -48,6 +51,14 @@ interface WarehouseRepository {
     fun observeMoves(itemId: Long): Flow<List<StockMove>>
 
     suspend fun save(draft: StockDraft): SaveStockResult
+
+    /** What masters attached to the user's companies see: counts only (default) or prices too. */
+    fun observeMastersSee(): Flow<MastersSee>
+
+    suspend fun setMastersSee(see: MastersSee)
+
+    /** On a master's phone: the stock attached companies share with him. */
+    fun observeCompanyStock(): Flow<List<CompanyStockLine>>
 }
 
 sealed interface SaveStockResult {
@@ -72,7 +83,38 @@ internal class OfflineWarehouseRepository @Inject constructor(
         prefs.getString(MODE, null)?.let { name -> WarehouseMode.entries.firstOrNull { it.name == name } } ?: WarehouseMode.SHARED,
     )
 
+    private val mastersSee = MutableStateFlow(
+        prefs.getString(MASTERS_SEE, null)?.let { name -> MastersSee.entries.firstOrNull { it.name == name } } ?: MastersSee.COUNTS,
+    )
+
     override fun observeMode(): Flow<WarehouseMode> = mode.asStateFlow()
+
+    override fun observeMastersSee(): Flow<MastersSee> = mastersSee.asStateFlow()
+
+    override suspend fun setMastersSee(see: MastersSee) {
+        mastersSee.value = see
+        prefs.edit { putString(MASTERS_SEE, see.name) }
+    }
+
+    override fun observeCompanyStock(): Flow<List<CompanyStockLine>> = stockDao.observeAttachedStock().map { rows ->
+        rows.map { CompanyStockLine(it.attachedCompanyId, it.type, it.name, it.count, it.priceMinor?.let(::Money)) }
+    }
+
+    /**
+     * What [companyId]'s masters may see: items sold as goods or with stock, by the warehouse its
+     * orders use. Ids are the items' own; only this phone writes them.
+     */
+    internal suspend fun sharedStock(companyId: Long): List<SharedStockItem> {
+        val warehouseId = warehouseFor(companyId)
+        val counts = stockDao.observeCounts(warehouseId).first().associate { it.id to it.count }
+        val prices = mastersSee.value == MastersSee.COUNTS_AND_PRICES
+        return catalogDao.observeSnapshot().first().items.values
+            .filter { !it.type.perClient && (it.isGoods || (counts[it.id] ?: 0) != 0) }
+            .map { SharedStockItem("item-${it.id}", it.type.name, it.title, counts[it.id] ?: 0, it.price.minor.takeIf { prices }) }
+    }
+
+    /** Fires when what masters see may have changed. */
+    internal fun observeSharedChanges(): Flow<Any> = combine(stockDao.observeChanges(), mastersSee, mode) { a, b, c -> Triple(a, b, c) }
 
     override suspend fun setMode(mode: WarehouseMode) {
         if (mode == this.mode.value) return
@@ -156,5 +198,6 @@ internal class OfflineWarehouseRepository @Inject constructor(
 
     private companion object {
         const val MODE = "mode"
+        const val MASTERS_SEE = "masters_see"
     }
 }

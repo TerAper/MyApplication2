@@ -68,7 +68,7 @@ internal class TestRepos(clock: Clock = Clock.fixed(Instant.parse("2026-10-07T10
 
     fun syncEngine(backend: SyncBackend) = SyncEngine(
         db, db.syncDao(), db.clientDao(), db.orderDao(), db.repairDao(), db.catalogDao(), CatalogWriter(db.catalogDao()),
-        db.companyDao(), repairs, backend, testClock,
+        db.companyDao(), repairs, warehouse, backend, testClock,
     )
 
     /** Registers as a master with one company and returns its id. */

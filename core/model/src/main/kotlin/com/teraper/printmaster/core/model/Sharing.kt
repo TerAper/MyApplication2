@@ -113,12 +113,26 @@ data class SharedPriceItem(
     val archived: Boolean = false,
 )
 
+/**
+ * One catalog item's stock in the company's warehouse, for its masters. [priceMinor] is the selling
+ * price when the company shows prices, else null; costs are never shared. [removed]: gone from the catalog.
+ */
+data class SharedStockItem(
+    val id: String,
+    val type: String,
+    val name: String,
+    val count: Int,
+    val priceMinor: Long? = null,
+    val removed: Boolean = false,
+)
+
 data class SharedChanges(
     val clients: List<SharedClient> = emptyList(),
     val orders: List<SharedOrder> = emptyList(),
     val priceItems: List<SharedPriceItem> = emptyList(),
+    val stock: List<SharedStockItem> = emptyList(),
 ) {
-    val isEmpty: Boolean get() = clients.isEmpty() && orders.isEmpty() && priceItems.isEmpty()
+    val isEmpty: Boolean get() = clients.isEmpty() && orders.isEmpty() && priceItems.isEmpty() && stock.isEmpty()
 }
 
 /** What one sync did, for notifications ("2 orders finished by masters"). */

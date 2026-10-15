@@ -59,4 +59,8 @@
     <string name="feature_team_error_own_code">Սա Ձեր սեփական ընկերության կոդն է։</string>
     <string name="feature_team_error_already">Դուք արդեն աշխատում եք այս ընկերության համար։</string>
     <string name="feature_team_error_internet">Չստացվեց։ Ստուգեք ինտերնետը և նորից փորձեք։</string>
+    <string name="feature_team_masters_see">Ինչ են տեսնում վարպետները պահեստում</string>
+    <string name="feature_team_masters_see_counts">Միայն քանակները</string>
+    <string name="feature_team_masters_see_prices">Քանակները և գները</string>
+    <string name="feature_team_masters_see_help">Ինքնարժեքը վարպետները երբեք չեն տեսնում։</string>
 </resources>

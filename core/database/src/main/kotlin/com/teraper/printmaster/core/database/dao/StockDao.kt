@@ -3,6 +3,8 @@ package com.teraper.printmaster.core.database.dao
 import androidx.room.Dao
 import androidx.room.Insert
 import androidx.room.Query
+import androidx.room.Upsert
+import com.teraper.printmaster.core.database.entity.AttachedStockEntity
 import com.teraper.printmaster.core.database.entity.StockMoveEntity
 import com.teraper.printmaster.core.database.model.IdCount
 import kotlinx.coroutines.flow.Flow
@@ -22,6 +24,19 @@ interface StockDao {
 
     @Insert
     suspend fun insert(move: StockMoveEntity): Long
+
+    /** Fires on any change of stock or of the catalog, so the masters' copy can be brought up to date. */
+    @Query("SELECT (SELECT COUNT(*) FROM stock_moves) + (SELECT COUNT(*) FROM items)")
+    fun observeChanges(): Flow<Int>
+
+    @Query("SELECT * FROM attached_stock ORDER BY name COLLATE NOCASE")
+    fun observeAttachedStock(): Flow<List<AttachedStockEntity>>
+
+    @Upsert
+    suspend fun upsertAttachedStock(line: AttachedStockEntity)
+
+    @Query("DELETE FROM attached_stock WHERE attached_company_id = :companyId AND doc_id = :docId")
+    suspend fun deleteAttachedStock(companyId: Long, docId: String)
 
     /** Reopening an order: the goods it took go back. */
     @Query("DELETE FROM stock_moves WHERE order_id = :orderId AND kind = 'ORDER'")

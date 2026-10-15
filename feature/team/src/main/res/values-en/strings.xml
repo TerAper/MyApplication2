@@ -59,4 +59,8 @@
     <string name="feature_team_error_own_code">This is the code of your own company.</string>
     <string name="feature_team_error_already">You already work for this company.</string>
     <string name="feature_team_error_internet">It didn\'t work. Check the internet and try again.</string>
+    <string name="feature_team_masters_see">What masters see in the warehouse</string>
+    <string name="feature_team_masters_see_counts">Stock counts only</string>
+    <string name="feature_team_masters_see_prices">Stock counts and prices</string>
+    <string name="feature_team_masters_see_help">Masters never see what things cost you.</string>
 </resources>

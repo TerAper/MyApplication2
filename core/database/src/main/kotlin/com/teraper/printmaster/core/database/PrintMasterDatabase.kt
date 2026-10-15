@@ -51,6 +51,7 @@ import com.teraper.printmaster.core.database.entity.RepairEntity
 import com.teraper.printmaster.core.database.entity.RepairItemEntity
 import com.teraper.printmaster.core.database.entity.RepairPartEntity
 import com.teraper.printmaster.core.database.entity.StockMoveEntity
+import com.teraper.printmaster.core.database.entity.AttachedStockEntity
 import com.teraper.printmaster.core.database.entity.SyncOutboxEntity
 import com.teraper.printmaster.core.database.entity.SyncStateEntity
 
@@ -89,6 +90,7 @@ import com.teraper.printmaster.core.database.entity.SyncStateEntity
         PhotoEntity::class,
         ExpenseEntity::class,
         StockMoveEntity::class,
+        AttachedStockEntity::class,
     ],
     version = PrintMasterDatabase.VERSION,
     exportSchema = true,
@@ -125,6 +127,8 @@ import com.teraper.printmaster.core.database.entity.SyncStateEntity
         AutoMigration(from = 17, to = 18),
         // 19: goods on an order marked "to buy".
         AutoMigration(from = 18, to = 19),
+        // 20: attached companies' stock on a master's phone.
+        AutoMigration(from = 19, to = 20),
     ],
 )
 abstract class PrintMasterDatabase : RoomDatabase() {
@@ -144,7 +148,7 @@ abstract class PrintMasterDatabase : RoomDatabase() {
     abstract fun stockDao(): StockDao
 
     companion object {
-        const val VERSION = 19
+        const val VERSION = 20
 
         /** Oldest version a backup file may have; older ones only existed on development phones. */
         const val OLDEST_RESTORABLE_VERSION = 2

@@ -114,3 +114,16 @@ data class StockDraft(
 }
 
 enum class StockDraftError { QUANTITY_REQUIRED, NO_CHANGE, NOT_ENOUGH, COMPANY_REQUIRED }
+
+/** What masters attached to the user's companies see of the warehouse: counts only, or prices too (never costs). */
+enum class MastersSee { COUNTS, COUNTS_AND_PRICES }
+
+/** On a master's phone: one item of an attached company's stock, as that company shares it. */
+data class CompanyStockLine(
+    val companyId: Long,
+    val type: String,
+    val name: String,
+    val count: Int,
+    /** Null = the company doesn't show prices. */
+    val price: Money? = null,
+)
