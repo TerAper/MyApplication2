@@ -3,7 +3,7 @@ rules_version = '2';
 // PrintMaster shared spaces. Paste into Firebase console → Firestore Database → Rules → Publish.
 // Every own company that invites masters has a space. Its owner sees and writes everything there;
 // a master who attached with the company's code sees only orders given to him, the clients of
-// those orders and the price list, and answers on those orders (done, taken as his own, turned down).
+// those orders, the price list and stock counts, and answers on those orders (done, taken as his own, turned down).
 // Debts and payments never leave the owner's phone, so there is nothing about money here.
 service cloud.firestore {
   match /databases/{db}/documents {
@@ -53,6 +53,12 @@ service cloud.firestore {
       }
 
       match /prices/{id} {
+        allow read: if isOwner(w) || isMember(w);
+        allow write: if isOwner(w) && mine();
+      }
+
+      // Stock counts (no costs): masters see how many there are, only the owner changes them.
+      match /stock/{id} {
         allow read: if isOwner(w) || isMember(w);
         allow write: if isOwner(w) && mine();
       }
