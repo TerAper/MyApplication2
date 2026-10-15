@@ -52,6 +52,10 @@ dependencies {
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.play.services.location)
+    // App Check: only this app (Play Integrity) uses the project's AI; test builds use a debug key.
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.appcheck.playintegrity)
+    debugImplementation(libs.firebase.appcheck.debug)
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.navigation.compose)

@@ -96,8 +96,8 @@ internal class GeminiItemReader @Inject constructor(
     }.getOrNull()
 
     private companion object {
-        /** The newest fast model first; a fixed one if that name isn't served. */
-        val MODELS = listOf("gemini-flash-latest", "gemini-2.5-flash")
+        /** The fast model Google recommends now; its "latest" name if that one isn't served. */
+        val MODELS = listOf("gemini-3.8-flash", "gemini-flash-latest")
         const val TIMEOUT_MS = 45_000L
         const val MAX_SIDE = 1600
         const val TAG = "ItemReader"

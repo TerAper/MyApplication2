@@ -33,6 +33,8 @@ class PrintMasterApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        // Before anything calls Firebase: proves to it that requests come from this app.
+        AppCheck.install(this)
         CallRecordingsSync.schedule(this)
         callRecordings.startWatching(appScope)
         liveSync.start(appScope)
