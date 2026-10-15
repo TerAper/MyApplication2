@@ -30,6 +30,34 @@ class RepairTest {
         assertEquals(Money.ofDram(1_200), draft.cost)
     }
 
+    private val toner = CatalogItem(10, ItemType(1, "Cartridge"), "CF283A", price = Money.ofDram(9_000), cost = Money.ofDram(7_000))
+
+    @Test
+    fun goodsBeyondStockAreMarkedToBuyAndStaySo() {
+        val one = RepairDraft(orderId = 1).plus(toner, inStock = 1)
+        assertEquals(listOf(false), one.lines.map { it.toBuy })
+        val two = one.plus(toner, inStock = 1)
+        assertEquals(listOf(true), two.lines.map { it.toBuy })
+        // Unmarked by hand it stays so; services can't be marked.
+        val unmarked = two.withToBuy(0, false).plus(refill).withToBuy(1, true)
+        assertEquals(listOf(false, false), unmarked.lines.map { it.toBuy })
+    }
+
+    @Test
+    fun shortagesCoverToBuyAndMissingStock() {
+        val work = OrderWork(
+            listOf(
+                Repair(1, 1, lines = listOf(RepairLine(null, "CF283A", Money.ofDram(9_000), quantity = 2, itemId = 10, toBuy = true))),
+                Repair(2, 1, lines = listOf(RepairLine(null, "CF283A", Money.ofDram(9_000), itemId = 10), RepairLine(null, "Drum", Money.ofDram(5_000), quantity = 3, itemId = 11))),
+            ),
+        )
+        assertEquals(mapOf(10L to 3, 11L to 3), work.goodsNeeded)
+        // 3 toners, 2 of them to buy, 2 in stock: buy 2. 3 drums, 1 in stock: buy 2.
+        assertEquals(listOf(10L to 2, 11L to 2), work.goodsShortages(mapOf(10L to 2, 11L to 1)).map { it.itemId to it.missing })
+        // To-buy toners must be bought even with enough in stock; enough drums: no shortage.
+        assertEquals(listOf(10L to 2), work.goodsShortages(mapOf(10L to 9, 11L to 3)).map { it.itemId to it.missing })
+    }
+
     @Test
     fun needsAtLeastOneLine() {
         assertEquals(setOf(RepairDraftError.LINES_REQUIRED), RepairDraft(orderId = 1).validate())

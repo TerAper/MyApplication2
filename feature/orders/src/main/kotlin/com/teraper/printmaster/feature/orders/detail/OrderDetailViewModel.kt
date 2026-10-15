@@ -9,6 +9,8 @@ import com.teraper.printmaster.core.data.repository.DeleteOrderResult
 import com.teraper.printmaster.core.data.repository.OrdersRepository
 import com.teraper.printmaster.core.data.repository.PhotoRepository
 import com.teraper.printmaster.core.data.repository.RepairsRepository
+import com.teraper.printmaster.core.data.repository.WarehouseRepository
+import com.teraper.printmaster.core.model.GoodsShortage
 import com.teraper.printmaster.core.model.CallRecording
 import com.teraper.printmaster.core.model.Company
 import com.teraper.printmaster.core.model.Order
@@ -56,6 +58,8 @@ sealed interface OrderDetailUiState {
         /** The user's own companies, for an order given to him as his own. */
         val ownCompanies: List<Company> = emptyList(),
         val declineReason: String = "",
+        /** Goods the order still lacks (to buy, or not in the warehouse); it can't be finished before. */
+        val goodsShortages: List<GoodsShortage> = emptyList(),
     ) : OrderDetailUiState {
         /**
          * Work can be added or changed only while the order is open, and not on another owner's order
@@ -84,6 +88,7 @@ class OrderDetailViewModel @Inject constructor(
     companiesRepository: CompaniesRepository,
     callRecordingsRepository: CallRecordingsRepository,
     private val photoRepository: PhotoRepository,
+    warehouseRepository: WarehouseRepository,
     clock: Clock,
 ) : ViewModel() {
 
@@ -112,6 +117,14 @@ class OrderDetailViewModel @Inject constructor(
         }
     }
 
+    /** The work with what it still lacks; only an own company's orders use this phone's warehouse. */
+    private val work = combine(
+        repairsRepository.observeOrderWork(orderId),
+        order.map { it?.takeUnless { o -> o.fromAttachedCompany }?.companyId }.distinctUntilChanged().flatMapLatest { companyId ->
+            if (companyId == null) flowOf(emptyMap()) else warehouseRepository.observeCountsFor(companyId)
+        },
+    ) { work, stock -> work to if (work.isBilled) emptyList() else work.goodsShortages(stock) }
+
     init {
         // A call that just ended shows up here without waiting for the background check.
         viewModelScope.launch { callRecordingsRepository.refresh() }
@@ -139,13 +152,13 @@ class OrderDetailViewModel @Inject constructor(
 
     val uiState: StateFlow<OrderDetailUiState> = combine(
         order,
-        repairsRepository.observeOrderWork(orderId),
+        work,
         calls,
         view,
-    ) { order, work, calls, view ->
+    ) { order, (work, shortages), calls, view ->
         when {
             order != null -> OrderDetailUiState.Loaded(
-                order, today, work, view.dialog, calls, view.playing, view.photos, view.choosingCompany, view.companies, view.declineReason,
+                order, today, work, view.dialog, calls, view.playing, view.photos, view.choosingCompany, view.companies, view.declineReason, shortages,
             )
             view.deleting -> OrderDetailUiState.Loading
             else -> OrderDetailUiState.NotFound
@@ -168,6 +181,11 @@ class OrderDetailViewModel @Inject constructor(
      */
     fun onFinish(paidInCash: Boolean) {
         viewModelScope.launch { repairsRepository.finishOrder(orderId, paidInCash) }
+    }
+
+    /** The goods were bought: they come into the warehouse and the order can be finished. */
+    fun onBought(itemId: Long) {
+        viewModelScope.launch { repairsRepository.markBought(orderId, itemId) }
     }
 
     /** Yes to an order from another company. Given as his own: into his only company, or he picks one. */

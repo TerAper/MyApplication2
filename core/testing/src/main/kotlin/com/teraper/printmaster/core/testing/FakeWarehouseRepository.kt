@@ -29,6 +29,8 @@ class FakeWarehouseRepository(lines: List<StockLine> = emptyList()) : WarehouseR
 
     override fun observeCount(itemId: Long): Flow<Int> = lines.map { all -> all.firstOrNull { it.item.id == itemId }?.count ?: 0 }
 
+    override fun observeCountsFor(companyId: Long): Flow<Map<Long, Int>> = lines.map { all -> all.associate { it.item.id to it.count } }
+
     override fun observeMoves(itemId: Long): Flow<List<StockMove>> = moves.map { all -> all.filter { it.itemId == itemId }.reversed() }
 
     override suspend fun save(draft: StockDraft): SaveStockResult {

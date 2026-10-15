@@ -136,4 +136,11 @@
     <string name="feature_orders_repair_services">Services</string>
     <string name="feature_orders_repair_goods">Goods</string>
     <string name="feature_orders_repair_fits">Fits</string>
+    <string name="feature_orders_repair_to_buy">To buy</string>
+    <string name="feature_orders_repair_in_stock">In stock: %1$d</string>
+    <string name="feature_orders_repair_not_in_stock">Not in stock</string>
+    <string name="feature_orders_goods_title">GOODS TO BUY</string>
+    <string name="feature_orders_goods_hint">Buy them or take them off the work to finish the order.</string>
+    <string name="feature_orders_goods_missing">Buy %1$d · in stock %2$d of %3$d needed</string>
+    <string name="feature_orders_goods_bought">Bought</string>
 </resources>

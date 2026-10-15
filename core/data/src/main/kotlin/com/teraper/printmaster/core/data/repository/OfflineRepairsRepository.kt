@@ -16,6 +16,8 @@ import com.teraper.printmaster.core.database.entity.OrderEntity
 import com.teraper.printmaster.core.database.entity.PaymentEntity
 import com.teraper.printmaster.core.database.entity.RepairEntity
 import com.teraper.printmaster.core.database.entity.RepairItemEntity
+import com.teraper.printmaster.core.database.entity.StockMoveEntity
+import com.teraper.printmaster.core.model.StockKind
 import com.teraper.printmaster.core.model.ChargeSource
 import com.teraper.printmaster.core.model.CompanyKind
 import com.teraper.printmaster.core.model.ClientItem
@@ -48,6 +50,7 @@ internal class OfflineRepairsRepository @Inject constructor(
     private val orderDao: OrderDao,
     private val ledgerDao: LedgerDao,
     private val clientItems: ClientItemsRepository,
+    private val warehouse: OfflineWarehouseRepository,
     private val clock: Clock,
     private val analytics: AppAnalytics,
 ) : RepairsRepository {
@@ -105,7 +108,7 @@ internal class OfflineRepairsRepository @Inject constructor(
                 existing.id
             }
             repairDao.insertItems(
-                draft.lines.map { RepairItemEntity(repairId = repairId, partId = it.partId, name = it.name.trim(), priceMinor = it.price.minor, costMinor = it.cost.minor, quantity = it.quantity, itemId = it.itemId) },
+                draft.lines.map { RepairItemEntity(repairId = repairId, partId = it.partId, name = it.name.trim(), priceMinor = it.price.minor, costMinor = it.cost.minor, quantity = it.quantity, itemId = it.itemId, toBuy = it.toBuy && it.itemId != null) },
             )
             if (order.status == OrderStatus.NEW) orderDao.setStatus(order.id, OrderStatus.IN_PROGRESS)
             SaveRepairResult.Saved(repairId)
@@ -140,6 +143,17 @@ internal class OfflineRepairsRepository @Inject constructor(
         if (db.companyDao().getCompany(order.companyId)?.kind == CompanyKind.ATTACHED) {
             orderDao.updateOrder(order.copy(status = OrderStatus.DONE, doneAt = now, paidInCash = paidInCash))
             return FinishOrderResult.FINISHED
+        }
+        // Goods leave the warehouse with the order; all of them must be there.
+        val stock = db.stockDao()
+        val warehouseId = warehouse.warehouseFor(order.companyId)
+        val work = OrderWork(repairDao.getRepairs(orderId).map { it.toModel(items) })
+        val needed = work.goodsNeeded
+        if (work.goodsShortages(needed.keys.associateWith { stock.count(it, warehouseId) }).isNotEmpty()) {
+            return FinishOrderResult.GOODS_MISSING
+        }
+        needed.forEach { (itemId, quantity) ->
+            stock.insert(StockMoveEntity(itemId = itemId, companyId = warehouseId, quantity = -quantity, kind = StockKind.ORDER, at = now, orderId = orderId))
         }
         repairs.forEach { repair ->
             ledgerDao.insertCharge(
@@ -283,8 +297,27 @@ internal class OfflineRepairsRepository @Inject constructor(
         db.withTransaction {
             repairDao.deleteCharges(orderId)
             repairDao.deleteCashPayments(orderId)
+            db.stockDao().deleteOrderMoves(orderId)
             orderDao.setStatus(orderId, OrderStatus.IN_PROGRESS)
         }
+    }
+
+    override suspend fun markBought(orderId: Long, itemId: Long): Boolean = db.withTransaction {
+        val order = orderDao.getOrder(orderId)
+        if (order == null || !order.isOpen() || db.companyDao().getCompany(order.companyId)?.kind != CompanyKind.OWN) return@withTransaction false
+        val stock = db.stockDao()
+        val warehouseId = warehouse.warehouseFor(order.companyId)
+        val lines = repairDao.getRepairs(orderId).flatMap { it.items }.filter { it.itemId == itemId }
+        val shortage = OrderWork(listOf(Repair(0, orderId, lines = lines.map { it.toLine() })))
+            .goodsShortages(mapOf(itemId to stock.count(itemId, warehouseId))).singleOrNull() ?: return@withTransaction false
+        val unitCost = lines.first().costMinor
+        stock.insert(
+            StockMoveEntity(itemId = itemId, companyId = warehouseId, quantity = shortage.missing, kind = StockKind.RECEIVE, at = clock.millis(), unitCostMinor = unitCost, orderId = orderId),
+        )
+        // What was paid last is what it costs now, as when receiving in the warehouse.
+        if (unitCost > 0) db.catalogDao().getItem(itemId)?.let { db.catalogDao().updateItem(it.copy(costMinor = unitCost)) }
+        repairDao.clearToBuy(orderId, itemId)
+        true
     }
 }
 
@@ -297,9 +330,11 @@ private fun RepairWithItems.toModel(clientItems: List<ClientItem>): Repair {
         orderId = repair.orderId,
         device = item?.let { i -> RepairDevice(i, i.parts.firstOrNull { it.id == repair.clientItemPartId }) },
         note = repair.note,
-        lines = items.sortedBy { it.id }.map { RepairLine(it.partId, it.name, Money(it.priceMinor), Money(it.costMinor), it.quantity, it.itemId) },
+        lines = items.sortedBy { it.id }.map { it.toLine() },
     )
 }
+
+private fun RepairItemEntity.toLine() = RepairLine(partId, name, Money(priceMinor), Money(costMinor), quantity, itemId, toBuy)
 
 /** What the client sees in their history: "CF283A · HP M125 — Refill ×2, Chip". */
 private fun Repair.chargeNote(): String {

@@ -27,6 +27,7 @@ import com.teraper.printmaster.core.designsystem.component.TagTone
 import com.teraper.printmaster.core.designsystem.component.format
 import com.teraper.printmaster.core.designsystem.icon.PmIcons
 import com.teraper.printmaster.core.designsystem.theme.PmTheme
+import com.teraper.printmaster.core.model.GoodsShortage
 import com.teraper.printmaster.core.model.Money
 import com.teraper.printmaster.core.model.OrderStatus
 import com.teraper.printmaster.core.model.OrderWork
@@ -95,12 +96,13 @@ private fun RepairCard(repair: Repair, onClick: (() -> Unit)?) {
                 if (onClick != null) Icon(PmIcons.Edit, contentDescription = null, tint = PmTheme.colors.outlineStrong)
             }
             repair.lines.forEach { line ->
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Text(
                         if (line.quantity > 1) "${line.name} ×${line.quantity}" else line.name,
                         modifier = Modifier.weight(1f),
                         style = MaterialTheme.typography.bodyMedium,
                     )
+                    if (line.toBuy) PmTag(stringResource(R.string.feature_orders_repair_to_buy), TagTone.Debt)
                     AmountText(line.total, style = MaterialTheme.typography.bodyMedium)
                 }
             }
@@ -150,25 +152,59 @@ private fun TotalRow(label: String, amount: Money, tone: AmountTone, style: Text
 
 /** An open order with work: finish it by taking cash now, or leave it owed. */
 @Composable
-internal fun FinishButtons(total: Money, actions: OrderDetailActions, attached: Boolean = false) {
+internal fun FinishButtons(total: Money, actions: OrderDetailActions, attached: Boolean = false, canFinish: Boolean = true) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         PmPrimaryButton(
             text = stringResource(R.string.feature_orders_finish_cash, total.format()),
             onClick = { actions.onFinish(true) },
             containerColor = PmTheme.colors.paid,
             modifier = Modifier.fillMaxWidth(),
+            enabled = canFinish,
         )
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             PmSecondaryButton(
                 text = stringResource(R.string.feature_orders_finish_on_account),
                 onClick = { actions.onFinish(false) },
                 modifier = Modifier.weight(1f),
+                enabled = canFinish,
             )
             PmSecondaryButton(
                 text = stringResource(if (attached) R.string.feature_orders_give_back else R.string.feature_orders_finish_cancel),
                 onClick = { if (attached) actions.onDecline() else actions.onStatusChange(OrderStatus.CANCELLED) },
                 modifier = Modifier.weight(1f),
             )
+        }
+    }
+}
+
+/** Goods the order lacks, each with "Bought" (they come into the warehouse); finishing waits for them. */
+@Composable
+internal fun GoodsToBuyCard(shortages: List<GoodsShortage>, onBought: (itemId: Long) -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(
+            stringResource(R.string.feature_orders_goods_title),
+            modifier = Modifier.padding(start = 2.dp, top = 8.dp),
+            style = MaterialTheme.typography.labelSmall,
+            color = PmTheme.colors.debt,
+        )
+        PmCard(Modifier.fillMaxWidth()) {
+            Column(Modifier.padding(14.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                shortages.forEachIndexed { index, shortage ->
+                    if (index > 0) HorizontalDivider(color = PmTheme.colors.surfaceMuted)
+                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Column(Modifier.weight(1f)) {
+                            Text(shortage.name, style = MaterialTheme.typography.titleSmall)
+                            Text(
+                                stringResource(R.string.feature_orders_goods_missing, shortage.missing, shortage.inStock.coerceAtLeast(0), shortage.needed),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = PmTheme.colors.inkMuted,
+                            )
+                        }
+                        PmSecondaryButton(text = stringResource(R.string.feature_orders_goods_bought), onClick = { onBought(shortage.itemId) }, icon = PmIcons.Add)
+                    }
+                }
+                Text(stringResource(R.string.feature_orders_goods_hint), style = MaterialTheme.typography.bodySmall, color = PmTheme.colors.inkMuted)
+            }
         }
     }
 }

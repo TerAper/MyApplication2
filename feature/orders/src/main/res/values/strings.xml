@@ -136,4 +136,11 @@
     <string name="feature_orders_repair_services">Ծառայություններ</string>
     <string name="feature_orders_repair_goods">Ապրանքներ</string>
     <string name="feature_orders_repair_fits">Համապատասխանում է</string>
+    <string name="feature_orders_repair_to_buy">Գնելու</string>
+    <string name="feature_orders_repair_in_stock">Պահեստում՝ %1$d</string>
+    <string name="feature_orders_repair_not_in_stock">Պահեստում չկա</string>
+    <string name="feature_orders_goods_title">ԳՆԵԼՈՒ ԱՊՐԱՆՔՆԵՐ</string>
+    <string name="feature_orders_goods_hint">Գնեք կամ հանեք դրանք աշխատանքից, որ պատվերն ավարտվի։</string>
+    <string name="feature_orders_goods_missing">Գնել %1$d · պահեստում %2$d / պետք է %3$d</string>
+    <string name="feature_orders_goods_bought">Գնված է</string>
 </resources>

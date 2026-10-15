@@ -17,6 +17,7 @@ import com.teraper.printmaster.core.data.repository.OfflinePriceListRepository
 import com.teraper.printmaster.core.data.repository.OfflineCatalogRepository
 import com.teraper.printmaster.core.data.repository.OfflineClientItemsRepository
 import com.teraper.printmaster.core.data.repository.OfflineRepairsRepository
+import com.teraper.printmaster.core.data.repository.OfflineWarehouseRepository
 import com.teraper.printmaster.core.data.repository.SaveCompanyResult
 import com.teraper.printmaster.core.data.sync.SyncBackend
 import com.teraper.printmaster.core.data.sync.SyncEngine
@@ -50,7 +51,12 @@ internal class TestRepos(clock: Clock = Clock.fixed(Instant.parse("2026-10-07T10
     val catalog = OfflineCatalogRepository(db, db.catalogDao(), CatalogWriter(db.catalogDao()))
     val clientItems = OfflineClientItemsRepository(db, db.catalogDao(), CatalogWriter(db.catalogDao()))
     val orders = OfflineOrdersRepository(db.orderDao(), db.clientDao(), companies, clock)
-    val repairs = OfflineRepairsRepository(db, db.repairDao(), db.orderDao(), db.ledgerDao(), clientItems, clock, NoAnalytics)
+    val warehouse = run {
+        // A fresh shared warehouse for every test.
+        ApplicationProvider.getApplicationContext<android.content.Context>().getSharedPreferences("warehouse", android.content.Context.MODE_PRIVATE).edit().clear().commit()
+        OfflineWarehouseRepository(ApplicationProvider.getApplicationContext(), db, db.stockDao(), db.catalogDao(), CatalogWriter(db.catalogDao()), companies, clock)
+    }
+    val repairs = OfflineRepairsRepository(db, db.repairDao(), db.orderDao(), db.ledgerDao(), clientItems, warehouse, clock, NoAnalytics)
     val reports = OfflineReportsRepository(db.reportDao(), db.expenseDao(), companies)
     val expenses = com.teraper.printmaster.core.data.repository.OfflineExpensesRepository(db.expenseDao(), companies, clock)
     val calls = OfflineCallRecordingsRepository(ApplicationProvider.getApplicationContext(), db, db.callRecordingDao(), clock)

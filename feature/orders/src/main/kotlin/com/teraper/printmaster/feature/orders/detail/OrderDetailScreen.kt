@@ -93,6 +93,7 @@ internal fun OrderDetailRoute(
             onStatusChange = viewModel::onStatusChange,
             onOpenRepair = onOpenRepair,
             onFinish = viewModel::onFinish,
+            onBought = viewModel::onBought,
             onAccept = viewModel::onAccept,
             onAcceptInto = viewModel::onAcceptInto,
             onDismissCompanyChoice = viewModel::onDismissCompanyChoice,
@@ -130,6 +131,7 @@ internal data class OrderDetailActions(
     /** repairId 0 = add new work. */
     val onOpenRepair: (orderId: Long, repairId: Long) -> Unit = { _, _ -> },
     val onFinish: (paidInCash: Boolean) -> Unit = {},
+    val onBought: (itemId: Long) -> Unit = {},
     val onAccept: () -> Unit = {},
     val onAcceptInto: (companyId: Long) -> Unit = {},
     val onDismissCompanyChoice: () -> Unit = {},
@@ -367,6 +369,9 @@ private fun OrderContent(state: OrderDetailUiState.Loaded, actions: OrderDetailA
                     onOpenRepair = { actions.onOpenRepair(order.id, it) },
                 )
             }
+            if (state.canEditWork && state.goodsShortages.isNotEmpty()) {
+                GoodsToBuyCard(state.goodsShortages, actions.onBought)
+            }
 
             Text(
                 stringResource(R.string.feature_orders_photos, state.photos.size),
@@ -427,7 +432,7 @@ private fun OrderContent(state: OrderDetailUiState.Loaded, actions: OrderDetailA
                     return@Column
                 }
                 state.canFinishWithWork -> {
-                    FinishButtons(state.work.total, actions, attached = fromOther)
+                    FinishButtons(state.work.total, actions, attached = fromOther, canFinish = state.goodsShortages.isEmpty())
                     return@Column
                 }
             }

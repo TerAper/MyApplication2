@@ -63,6 +63,7 @@ internal fun PricePickerSheet(
     goods: List<CatalogItem> = emptyList(),
     fittingGoods: Set<Long> = emptySet(),
     goodsQuantities: Map<Long, Int> = emptyMap(),
+    goodsStock: Map<Long, Int> = emptyMap(),
     onGoodsMode: (Boolean) -> Unit = {},
     onPickGoods: (CatalogItem) -> Unit = {},
 ) {
@@ -127,6 +128,7 @@ internal fun PricePickerSheet(
                         price = item.price,
                         quantity = goodsQuantities[item.id] ?: 0,
                         fits = item.id in fittingGoods,
+                        inStock = goodsStock[item.id] ?: 0,
                         onClick = { onPickGoods(item) },
                     )
                     HorizontalDivider(color = PmTheme.colors.surfaceMuted)
@@ -168,7 +170,7 @@ internal fun PricePickerSheet(
 }
 
 @Composable
-private fun PickRow(name: String, details: String, price: Money, quantity: Int, fits: Boolean, onClick: () -> Unit) {
+private fun PickRow(name: String, details: String, price: Money, quantity: Int, fits: Boolean, onClick: () -> Unit, inStock: Int? = null) {
     Row(
         Modifier.fillMaxWidth().clickable(onClick = onClick).padding(horizontal = 16.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -178,6 +180,14 @@ private fun PickRow(name: String, details: String, price: Money, quantity: Int, 
             Text(name, style = MaterialTheme.typography.titleSmall, maxLines = 2, overflow = TextOverflow.Ellipsis)
             if (details.isNotBlank()) {
                 Text(details, style = MaterialTheme.typography.bodySmall, color = PmTheme.colors.inkMuted, maxLines = 1, overflow = TextOverflow.Ellipsis)
+            }
+            // Goods: how many the warehouse has.
+            inStock?.let {
+                Text(
+                    if (it > 0) stringResource(R.string.feature_orders_repair_in_stock, it) else stringResource(R.string.feature_orders_repair_not_in_stock),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = if (it > 0) PmTheme.colors.inkSecondary else PmTheme.colors.debt,
+                )
             }
             if (fits) PmTag(stringResource(R.string.feature_orders_repair_fits), TagTone.Paid)
         }

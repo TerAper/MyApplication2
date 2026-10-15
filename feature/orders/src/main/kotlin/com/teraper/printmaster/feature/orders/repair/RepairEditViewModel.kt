@@ -9,6 +9,7 @@ import com.teraper.printmaster.core.data.repository.CatalogRepository
 import com.teraper.printmaster.core.data.repository.ClientItemsRepository
 import com.teraper.printmaster.core.data.repository.RepairsRepository
 import com.teraper.printmaster.core.data.repository.SaveRepairResult
+import com.teraper.printmaster.core.data.repository.WarehouseRepository
 import com.teraper.printmaster.core.model.ClientItem
 import com.teraper.printmaster.core.model.StockMatch
 import com.teraper.printmaster.core.model.CatalogSearch
@@ -76,6 +77,8 @@ data class RepairEditUiState(
     val fittingGoods: Set<Long> = emptySet(),
     /** Goods can be sold on this order: an own company's, with priced catalog items. */
     val goodsAvailable: Boolean = false,
+    /** How many of each goods item the order's warehouse has. */
+    val goodsStock: Map<Long, Int> = emptyMap(),
     val priceListIsEmpty: Boolean = false,
 ) {
     val isNew: Boolean get() = form.draft.isNew
@@ -104,6 +107,7 @@ class RepairEditViewModel @Inject constructor(
     catalogRepository: CatalogRepository,
     priceListRepository: PriceListRepository,
     private val repairsRepository: RepairsRepository,
+    warehouseRepository: WarehouseRepository,
 ) : ViewModel() {
 
     private val orderId: Long = checkNotNull(savedStateHandle[ORDER_ID_ARG])
@@ -123,13 +127,17 @@ class RepairEditViewModel @Inject constructor(
     private val clientItems = clientId.filterNotNull().flatMapLatest { clientItemsRepository.observeClientItems(it) }
         .stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
+    private val goodsStock = companyId.filterNotNull().flatMapLatest { warehouseRepository.observeCountsFor(it) }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptyMap())
+
     val uiState: StateFlow<RepairEditUiState> = combine(
         form,
         clientItems,
         // An attached company's order is priced from that company's list.
         companyId.filterNotNull().flatMapLatest { priceListRepository.observeItemsFor(it) },
         combine(catalogRepository.observeTypes(), catalogRepository.observeCatalog(), ownOrder, ::Catalog),
-    ) { form, clientItems, items, catalog ->
+        goodsStock,
+    ) { form, clientItems, items, catalog, stock ->
         val types = catalog.types
         val goods = if (catalog.own) catalog.entries.map { it.item }.filter { it.isGoods } else emptyList()
         val fitting = fittingGoods(form.draft, clientItems.orEmpty(), goods)
@@ -143,6 +151,7 @@ class RepairEditViewModel @Inject constructor(
             hasGeneralPrices = items.any { it.typeId == null },
             priceListIsEmpty = items.isEmpty(),
             goodsAvailable = goods.isNotEmpty(),
+            goodsStock = stock,
             fittingGoods = fitting,
             pickerGoods = form.picker?.takeIf { it.goods }?.let { picker ->
                 goods.filter { CatalogSearch.matches(it, picker.query) }.sortedByDescending { it.id in fitting }
@@ -204,7 +213,10 @@ class RepairEditViewModel @Inject constructor(
 
     fun onPickItem(item: PriceItem) = editDraft { it.plus(item) }
 
-    fun onPickGoods(goods: CatalogItem) = editDraft { it.plus(goods) }
+    /** More than the warehouse has is marked "to buy". */
+    fun onPickGoods(goods: CatalogItem) = editDraft { it.plus(goods, inStock = goodsStock.value[goods.id] ?: 0) }
+
+    fun onToBuyChange(index: Int, toBuy: Boolean) = editDraft { it.withToBuy(index, toBuy) }
 
     /** Services (price list) or goods (catalog items with a price). */
     fun onPickerGoods(goods: Boolean) = form.update { it.copy(picker = it.picker?.copy(goods = goods)) }

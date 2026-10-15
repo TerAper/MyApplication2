@@ -12,9 +12,19 @@ data class RepairLine(
     val cost: Money = Money.ZERO,
     val quantity: Int = 1,
     val itemId: Long? = null,
+    /** Goods that must be bought first: the order can't be finished until they are. */
+    val toBuy: Boolean = false,
 ) {
     val total: Money get() = price * quantity
     val costTotal: Money get() = cost * quantity
+}
+
+/**
+ * Goods an order still lacks: some marked "to buy", or more needed than the warehouse has.
+ * [missing] is how many to buy so that both are covered.
+ */
+data class GoodsShortage(val itemId: Long, val name: String, val needed: Int, val inStock: Int, val toBuy: Int) {
+    val missing: Int get() = maxOf(toBuy, needed - inStock.coerceAtLeast(0))
 }
 
 /** What was worked on: a client's item, or one of its parts. */
@@ -51,6 +61,17 @@ data class OrderWork(
     val cost: Money get() = repairs.map { it.cost }.sum()
     val profit: Money get() = total - cost
     val hasWork: Boolean get() = repairs.any { it.lines.isNotEmpty() }
+
+    /** How many of each catalog item (goods) the whole order uses. */
+    val goodsNeeded: Map<Long, Int>
+        get() = repairs.flatMap { it.lines }.filter { it.itemId != null }
+            .groupBy { it.itemId!! }.mapValues { (_, lines) -> lines.sumOf { it.quantity } }
+
+    /** Goods to buy before finishing, given the warehouse's [stock] counts by item id. */
+    fun goodsShortages(stock: Map<Long, Int>): List<GoodsShortage> =
+        repairs.flatMap { it.lines }.filter { it.itemId != null }.groupBy { it.itemId!! }.map { (itemId, lines) ->
+            GoodsShortage(itemId, lines.first().name, lines.sumOf { it.quantity }, stock[itemId] ?: 0, lines.filter { it.toBuy }.sumOf { it.quantity })
+        }.filter { it.missing > 0 }
 }
 
 /** The repair form. [id] 0 = new. [itemPartId] is a part of client item [itemId]. */
@@ -85,15 +106,24 @@ data class RepairDraft(
         }
     }
 
-    /** Goods from the catalog: the same item again counts twice. */
-    fun plus(goods: CatalogItem): RepairDraft {
+    /**
+     * Goods from the catalog: the same item again counts twice. With [inStock] known, a line that
+     * needs more than the warehouse has is marked "to buy" (never unmarked by itself).
+     */
+    fun plus(goods: CatalogItem, inStock: Int? = null): RepairDraft {
         val index = lines.indexOfFirst { it.itemId == goods.id }
-        return if (index >= 0) {
+        val added = if (index >= 0) {
             withQuantity(index, lines[index].quantity + 1)
         } else {
             copy(lines = lines + RepairLine(partId = null, name = goods.title, price = goods.price, cost = goods.cost, itemId = goods.id))
         }
+        val line = added.lines.indexOfFirst { it.itemId == goods.id }
+        return if (inStock != null && added.lines[line].quantity > inStock) added.withToBuy(line, true) else added
     }
+
+    /** Only goods lines can be "to buy". */
+    fun withToBuy(index: Int, toBuy: Boolean) =
+        copy(lines = lines.mapIndexed { i, line -> if (i == index && line.itemId != null) line.copy(toBuy = toBuy) else line })
 
     fun plus(line: RepairLine) = copy(lines = lines + line)
 

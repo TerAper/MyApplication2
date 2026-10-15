@@ -85,6 +85,7 @@ internal fun RepairEditRoute(onClose: () -> Unit, viewModel: RepairEditViewModel
             onDeviceClick = viewModel::onDeviceClick,
             onNoteChange = viewModel::onNoteChange,
             onQuantityChange = viewModel::onQuantityChange,
+            onToBuyChange = viewModel::onToBuyChange,
             onLinePriceClick = viewModel::onLinePriceClick,
             onLinePriceChange = viewModel::onLinePriceChange,
             onOpenPicker = viewModel::onOpenPicker,
@@ -110,6 +111,7 @@ internal data class RepairEditActions(
     val onDeviceClick: (Long?, Long?) -> Unit = { _, _ -> },
     val onNoteChange: (String) -> Unit = {},
     val onQuantityChange: (Int, Int) -> Unit = { _, _ -> },
+    val onToBuyChange: (Int, Boolean) -> Unit = { _, _ -> },
     val onLinePriceClick: (Int) -> Unit = {},
     val onLinePriceChange: (Int, String) -> Unit = { _, _ -> },
     val onOpenPicker: () -> Unit = {},
@@ -164,6 +166,9 @@ internal fun RepairEditScreen(state: RepairEditUiState, actions: RepairEditActio
                             onQuantityChange = { actions.onQuantityChange(index, it) },
                             onPriceClick = { actions.onLinePriceClick(index) },
                         )
+                        if (line.itemId != null) {
+                            GoodsStockRow(line, state.goodsStock[line.itemId] ?: 0, onToBuyChange = { actions.onToBuyChange(index, it) })
+                        }
                     }
                 }
             } else {
@@ -241,6 +246,7 @@ internal fun RepairEditScreen(state: RepairEditUiState, actions: RepairEditActio
             goods = state.pickerGoods,
             fittingGoods = state.fittingGoods,
             goodsQuantities = draft.goodsQuantities(),
+            goodsStock = state.goodsStock,
             onGoodsMode = actions.onPickerGoods,
             onPickGoods = actions.onPickGoods,
         )
@@ -380,6 +386,28 @@ private fun LineRow(line: RepairLine, onQuantityChange: (Int) -> Unit, onPriceCl
             Icon(PmIcons.Add, contentDescription = stringResource(R.string.feature_orders_repair_more), tint = PmTheme.colors.primary)
         }
         AmountText(line.total, modifier = Modifier.widthIn(min = 76.dp), style = MaterialTheme.typography.titleSmall)
+    }
+}
+
+/** Under a goods line: how many the warehouse has, and whether it must be bought first. */
+@Composable
+private fun GoodsStockRow(line: RepairLine, inStock: Int, onToBuyChange: (Boolean) -> Unit) {
+    Row(
+        Modifier.fillMaxWidth().padding(start = 14.dp, end = 14.dp, bottom = 10.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
+    ) {
+        Text(
+            if (inStock > 0) stringResource(R.string.feature_orders_repair_in_stock, inStock) else stringResource(R.string.feature_orders_repair_not_in_stock),
+            modifier = Modifier.weight(1f),
+            style = MaterialTheme.typography.bodySmall,
+            color = if (inStock < line.quantity) PmTheme.colors.debt else PmTheme.colors.inkMuted,
+        )
+        PmFilterChip(
+            text = stringResource(R.string.feature_orders_repair_to_buy),
+            selected = line.toBuy,
+            onClick = { onToBuyChange(!line.toBuy) },
+        )
     }
 }
 

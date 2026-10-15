@@ -123,6 +123,8 @@ import com.teraper.printmaster.core.database.entity.SyncStateEntity
         AutoMigration(from = 16, to = 17),
         // 18: the warehouse (stock movements) and the minimum to keep of an item.
         AutoMigration(from = 17, to = 18),
+        // 19: goods on an order marked "to buy".
+        AutoMigration(from = 18, to = 19),
     ],
 )
 abstract class PrintMasterDatabase : RoomDatabase() {
@@ -142,7 +144,7 @@ abstract class PrintMasterDatabase : RoomDatabase() {
     abstract fun stockDao(): StockDao
 
     companion object {
-        const val VERSION = 18
+        const val VERSION = 19
 
         /** Oldest version a backup file may have; older ones only existed on development phones. */
         const val OLDEST_RESTORABLE_VERSION = 2

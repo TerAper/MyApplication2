@@ -21,6 +21,8 @@ import com.teraper.printmaster.core.testing.FakePriceListRepository
 import com.teraper.printmaster.core.testing.FakeCatalogRepository
 import com.teraper.printmaster.core.testing.FakeClientItemsRepository
 import com.teraper.printmaster.core.testing.FakeRepairsRepository
+import com.teraper.printmaster.core.testing.FakeWarehouseRepository
+import com.teraper.printmaster.core.model.StockLine
 import com.teraper.printmaster.core.testing.MainDispatcherRule
 import com.teraper.printmaster.feature.orders.detail.OrderDetailDialog
 import com.teraper.printmaster.feature.orders.detail.OrderDetailUiState
@@ -59,10 +61,11 @@ class RepairViewModelsTest {
     private val catalog = FakeCatalogRepository(listOf(printerType, cartridgeType))
     private val priceList = FakePriceListRepository(listOf(refill, drum))
     private val repairs = FakeRepairsRepository()
+    private val warehouse = FakeWarehouseRepository()
 
     private fun editVm(items: List<ClientItem> = listOf(printer), repairId: Long = 0) = RepairEditViewModel(
         SavedStateHandle(mapOf("orderId" to 1L, "repairId" to repairId)),
-        orders, FakeClientItemsRepository(items), catalog, priceList, repairs,
+        orders, FakeClientItemsRepository(items), catalog, priceList, repairs, warehouse,
     )
 
     @Test
@@ -131,7 +134,7 @@ class RepairViewModelsTest {
     @Test
     fun detailFinishesWithWorkAndAsksBeforeReopening() = runTest {
         repairs.repairs.value = listOf(Repair(3, 1, lines = listOf(RepairLine(1, "Refill", Money.ofDram(3_000), quantity = 2))))
-        val vm = OrderDetailViewModel(SavedStateHandle(mapOf("orderId" to 1L)), orders, repairs, FakeCompaniesRepository(), FakeCallRecordingsRepository(), FakePhotoRepository(), clock)
+        val vm = OrderDetailViewModel(SavedStateHandle(mapOf("orderId" to 1L)), orders, repairs, FakeCompaniesRepository(), FakeCallRecordingsRepository(), FakePhotoRepository(), warehouse, clock)
         backgroundScope.launch(UnconfinedTestDispatcher()) { vm.uiState.collect {} }
         val loaded = { vm.uiState.value as OrderDetailUiState.Loaded }
         assertTrue(loaded().canFinishWithWork)
@@ -171,5 +174,40 @@ class RepairViewModelsTest {
         assertEquals(3L, line.itemId)
         assertEquals(Money.ofDram(12_000), line.price)
         assertEquals(Money.ofDram(7_000), line.cost)
+        // None in the warehouse: to buy first, unless unmarked.
+        assertTrue(line.toBuy)
+        vm.onToBuyChange(0, false)
+        assertFalse(vm.uiState.value.form.draft.lines.single().toBuy)
+    }
+
+    @Test
+    fun goodsInStockAreNotToBuy() = runTest {
+        val toner = CatalogItem(3, cartridgeType, "CF283A", price = Money.ofDram(12_000))
+        catalog.entries.value = listOf(CatalogEntry(toner))
+        warehouse.lines.value = listOf(StockLine(toner, 1))
+        val vm = editVm()
+        backgroundScope.launch(UnconfinedTestDispatcher()) { vm.uiState.collect {} }
+        assertEquals(mapOf(3L to 1), vm.uiState.value.goodsStock)
+        vm.onPickGoods(toner)
+        assertFalse(vm.uiState.value.form.draft.lines.single().toBuy)
+        vm.onPickGoods(toner)
+        assertTrue(vm.uiState.value.form.draft.lines.single().toBuy)
+    }
+
+    @Test
+    fun detailListsMissingGoodsAndBoughtClearsThem() = runTest {
+        val toner = CatalogItem(3, cartridgeType, "CF283A", price = Money.ofDram(12_000))
+        warehouse.lines.value = listOf(StockLine(toner, 0))
+        repairs.repairs.value = listOf(Repair(3, 1, lines = listOf(RepairLine(null, "CF283A", Money.ofDram(12_000), itemId = 3, toBuy = true))))
+        val vm = OrderDetailViewModel(SavedStateHandle(mapOf("orderId" to 1L)), orders, repairs, FakeCompaniesRepository(), FakeCallRecordingsRepository(), FakePhotoRepository(), warehouse, clock)
+        backgroundScope.launch(UnconfinedTestDispatcher()) { vm.uiState.collect {} }
+        val loaded = { vm.uiState.value as OrderDetailUiState.Loaded }
+        assertEquals(listOf(3L to 1), loaded().goodsShortages.map { it.itemId to it.missing })
+
+        vm.onBought(3)
+        assertEquals(listOf(1L to 3L), repairs.bought)
+        // The fake doesn't stock it, so it's still short of the warehouse; once there, nothing is missing.
+        warehouse.lines.value = listOf(StockLine(toner, 1))
+        assertTrue(loaded().goodsShortages.isEmpty())
     }
 }

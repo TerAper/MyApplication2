@@ -61,6 +61,10 @@ interface RepairDao {
 
     @Query("DELETE FROM payments WHERE order_id = :orderId AND method = 'CASH'")
     suspend fun deleteCashPayments(orderId: Long)
+
+    /** The goods [itemId] on [orderId] were bought: no line of it is "to buy" any more. */
+    @Query("UPDATE repair_items SET to_buy = 0 WHERE item_id = :itemId AND repair_id IN (SELECT id FROM repairs WHERE order_id = :orderId)")
+    suspend fun clearToBuy(orderId: Long, itemId: Long)
 }
 
 data class RepairWithItems(

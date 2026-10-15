@@ -25,8 +25,14 @@ interface RepairsRepository {
     /** [finishedAt]: when it was finished, e.g. on the master's phone; null = now. */
     suspend fun finishOrder(orderId: Long, paidInCash: Boolean, finishedAt: java.time.Instant? = null): FinishOrderResult
 
-    /** Undoes [finishOrder]: removes its charges and cash, and the order is in progress again. */
+    /** Undoes [finishOrder]: removes its charges and cash, puts its goods back, and the order is in progress again. */
     suspend fun reopenOrder(orderId: Long)
+
+    /**
+     * The goods [itemId] the open order [orderId] lacks were bought: they come into the warehouse
+     * (at the line's cost) and nothing of them is "to buy" any more. False when nothing was missing.
+     */
+    suspend fun markBought(orderId: Long, itemId: Long): Boolean
 
     /**
      * The master says yes to an order another company gave him. One given to him as his own moves
@@ -50,4 +56,9 @@ sealed interface SaveRepairResult {
     data object Locked : SaveRepairResult
 }
 
-enum class FinishOrderResult { FINISHED, NO_WORK, NOT_OPEN, NOT_FOUND }
+enum class FinishOrderResult {
+    FINISHED, NO_WORK, NOT_OPEN, NOT_FOUND,
+
+    /** Some goods are "to buy" or not in the warehouse: buy them or take them off first. */
+    GOODS_MISSING,
+}

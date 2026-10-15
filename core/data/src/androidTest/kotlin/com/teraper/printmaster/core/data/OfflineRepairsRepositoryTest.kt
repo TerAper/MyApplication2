@@ -157,4 +157,54 @@ class OfflineRepairsRepositoryTest {
         assertEquals(2, line.quantity)
         assertEquals(1_000L, line.cost.dram)
     }
+
+    @Test
+    fun goodsMustBeThereToFinishAndLeaveWithTheOrder() = runTest {
+        val cartridgeType = repos.printerTypes().second
+        val goodsId = (
+            repos.catalog.saveItem(
+                com.teraper.printmaster.core.model.ItemDraft(typeId = cartridgeType, name = "Toner 85A").withPrice("9000").withCost("6000"),
+            ) as com.teraper.printmaster.core.data.repository.SaveItemResult.Saved
+            ).itemId
+        val goods = repos.catalog.observeItem(goodsId).first()!!
+        repos.warehouse.save(com.teraper.printmaster.core.model.StockDraft(goodsId).withQuantity("1"))
+        // Two toners, one in stock; the line is marked "to buy" by the form.
+        addWork(RepairDraft(orderId = orderId).plus(goods, inStock = 1).plus(goods, inStock = 1))
+        assertTrue(repairs.observeOrderWork(orderId).first().repairs.single().lines.single().toBuy)
+
+        assertEquals(FinishOrderResult.GOODS_MISSING, repairs.finishOrder(orderId, paidInCash = false))
+        assertEquals(0, repos.count("charges"))
+
+        // Bought: the two to buy come in, at the line's cost.
+        assertTrue(repairs.markBought(orderId, goodsId))
+        assertFalse(repairs.observeOrderWork(orderId).first().repairs.single().lines.single().toBuy)
+        assertEquals(3, repos.warehouse.observeCount(goodsId).first())
+        assertFalse(repairs.markBought(orderId, goodsId))
+
+        assertEquals(FinishOrderResult.FINISHED, repairs.finishOrder(orderId, paidInCash = false))
+        assertEquals(1, repos.warehouse.observeCount(goodsId).first())
+        val out = repos.warehouse.observeMoves(goodsId).first().first()
+        assertEquals(com.teraper.printmaster.core.model.StockKind.ORDER, out.kind)
+        assertEquals(-2, out.quantity)
+        assertEquals(orderId, out.orderId)
+
+        // Reopened: they go back.
+        repairs.reopenOrder(orderId)
+        assertEquals(3, repos.warehouse.observeCount(goodsId).first())
+    }
+
+    @Test
+    fun goodsShortOfStockBlockFinishingEvenUnmarked() = runTest {
+        val cartridgeType = repos.printerTypes().second
+        val goodsId = (
+            repos.catalog.saveItem(
+                com.teraper.printmaster.core.model.ItemDraft(typeId = cartridgeType, name = "Drum").withPrice("5000"),
+            ) as com.teraper.printmaster.core.data.repository.SaveItemResult.Saved
+            ).itemId
+        addWork(RepairDraft(orderId = orderId).plus(repos.catalog.observeItem(goodsId).first()!!))
+        assertEquals(FinishOrderResult.GOODS_MISSING, repairs.finishOrder(orderId, paidInCash = true))
+        assertTrue(repairs.markBought(orderId, goodsId))
+        assertEquals(FinishOrderResult.FINISHED, repairs.finishOrder(orderId, paidInCash = true))
+        assertEquals(0, repos.warehouse.observeCount(goodsId).first())
+    }
 }

@@ -23,6 +23,10 @@ interface StockDao {
     @Insert
     suspend fun insert(move: StockMoveEntity): Long
 
+    /** Reopening an order: the goods it took go back. */
+    @Query("DELETE FROM stock_moves WHERE order_id = :orderId AND kind = 'ORDER'")
+    suspend fun deleteOrderMoves(orderId: Long)
+
     /** Switching to one shared warehouse: every company's stock goes into it. */
     @Query("UPDATE stock_moves SET company_id = NULL")
     suspend fun mergeIntoShared()

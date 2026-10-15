@@ -41,6 +41,9 @@ interface WarehouseRepository {
 
     fun observeCount(itemId: Long): Flow<Int>
 
+    /** Counts by item id in the warehouse [companyId]'s orders take goods from. */
+    fun observeCountsFor(companyId: Long): Flow<Map<Long, Int>>
+
     /** Newest first. */
     fun observeMoves(itemId: Long): Flow<List<StockMove>>
 
@@ -93,6 +96,12 @@ internal class OfflineWarehouseRepository @Inject constructor(
         companies.observeActiveCompany().first()?.takeIf { it.kind == CompanyKind.OWN }?.id
 
     private suspend fun currentWarehouse(): Long? = if (mode.value == WarehouseMode.SHARED) null else ownCompanyId()
+
+    /** The warehouse [companyId]'s orders take goods from: null = the shared one. */
+    internal fun warehouseFor(companyId: Long): Long? = if (mode.value == WarehouseMode.SHARED) null else companyId
+
+    override fun observeCountsFor(companyId: Long): Flow<Map<Long, Int>> = mode.map { warehouseFor(companyId) }.distinctUntilChanged()
+        .flatMapLatest { warehouse -> stockDao.observeCounts(warehouse).map { counts -> counts.associate { it.id to it.count } } }
 
     override fun observeStock(): Flow<List<StockLine>> = warehouse().flatMapLatest { companyId ->
         combine(catalogDao.observeSnapshot(), stockDao.observeCounts(companyId)) { snapshot, counts ->

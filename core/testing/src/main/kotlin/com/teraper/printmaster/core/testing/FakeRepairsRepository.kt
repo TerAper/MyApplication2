@@ -57,6 +57,16 @@ class FakeRepairsRepository(initial: List<Repair> = emptyList()) : RepairsReposi
         billed.value = billed.value - orderId
     }
 
+    val bought = mutableListOf<Pair<Long, Long>>()
+
+    override suspend fun markBought(orderId: Long, itemId: Long): Boolean {
+        bought += orderId to itemId
+        repairs.value = repairs.value.map { r ->
+            if (r.orderId == orderId) r.copy(lines = r.lines.map { if (it.itemId == itemId) it.copy(toBuy = false) else it }) else r
+        }
+        return true
+    }
+
     /** Order → the own company it was accepted into (null = done for the giving company). */
     val accepted = mutableMapOf<Long, Long?>()
     val declined = mutableMapOf<Long, String>()

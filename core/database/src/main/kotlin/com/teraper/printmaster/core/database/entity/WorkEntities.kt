@@ -193,4 +193,6 @@ data class RepairItemEntity(
     val quantity: Int,
     /** Goods sold from the catalog; null = a service from the price list or a typed line. */
     @ColumnInfo(name = "item_id") val itemId: Long? = null,
+    /** Goods to be bought before the order can be finished. */
+    @ColumnInfo(name = "to_buy", defaultValue = "0") val toBuy: Boolean = false,
 )
